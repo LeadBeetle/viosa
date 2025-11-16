@@ -1,0 +1,5 @@
+package com.example.viosa
+
+import io.flutter.embedding.android.FlutterActivity
+
+class MainActivity : FlutterActivity()
