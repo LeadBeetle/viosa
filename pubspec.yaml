@@ -38,6 +38,7 @@ dependencies:
   # Audio
   just_audio: ^0.10.5
   record: ^6.1.2  # Audio recording
+  audio_waveforms: ^1.3.0  # Audio visualization
 
   # Dateiauswahl
   file_picker: ^10.3.6

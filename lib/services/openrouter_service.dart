@@ -19,6 +19,7 @@ abstract class ITranscriptionService {
     required String base64Audio,
     required String mimeType,
     required String language,
+    CancelToken? cancelToken,
   });
 }
 
@@ -34,7 +35,12 @@ class OpenRouterService implements ITranscriptionService {
     Dio? dio,
     this.baseUrl = 'https://openrouter.ai/api/v1',
     this.model = AppConstants.llmModel,
-  }) : _dio = dio ?? Dio();
+  }) : _dio = dio ?? Dio() {
+    // Configure timeouts for large audio file uploads
+    _dio.options.connectTimeout = const Duration(seconds: 30);
+    _dio.options.sendTimeout = const Duration(minutes: 7); // Increased for large files
+    _dio.options.receiveTimeout = const Duration(minutes: 7); // Increased for large responses
+  }
 
   @override
   Future<TranscriptionResult> transcribeAudio({
@@ -52,7 +58,7 @@ class OpenRouterService implements ITranscriptionService {
         data: request,
         options: Options(
           headers: _buildHeaders(apiKey),
-          validateStatus: (status) => status != null && status < 500,
+          validateStatus: (status) => status != null && status < 600,
         ),
       );
 
@@ -62,6 +68,14 @@ class OpenRouterService implements ITranscriptionService {
 
       if (response.statusCode == 429) {
         throw Exception('Rate limit exceeded. Please try again later.');
+      }
+
+      if (response.statusCode == 503) {
+        throw Exception('Service temporarily unavailable. Please try again in a moment.');
+      }
+
+      if (response.statusCode != null && response.statusCode! >= 500) {
+        throw Exception('Server error (${response.statusCode}). Please try again later.');
       }
 
       if (response.statusCode != 200) {
@@ -78,11 +92,22 @@ class OpenRouterService implements ITranscriptionService {
         timestamp: DateTime.now(),
       );
     } on DioException catch (e) {
-      if (e.type == DioExceptionType.connectionTimeout ||
-          e.type == DioExceptionType.receiveTimeout) {
-        throw Exception('Request timed out. Please try again.');
+      if (e.type == DioExceptionType.connectionTimeout) {
+        throw Exception('Connection timeout. Please check your internet connection.');
+      } else if (e.type == DioExceptionType.sendTimeout) {
+        throw Exception('Upload timeout. Your audio file may be too large or connection too slow.');
+      } else if (e.type == DioExceptionType.receiveTimeout) {
+        throw Exception('Response timeout. The server is taking too long to process your request.');
       } else if (e.type == DioExceptionType.connectionError) {
         throw Exception('Network error. Please check your internet connection.');
+      } else if (e.response?.statusCode != null) {
+        // Handle HTTP errors that weren't caught by validateStatus
+        final statusCode = e.response!.statusCode!;
+        if (statusCode == 503) {
+          throw Exception('Service temporarily unavailable. Please try again in a moment.');
+        } else if (statusCode >= 500) {
+          throw Exception('Server error ($statusCode). Please try again later.');
+        }
       }
       throw Exception('Transcription failed: ${e.message}');
     } catch (e) {
@@ -170,6 +195,7 @@ class OpenRouterService implements ITranscriptionService {
     required String base64Audio,
     required String mimeType,
     required String language,
+    CancelToken? cancelToken,
   }) async* {
     final prompt = _getPromptForLanguage(language);
     final request = _buildRequest(prompt, base64Audio, mimeType);
@@ -186,8 +212,9 @@ class OpenRouterService implements ITranscriptionService {
         options: Options(
           headers: _buildHeaders(apiKey),
           responseType: ResponseType.stream,
-          validateStatus: (status) => status != null && status < 500,
+          validateStatus: (status) => status != null && status < 600,
         ),
+        cancelToken: cancelToken,
       );
 
       if (response.statusCode == 401) {
@@ -196,6 +223,14 @@ class OpenRouterService implements ITranscriptionService {
 
       if (response.statusCode == 429) {
         throw Exception('API-Rate-Limit erreicht. Bitte versuchen Sie es später erneut.');
+      }
+
+      if (response.statusCode == 503) {
+        throw Exception('Dienst vorübergehend nicht verfügbar. Bitte versuchen Sie es in einem Moment erneut.');
+      }
+
+      if (response.statusCode != null && response.statusCode! >= 500) {
+        throw Exception('Server-Fehler (${response.statusCode}). Bitte versuchen Sie es später erneut.');
       }
 
       if (response.statusCode != 200) {
@@ -247,17 +282,33 @@ class OpenRouterService implements ITranscriptionService {
       debugPrint('DioException response: ${e.response}');
       debugPrint('DioException error: ${e.error}');
 
+      // Handle cancellation separately
+      if (e.type == DioExceptionType.cancel) {
+        throw Exception('Transkription vom Benutzer abgebrochen');
+      }
+
       String errorMessage;
-      if (e.type == DioExceptionType.connectionTimeout ||
-          e.type == DioExceptionType.receiveTimeout) {
-        errorMessage = 'Zeitüberschreitung bei der Anfrage. Bitte versuchen Sie es erneut.';
+      if (e.type == DioExceptionType.connectionTimeout) {
+        errorMessage = 'Verbindungs-Timeout. Bitte überprüfen Sie Ihre Internetverbindung.';
+      } else if (e.type == DioExceptionType.sendTimeout) {
+        errorMessage = 'Upload-Timeout. Ihre Audiodatei ist möglicherweise zu groß oder die Verbindung zu langsam.';
+      } else if (e.type == DioExceptionType.receiveTimeout) {
+        errorMessage = 'Antwort-Timeout. Der Server benötigt zu lange für die Verarbeitung Ihrer Anfrage.';
       } else if (e.type == DioExceptionType.connectionError) {
         errorMessage = 'Netzwerkfehler. Bitte überprüfen Sie Ihre Internetverbindung.';
       } else if (e.response != null) {
         // Try to get error from response
         final responseData = e.response?.data;
+        final statusCode = e.response?.statusCode;
         debugPrint('Response data: $responseData');
-        errorMessage = 'API-Fehler (${e.response?.statusCode}): ${e.response?.statusMessage ?? e.message}';
+
+        if (statusCode == 503) {
+          errorMessage = 'Dienst vorübergehend nicht verfügbar. Bitte versuchen Sie es in einem Moment erneut.';
+        } else if (statusCode != null && statusCode >= 500) {
+          errorMessage = 'Server-Fehler ($statusCode). Bitte versuchen Sie es später erneut.';
+        } else {
+          errorMessage = 'API-Fehler ($statusCode): ${e.response?.statusMessage ?? e.message}';
+        }
       } else if (e.message != null) {
         errorMessage = 'Transkription fehlgeschlagen: ${e.message}';
       } else if (e.error != null) {

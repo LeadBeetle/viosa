@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:dio/dio.dart';
 import '../models/audio_file.dart';
 import '../models/transcription_result.dart';
 import '../models/prompt_result.dart';
@@ -8,6 +9,7 @@ import '../services/file_service.dart';
 import '../services/audio_service.dart';
 import '../services/openrouter_service.dart';
 import '../services/prompt_service.dart';
+import '../services/snackbar_service.dart';
 import '../providers/settings_provider.dart';
 import '../providers/history_provider.dart';
 import '../providers/session_state_provider.dart';
@@ -60,6 +62,9 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _currentPromptName;
   String? _currentPromptTemplate;
 
+  // Cancel token for transcription
+  CancelToken? _transcriptionCancelToken;
+
   @override
   void initState() {
     super.initState();
@@ -94,7 +99,16 @@ class _HomeScreenState extends State<HomeScreen> {
     // Load audio if file was restored
     if (_selectedFile != null) {
       try {
-        await _audioService.loadAudio(_selectedFile!.path);
+        // Reload the audio file from disk to restore base64Data
+        final reloadedFile = await _fileService.reloadAudioFile(_selectedFile!);
+        if (reloadedFile != null && mounted) {
+          setState(() {
+            _selectedFile = reloadedFile;
+          });
+          // Update session with reloaded file (but don't persist base64Data)
+          await sessionProvider.setSelectedFile(reloadedFile);
+          await _audioService.loadAudio(reloadedFile.path);
+        }
       } catch (e) {
         // File might not exist anymore, clear session
         if (mounted) {
@@ -175,6 +189,7 @@ class _HomeScreenState extends State<HomeScreen> {
           _transcriptionResult = null;
           _promptResults.clear();
           _currentHistoryId = null;
+          _showRecorder = false;
         });
 
         await _audioService.loadAudio(file.path);
@@ -226,6 +241,9 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
+    // Create new cancel token
+    _transcriptionCancelToken = CancelToken();
+
     setState(() {
       _isTranscribing = true;
       _errorMessage = null;
@@ -242,6 +260,7 @@ class _HomeScreenState extends State<HomeScreen> {
         base64Audio: _selectedFile!.base64Data,
         mimeType: _selectedFile!.mimeType,
         language: language,
+        cancelToken: _transcriptionCancelToken,
       );
 
       setState(() {
@@ -252,6 +271,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _errorMessage = e.toString();
         _isTranscribing = false;
         _transcriptionStream = null;
+        _transcriptionCancelToken = null;
       });
       if (mounted) {
         _showErrorSnackBar(_errorMessage!);
@@ -259,9 +279,25 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  void _cancelTranscription() {
+    if (_transcriptionCancelToken != null && !_transcriptionCancelToken!.isCancelled) {
+      _transcriptionCancelToken!.cancel('Transkription vom Benutzer abgebrochen');
+    }
+
+    setState(() {
+      _isTranscribing = false;
+      _transcriptionStream = null;
+      _transcriptionBuffer.clear();
+      _transcriptionCancelToken = null;
+    });
+
+    _showErrorSnackBar('Transkription abgebrochen');
+  }
+
   void _onTranscriptionComplete() async {
     setState(() {
       _isTranscribing = false;
+      _transcriptionCancelToken = null;
     });
 
     final transcribedText = _transcriptionBuffer.toString();
@@ -296,10 +332,17 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _onTranscriptionError(String error) {
+    // Check if error is due to cancellation
+    if (error.contains('abgebrochen') || error.contains('cancelled')) {
+      // Already handled by _cancelTranscription
+      return;
+    }
+
     setState(() {
       _errorMessage = error;
       _isTranscribing = false;
       _transcriptionStream = null;
+      _transcriptionCancelToken = null;
     });
     if (mounted) {
       _showErrorSnackBar(error);
@@ -307,23 +350,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppConstants.errorColor,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    SnackBarService.showError(context, message);
   }
 
   void _showSuccessSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppConstants.successColor,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    SnackBarService.showSuccess(context, message);
   }
 
   Future<void> _navigateToSettings() async {
@@ -602,17 +633,22 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: AppConstants.defaultPadding),
               ElevatedButton.icon(
-                onPressed: _isTranscribing ? null : _transcribe,
+                onPressed: _isTranscribing ? _cancelTranscription : _transcribe,
                 icon: _isTranscribing
                     ? const SizedBox(
                         width: 20,
                         height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
                       )
                     : const Icon(Icons.transcribe),
-                label: Text(_isTranscribing ? 'Transkribiere...' : 'Transkribieren'),
+                label: Text(_isTranscribing ? 'Abbrechen' : 'Transkribieren'),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.all(16),
+                  backgroundColor: _isTranscribing ? Colors.red : null,
+                  foregroundColor: _isTranscribing ? Colors.white : null,
                 ),
               ),
               const SizedBox(height: AppConstants.defaultPadding),

@@ -1,10 +1,12 @@
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import '../models/audio_file_info.dart';
+import 'settings_service.dart';
 
 /// Service for scanning directories and finding audio files
 /// Follows Single Responsibility Principle: Only handles file system scanning
 class AudioFileScannerService {
+  final ISettingsService _settingsService = SettingsService();
   static const List<String> _supportedExtensions = [
     'mp3',   // MPEG Audio Layer 3
     'wav',   // Waveform Audio File
@@ -40,8 +42,30 @@ class AudioFileScannerService {
   /// Get common audio directories based on platform
   Future<List<Directory>> getCommonAudioDirectories() async {
     final List<Directory> directories = [];
+    final Set<String> addedPaths = {}; // Track added paths to avoid duplicates
 
     try {
+      // Add custom save path from settings if configured
+      final customPath = await _settingsService.getAudioSavePath();
+      if (customPath != null && customPath.isNotEmpty) {
+        final customDir = Directory(customPath);
+        if (await customDir.exists()) {
+          final normalizedPath = _normalizePath(customDir.path);
+          if (!addedPaths.contains(normalizedPath)) {
+            directories.add(customDir);
+            addedPaths.add(normalizedPath);
+          }
+        }
+      }
+
+      // Always add application documents directory (where recordings are saved by default)
+      final appDocDir = await getApplicationDocumentsDirectory();
+      final normalizedAppDocPath = _normalizePath(appDocDir.path);
+      if (!addedPaths.contains(normalizedAppDocPath)) {
+        directories.add(appDocDir);
+        addedPaths.add(normalizedAppDocPath);
+      }
+
       if (Platform.isAndroid) {
         // On Android, try to access common media directories
         // Note: Android 11+ has scoped storage restrictions
@@ -55,36 +79,49 @@ class AudioFileScannerService {
             // Add Music directory
             final musicDir = Directory('$storageRoot/Music');
             if (await musicDir.exists()) {
-              directories.add(musicDir);
+              final normalizedPath = _normalizePath(musicDir.path);
+              if (!addedPaths.contains(normalizedPath)) {
+                directories.add(musicDir);
+                addedPaths.add(normalizedPath);
+              }
             }
 
             // Add Downloads directory
             final downloadsDir = Directory('$storageRoot/Download');
             if (await downloadsDir.exists()) {
-              directories.add(downloadsDir);
+              final normalizedPath = _normalizePath(downloadsDir.path);
+              if (!addedPaths.contains(normalizedPath)) {
+                directories.add(downloadsDir);
+                addedPaths.add(normalizedPath);
+              }
             }
 
             // Add Recordings directory
             final recordingsDir = Directory('$storageRoot/Recordings');
             if (await recordingsDir.exists()) {
-              directories.add(recordingsDir);
+              final normalizedPath = _normalizePath(recordingsDir.path);
+              if (!addedPaths.contains(normalizedPath)) {
+                directories.add(recordingsDir);
+                addedPaths.add(normalizedPath);
+              }
             }
 
             // Add Voice Recorder directory
             final voiceRecorderDir = Directory('$storageRoot/Voice Recorder');
             if (await voiceRecorderDir.exists()) {
-              directories.add(voiceRecorderDir);
+              final normalizedPath = _normalizePath(voiceRecorderDir.path);
+              if (!addedPaths.contains(normalizedPath)) {
+                directories.add(voiceRecorderDir);
+                addedPaths.add(normalizedPath);
+              }
             }
           }
         }
-      } else if (Platform.isIOS) {
-        // On iOS, use documents directory
-        final appDocDir = await getApplicationDocumentsDirectory();
-        directories.add(appDocDir);
       }
     } catch (e) {
-      // If we can't access standard directories, return empty list
-      // Silent fail - return empty list
+      // If we can't access standard directories, return what we have
+      // Log error for debugging but don't throw
+      print('Error getting audio directories: $e');
     }
 
     return directories;
@@ -108,6 +145,23 @@ class AudioFileScannerService {
     return null;
   }
 
+  /// Normalize a path to ensure consistent comparison
+  /// Handles trailing slashes and case sensitivity on Windows
+  String _normalizePath(String path) {
+    // Remove trailing slashes/backslashes
+    String normalized = path.replaceAll(RegExp(r'[/\\]+$'), '');
+
+    // On Windows, paths are case-insensitive
+    if (Platform.isWindows) {
+      normalized = normalized.toLowerCase();
+    }
+
+    // Replace backslashes with forward slashes for consistency
+    normalized = normalized.replaceAll('\\', '/');
+
+    return normalized;
+  }
+
   /// Scan a directory for audio files
   /// Returns list of AudioFileInfo sorted by creation date (newest first)
   Future<List<AudioFileInfo>> scanDirectory(
@@ -118,6 +172,12 @@ class AudioFileScannerService {
     final List<AudioFileInfo> audioFiles = [];
 
     try {
+      // Check if directory exists before scanning
+      if (!await directory.exists()) {
+        print('Directory does not exist: ${directory.path}');
+        return audioFiles;
+      }
+
       final entities = directory.listSync(
         recursive: recursive,
         followLinks: false,
@@ -139,6 +199,7 @@ class AudioFileScannerService {
                 audioFiles.add(audioFileInfo);
               } catch (e) {
                 // Skip files that can't be accessed
+                print('Could not access file ${entity.path}: $e');
               }
             }
           }
@@ -148,7 +209,8 @@ class AudioFileScannerService {
       // Sort by creation date (newest first)
       audioFiles.sort((a, b) => b.createdDate.compareTo(a.createdDate));
     } catch (e) {
-      // Silent fail - return empty list
+      // Log error but return what we have so far
+      print('Error scanning directory ${directory.path}: $e');
     }
 
     return audioFiles;
@@ -161,6 +223,7 @@ class AudioFileScannerService {
     int maxFilesPerDirectory = 200,
   }) async {
     final List<AudioFileInfo> allAudioFiles = [];
+    final Set<String> seenPaths = {}; // Track file paths to avoid duplicates
 
     for (final directory in directories) {
       final files = await scanDirectory(
@@ -168,7 +231,15 @@ class AudioFileScannerService {
         recursive: recursive,
         maxFiles: maxFilesPerDirectory,
       );
-      allAudioFiles.addAll(files);
+
+      // Add only unique files based on normalized file path
+      for (final file in files) {
+        final normalizedPath = _normalizePath(file.path);
+        if (!seenPaths.contains(normalizedPath)) {
+          allAudioFiles.add(file);
+          seenPaths.add(normalizedPath);
+        }
+      }
     }
 
     // Sort combined results by creation date (newest first)

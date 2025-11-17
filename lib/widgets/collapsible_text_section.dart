@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import '../services/snackbar_service.dart';
 
 /// A collapsible text section widget with expand/collapse functionality
 /// Optimized for displaying long text content with better UX
@@ -83,12 +84,7 @@ class _CollapsibleTextSectionState extends State<CollapsibleTextSection>
 
   void _copyToClipboard() {
     Clipboard.setData(ClipboardData(text: widget.content));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('In Zwischenablage kopiert'),
-        duration: Duration(seconds: 2),
-      ),
-    );
+    SnackBarService.showInfo(context, 'In Zwischenablage kopiert');
   }
 
   Widget _buildContent() {

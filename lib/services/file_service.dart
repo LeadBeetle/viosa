@@ -9,6 +9,7 @@ import '../widgets/custom_audio_file_picker.dart';
 /// Following Interface Segregation Principle (ISP)
 abstract class IFileService {
   Future<AudioFile?> pickAudioFile(BuildContext context);
+  Future<AudioFile?> reloadAudioFile(AudioFile audioFile);
 }
 
 /// Service for handling file operations
@@ -46,6 +47,33 @@ class FileService implements IFileService {
         name: selectedFileInfo.name,
         base64Data: base64Audio,
         mimeType: mimeType,
+        size: bytes.length,
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Reloads an audio file from disk to restore base64Data
+  /// Used when restoring sessions to avoid storing large base64 strings
+  @override
+  Future<AudioFile?> reloadAudioFile(AudioFile audioFile) async {
+    try {
+      final file = File(audioFile.path);
+
+      // Validate file exists
+      if (!await file.exists()) {
+        throw Exception('Datei existiert nicht: ${audioFile.path}');
+      }
+
+      final bytes = await file.readAsBytes();
+      final base64Audio = base64Encode(bytes);
+
+      return AudioFile(
+        path: audioFile.path,
+        name: audioFile.name,
+        base64Data: base64Audio,
+        mimeType: audioFile.mimeType,
         size: bytes.length,
       );
     } catch (e) {

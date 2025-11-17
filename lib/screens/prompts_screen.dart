@@ -4,6 +4,7 @@ import '../models/prompt.dart';
 import '../providers/prompts_provider.dart';
 import '../utils/constants.dart';
 import '../widgets/prompt_edit_dialog.dart';
+import '../services/snackbar_service.dart';
 
 /// Screen for managing prompt templates
 /// Follows Single Responsibility Principle: Manages prompt list UI
@@ -90,23 +91,11 @@ class _PromptsScreenState extends State<PromptsScreen> {
   }
 
   void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppConstants.errorColor,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    SnackBarService.showError(context, message);
   }
 
   void _showSuccessSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppConstants.successColor,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    SnackBarService.showSuccess(context, message);
   }
 
   @override

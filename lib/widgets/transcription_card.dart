@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import '../models/transcription_result.dart';
 import '../utils/constants.dart';
+import '../services/snackbar_service.dart';
 
 /// Widget displaying transcription results
 /// Follows Single Responsibility Principle: Only displays transcription data
@@ -19,13 +20,7 @@ class TranscriptionCard extends StatelessWidget {
   Future<void> _copyToClipboard(BuildContext context, String text) async {
     await Clipboard.setData(ClipboardData(text: text));
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('In Zwischenablage kopiert'),
-          behavior: SnackBarBehavior.floating,
-          duration: Duration(seconds: 2),
-        ),
-      );
+      SnackBarService.showInfo(context, 'In Zwischenablage kopiert');
     }
   }
 

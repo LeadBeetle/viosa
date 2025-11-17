@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import '../models/prompt_result.dart';
 import '../utils/constants.dart';
+import '../services/snackbar_service.dart';
 
 /// Widget displaying prompt application results
 /// Follows Single Responsibility Principle: Only displays prompt result data
@@ -26,13 +27,7 @@ class _PromptResultCardState extends State<PromptResultCard> {
   Future<void> _copyToClipboard(String text) async {
     await Clipboard.setData(ClipboardData(text: text));
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('In Zwischenablage kopiert'),
-          behavior: SnackBarBehavior.floating,
-          duration: Duration(seconds: 2),
-        ),
-      );
+      SnackBarService.showInfo(context, 'In Zwischenablage kopiert');
     }
   }
 

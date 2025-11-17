@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import '../services/snackbar_service.dart';
 
 /// A full-screen dialog for displaying markdown content
 /// Similar to the PromptEditDialog but for viewing markdown
@@ -37,12 +38,7 @@ class MarkdownViewDialog extends StatelessWidget {
 
   void _copyToClipboard(BuildContext context) {
     Clipboard.setData(ClipboardData(text: content));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('In Zwischenablage kopiert'),
-        duration: Duration(seconds: 2),
-      ),
-    );
+    SnackBarService.showInfo(context, 'In Zwischenablage kopiert');
   }
 
   @override

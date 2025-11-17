@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/prompt.dart';
 import '../providers/prompts_provider.dart';
+import '../services/snackbar_service.dart';
 
 /// Simple dialog for selecting a prompt
 class PromptSelectorDialog extends StatefulWidget {
@@ -39,9 +40,7 @@ class _PromptSelectorDialogState extends State<PromptSelectorDialog> {
         _isLoading = false;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fehler beim Laden der Prompts: $e')),
-        );
+        SnackBarService.showError(context, 'Fehler beim Laden der Prompts: $e');
       }
     }
   }

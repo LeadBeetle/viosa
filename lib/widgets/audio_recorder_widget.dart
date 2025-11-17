@@ -1,12 +1,15 @@
 import 'dart:io';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:record/record.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
+import 'package:audio_waveforms/audio_waveforms.dart';
 import '../models/audio_file.dart';
 import '../services/recording_service.dart';
 import '../providers/settings_provider.dart';
 import '../utils/constants.dart';
+import '../services/snackbar_service.dart';
 
 /// Widget for audio recording with controls
 /// Follows Single Responsibility Principle: Only handles recording UI
@@ -29,10 +32,21 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> {
   bool _hasPermission = false;
   bool _isStopping = false;
 
+  // Visualization controller for waveforms
+  late final RecorderController _visualizationController;
+
   @override
   void initState() {
     super.initState();
     _checkPermission();
+
+    // Initialize visualization controller
+    _visualizationController = RecorderController()
+      ..androidEncoder = AndroidEncoder.aac
+      ..androidOutputFormat = AndroidOutputFormat.mpeg4
+      ..iosEncoder = IosEncoder.kAudioFormatMPEG4AAC
+      ..sampleRate = 44100;
+
     _recordingService.recordStateStream.listen((state) {
       if (mounted) {
         setState(() {
@@ -52,6 +66,7 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> {
   @override
   void dispose() {
     _recordingService.dispose();
+    _visualizationController.dispose();
     super.dispose();
   }
 
@@ -76,7 +91,16 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> {
         }
       }
 
+      // Start the actual recording service
       await _recordingService.startRecording();
+
+      // Start visualization controller (parallel recording for visualization only)
+      try {
+        await _visualizationController.record();
+      } catch (e) {
+        // Visualization failure shouldn't stop the recording
+        debugPrint('Visualization recording failed: $e');
+      }
     } catch (e) {
       if (mounted) {
         _showErrorSnackBar('Fehler beim Starten der Aufnahme: $e');
@@ -175,6 +199,14 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> {
     });
 
     try {
+      // Stop visualization controller first (cleanup)
+      try {
+        await _visualizationController.stop();
+      } catch (e) {
+        debugPrint('Visualization stop failed: $e');
+      }
+
+      // Stop the actual recording service
       final audioFile = await _recordingService.stopRecording();
       if (audioFile != null && mounted) {
         widget.onRecordingComplete(audioFile);
@@ -195,6 +227,13 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> {
   Future<void> _pauseRecording() async {
     try {
       await _recordingService.pauseRecording();
+
+      // Pause visualization as well
+      try {
+        await _visualizationController.pause();
+      } catch (e) {
+        debugPrint('Visualization pause failed: $e');
+      }
     } catch (e) {
       if (mounted) {
         _showErrorSnackBar('Fehler beim Pausieren: $e');
@@ -205,6 +244,13 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> {
   Future<void> _resumeRecording() async {
     try {
       await _recordingService.resumeRecording();
+
+      // Resume visualization as well
+      try {
+        await _visualizationController.record();
+      } catch (e) {
+        debugPrint('Visualization resume failed: $e');
+      }
     } catch (e) {
       if (mounted) {
         _showErrorSnackBar('Fehler beim Fortsetzen: $e');
@@ -214,6 +260,13 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> {
 
   Future<void> _cancelRecording() async {
     try {
+      // Stop visualization controller
+      try {
+        await _visualizationController.stop();
+      } catch (e) {
+        debugPrint('Visualization stop failed: $e');
+      }
+
       await _recordingService.cancelRecording();
     } catch (e) {
       if (mounted) {
@@ -223,13 +276,7 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> {
   }
 
   void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppConstants.errorColor,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    SnackBarService.showError(context, message);
   }
 
   String _formatDuration(Duration duration) {
@@ -301,6 +348,35 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> {
                   ),
             ),
             const SizedBox(height: 16),
+            // Audio waveform visualization (shows when recording or paused)
+            if (_recordState == RecordState.record || _recordState == RecordState.pause) ...[
+              Container(
+                height: 100,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                ),
+                child: AudioWaveforms(
+                  size: Size(MediaQuery.of(context).size.width - (AppConstants.defaultPadding * 4), 100),
+                  recorderController: _visualizationController,
+                  waveStyle: WaveStyle(
+                    gradient: ui.Gradient.linear(
+                      const Offset(0, 50),
+                      Offset(MediaQuery.of(context).size.width, 50),
+                      [
+                        Theme.of(context).colorScheme.primary,
+                        Theme.of(context).colorScheme.secondary,
+                      ],
+                    ),
+                    showMiddleLine: false,
+                    extendWaveform: true,
+                    waveThickness: 3.0,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
             if (_recordState == RecordState.stop) ...[
               FilledButton.icon(
                 onPressed: _startRecording,
@@ -330,36 +406,36 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> {
                 ),
               ] else ...[
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     Expanded(
-                      child: OutlinedButton.icon(
+                      child: IconButton.outlined(
                         onPressed: _cancelRecording,
                         icon: const Icon(Icons.close),
-                        label: const Text('Abbrechen'),
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size.fromHeight(48),
-                        ),
+                        tooltip: 'Abbrechen',
+                        iconSize: 28,
+                        padding: const EdgeInsets.all(12),
                       ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: FilledButton.icon(
+                      child: IconButton.filled(
                         onPressed: _recordState == RecordState.pause ? _resumeRecording : _pauseRecording,
                         icon: Icon(_recordState == RecordState.pause ? Icons.play_arrow : Icons.pause),
-                        label: Text(_recordState == RecordState.pause ? 'Fortsetzen' : 'Pause'),
-                        style: FilledButton.styleFrom(
-                          minimumSize: const Size.fromHeight(48),
-                        ),
+                        tooltip: _recordState == RecordState.pause ? 'Fortsetzen' : 'Pause',
+                        iconSize: 28,
+                        padding: const EdgeInsets.all(12),
                       ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: FilledButton.icon(
+                      child: IconButton.filled(
                         onPressed: _stopRecording,
-                        icon: const Icon(Icons.stop),
-                        label: const Text('Fertig'),
-                        style: FilledButton.styleFrom(
-                          minimumSize: const Size.fromHeight(48),
+                        icon: const Icon(Icons.check),
+                        tooltip: 'Fertig',
+                        iconSize: 28,
+                        padding: const EdgeInsets.all(12),
+                        style: IconButton.styleFrom(
                           backgroundColor: Colors.green,
                         ),
                       ),

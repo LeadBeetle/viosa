@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'markdown_view_dialog.dart';
+import '../services/snackbar_service.dart';
 
 /// A widget that displays streaming text content with auto-scroll
 /// and user control features
@@ -136,12 +137,7 @@ class _StreamingTextDisplayState extends State<StreamingTextDisplay> {
 
   void _copyToClipboard() {
     Clipboard.setData(ClipboardData(text: _contentBuffer.toString()));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('In Zwischenablage kopiert'),
-        duration: Duration(seconds: 2),
-      ),
-    );
+    SnackBarService.showInfo(context, 'In Zwischenablage kopiert');
   }
 
   void _showFullScreen() {

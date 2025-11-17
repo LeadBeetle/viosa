@@ -11,6 +11,7 @@ abstract class IAudioService {
   Stream<Duration?> get durationStream;
   Stream<PlayerState> get playerStateStream;
   Stream<bool> get playingStream;
+  String? get currentFilePath;
   void dispose();
 }
 
@@ -18,12 +19,14 @@ abstract class IAudioService {
 /// Single Responsibility Principle (SRP): Only handles audio playback
 class AudioService implements IAudioService {
   final AudioPlayer _player;
+  String? _currentFilePath;
 
   AudioService({AudioPlayer? player}) : _player = player ?? AudioPlayer();
 
   @override
   Future<void> loadAudio(String filePath) async {
     try {
+      _currentFilePath = filePath;
       await _player.setFilePath(filePath);
     } catch (e) {
       throw Exception('Failed to load audio file: $e');
@@ -68,6 +71,9 @@ class AudioService implements IAudioService {
 
   @override
   Stream<bool> get playingStream => _player.playingStream;
+
+  @override
+  String? get currentFilePath => _currentFilePath;
 
   @override
   void dispose() {

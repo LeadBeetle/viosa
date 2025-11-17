@@ -4,6 +4,7 @@ import '../models/transcription_history.dart';
 import '../providers/history_provider.dart';
 import '../utils/constants.dart';
 import '../widgets/history_item_card.dart';
+import '../services/snackbar_service.dart';
 
 /// Screen for displaying transcription history with search and filters
 /// Follows Single Responsibility Principle: Manages history UI
@@ -133,23 +134,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppConstants.errorColor,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    SnackBarService.showError(context, message);
   }
 
   void _showSuccessSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppConstants.successColor,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    SnackBarService.showSuccess(context, message);
   }
 
   @override

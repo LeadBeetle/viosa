@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../providers/settings_provider.dart';
 import '../utils/constants.dart';
+import '../services/snackbar_service.dart';
 
 /// Settings screen for configuring API key and language
 /// Follows Single Responsibility Principle: Manages settings UI
@@ -148,23 +149,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppConstants.errorColor,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    SnackBarService.showError(context, message);
   }
 
   void _showSuccessSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppConstants.successColor,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    SnackBarService.showSuccess(context, message);
   }
 
   @override
