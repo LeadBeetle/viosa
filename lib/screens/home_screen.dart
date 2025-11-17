@@ -5,6 +5,7 @@ import '../models/audio_file.dart';
 import '../models/transcription_result.dart';
 import '../models/prompt_result.dart';
 import '../models/transcription_history.dart';
+import '../models/split_transcription_job.dart';
 import '../services/file_service.dart';
 import '../services/audio_service.dart';
 import '../services/openrouter_service.dart';
@@ -13,6 +14,7 @@ import '../services/snackbar_service.dart';
 import '../providers/settings_provider.dart';
 import '../providers/history_provider.dart';
 import '../providers/session_state_provider.dart';
+import '../providers/split_transcription_provider.dart';
 import '../widgets/audio_player_widget.dart';
 import '../widgets/file_info_card.dart';
 import '../widgets/audio_recorder_widget.dart';
@@ -21,8 +23,10 @@ import '../widgets/collapsible_text_section.dart';
 import '../widgets/prompt_selector_dialog.dart';
 import '../widgets/speed_dial_fab.dart';
 import '../widgets/new_transcription_button.dart';
+import '../widgets/split_transcription_progress_card.dart';
 import '../services/streaming_llm_service.dart';
 import '../utils/constants.dart';
+import '../utils/audio_utils.dart';
 import 'settings_screen.dart';
 import 'prompts_screen.dart';
 import 'history_screen.dart';
@@ -64,6 +68,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Cancel token for transcription
   CancelToken? _transcriptionCancelToken;
+
+  // Split transcription state
+  SplitTranscriptionJob? _activeSplitJob;
+  bool _isSplitTranscription = false;
 
   @override
   void initState() {
@@ -241,6 +249,16 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
+    // Check if audio file is longer than 10 minutes
+    final duration = await AudioUtils.getAudioDuration(_selectedFile!.path);
+    final shouldSplit = duration > const Duration(minutes: 10);
+
+    if (shouldSplit) {
+      // Show dialog and start split transcription
+      await _startSplitTranscription(duration);
+      return;
+    }
+
     // Create new cancel token
     _transcriptionCancelToken = CancelToken();
 
@@ -249,6 +267,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _errorMessage = null;
       _transcriptionResult = null;
       _transcriptionBuffer.clear();
+      _isSplitTranscription = false;
     });
 
     try {
@@ -365,6 +384,192 @@ class _HomeScreenState extends State<HomeScreen> {
     });
     if (mounted) {
       _showErrorSnackBar(error);
+    }
+  }
+
+  /// Shows dialog and starts split transcription for long audio files
+  Future<void> _startSplitTranscription(Duration duration) async {
+    if (_selectedFile == null) return;
+
+    final settingsProvider = context.read<SettingsProvider>();
+    final splitCount = await AudioUtils.calculateSplitCount(_selectedFile!.path);
+
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Lange Audiodatei erkannt'),
+        content: Text(
+          'Diese Audiodatei ist ${AudioUtils.formatDurationShort(duration)} lang und '
+          'wird in $splitCount Segmente aufgeteilt (je ~10 Minuten).\n\n'
+          'Die Transkription läuft im Hintergrund und kann einige Minuten dauern.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Abbrechen'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Starten'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    // Get provider before async operations
+    final splitProvider = context.read<SplitTranscriptionProvider>();
+    final apiKey = settingsProvider.apiKey!;
+    final language = settingsProvider.language;
+    final audioPath = _selectedFile!.path;
+    final fileName = _selectedFile!.name;
+
+    try {
+      splitProvider.setApiKey(apiKey);
+
+      // Start job creation and immediately set state to show UI
+      setState(() {
+        _isSplitTranscription = true;
+        _isTranscribing = true;
+        _errorMessage = null;
+      });
+
+      final job = await splitProvider.startTranscription(
+        audioPath: audioPath,
+        fileName: fileName,
+        language: language,
+        apiKey: apiKey,
+      );
+
+      if (mounted) {
+        // Listen for job updates FIRST (before setting state)
+        _listenToSplitJobUpdates(job.id);
+
+        setState(() {
+          _activeSplitJob = job;
+        });
+
+        _showSuccessSnackBar('Split-Transkription gestartet');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString();
+          _isTranscribing = false;
+          _isSplitTranscription = false;
+          _activeSplitJob = null;
+        });
+        _showErrorSnackBar('Fehler beim Starten der Split-Transkription: $e');
+      }
+    }
+  }
+
+  /// Listens to split job updates and handles completion
+  void _listenToSplitJobUpdates(String jobId) {
+    final splitProvider = context.read<SplitTranscriptionProvider>();
+    bool completionHandled = false;
+
+    splitProvider.jobUpdates.listen((job) {
+      if (!mounted) return;
+      if (job.id != jobId) return;
+
+      setState(() {
+        _activeSplitJob = job;
+      });
+
+      // Handle job completion (only once)
+      if (job.isFinished && !completionHandled) {
+        completionHandled = true;
+        _onSplitTranscriptionComplete(job);
+      }
+    });
+  }
+
+  /// Handles split transcription completion
+  Future<void> _onSplitTranscriptionComplete(SplitTranscriptionJob job) async {
+    setState(() {
+      _isTranscribing = false;
+    });
+
+    if (job.isFullySuccessful || (job.completedCount > 0 && job.failedCount < job.totalSplits)) {
+      final mergedText = job.mergedTranscription;
+
+      if (mergedText != null && mergedText.isNotEmpty) {
+        final result = TranscriptionResult(
+          text: mergedText,
+          language: job.language,
+          modelUsed: AppConstants.llmModel,
+          timestamp: job.completedAt ?? DateTime.now(),
+        );
+
+        setState(() {
+          _transcriptionResult = result;
+          // Clear split job UI elements now that we have the result
+          _activeSplitJob = null;
+          _isSplitTranscription = false;
+        });
+
+        // Save to history
+        if (mounted) {
+          final sessionProvider = context.read<SessionStateProvider>();
+          await sessionProvider.setTranscriptionResult(result);
+
+          await _saveSplitJobToHistory(job, result);
+        }
+
+        if (job.failedCount > 0) {
+          _showSuccessSnackBar(
+            'Transkription abgeschlossen mit ${job.failedCount} fehlgeschlagenen Segmenten',
+          );
+        } else {
+          _showSuccessSnackBar('Transkription erfolgreich abgeschlossen');
+        }
+      }
+    } else {
+      setState(() {
+        // Clear split job UI on failure too
+        _activeSplitJob = null;
+        _isSplitTranscription = false;
+      });
+      _showErrorSnackBar('Transkription fehlgeschlagen');
+    }
+  }
+
+  /// Saves split job to history
+  Future<void> _saveSplitJobToHistory(
+    SplitTranscriptionJob job,
+    TranscriptionResult result,
+  ) async {
+    if (_selectedFile == null) return;
+
+    try {
+      final history = TranscriptionHistory(
+        id: _currentHistoryId,
+        audioFileName: _selectedFile!.name,
+        transcription: result,
+        promptResults: _promptResults,
+        splitJobId: job.id,
+        isSplitTranscription: true,
+      );
+
+      if (mounted) {
+        final historyProvider = context.read<HistoryProvider>();
+        await historyProvider.saveHistory(history);
+
+        setState(() {
+          _currentHistoryId = history.id;
+        });
+
+        if (mounted) {
+          final sessionProvider = context.read<SessionStateProvider>();
+          await sessionProvider.setCurrentHistoryId(history.id);
+        }
+      }
+    } catch (e) {
+      // Silent fail
+      debugPrint('Error saving split job to history: $e');
     }
   }
 
@@ -688,7 +893,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         'Keine Audio-Datei ausgewählt',
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                             ),
                       ),
                       const SizedBox(height: 8),
@@ -696,13 +901,63 @@ class _HomeScreenState extends State<HomeScreen> {
                         'Tippen Sie auf das Symbol unten rechts, um eine Audio-Datei auszuwählen',
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
                             ),
                       ),
                     ],
                   ),
                 ),
               ),
+            // Split transcription progress card
+            if (_isSplitTranscription) ...[
+              if (_activeSplitJob != null)
+                SplitTranscriptionProgressCard(
+                  job: _activeSplitJob!,
+                  onCancel: () async {
+                    final splitProvider = context.read<SplitTranscriptionProvider>();
+                    await splitProvider.cancelJob(_activeSplitJob!.id);
+                    setState(() {
+                      _activeSplitJob = null;
+                      _isSplitTranscription = false;
+                      _isTranscribing = false;
+                    });
+                  },
+                  onViewMerged: _activeSplitJob!.mergedTranscription != null
+                      ? () {
+                          // Transcription is already set, just scroll to it
+                          _scrollToTop();
+                        }
+                      : null,
+                )
+              else
+                Card(
+                  elevation: 4,
+                  margin: const EdgeInsets.all(16),
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      children: [
+                        const CircularProgressIndicator(),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Audio-Datei wird in Segmente aufgeteilt...',
+                          style: Theme.of(context).textTheme.titleMedium,
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Dies kann einen Moment dauern',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                              ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              const SizedBox(height: AppConstants.defaultPadding),
+            ],
             // Streaming transcription display
             if (_transcriptionStream != null) ...[
               Consumer<SettingsProvider>(

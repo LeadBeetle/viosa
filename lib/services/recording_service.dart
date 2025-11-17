@@ -4,8 +4,11 @@ import 'dart:io';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:audio_session/audio_session.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 import '../models/audio_file.dart';
 import 'settings_service.dart';
+import 'recording_notification_service.dart';
 
 /// Interface for audio recording service
 /// Follows Interface Segregation Principle: Only recording-related methods
@@ -29,6 +32,7 @@ class RecordingService implements IRecordingService {
   final AudioRecorder _recorder = AudioRecorder();
   final StreamController<Duration> _durationController = StreamController<Duration>.broadcast();
   final ISettingsService _settingsService = SettingsService();
+  final RecordingNotificationService _notificationService = RecordingNotificationService();
   Timer? _timer;
   Duration _currentDuration = Duration.zero;
   String? _recordingPath;
@@ -60,6 +64,12 @@ class RecordingService implements IRecordingService {
     if (!await hasPermission()) {
       throw Exception('Mikrofon-Berechtigung nicht erteilt');
     }
+
+    // Configure audio session for background recording
+    await _configureAudioSession();
+
+    // Enable wakelock to prevent device sleep during recording
+    await WakelockPlus.enable();
 
     // Get save path from settings or use default
     final customPath = await _settingsService.getAudioSavePath();
@@ -112,6 +122,31 @@ class RecordingService implements IRecordingService {
       _currentDuration += const Duration(seconds: 1);
       _durationController.add(_currentDuration);
     });
+
+    // Show recording notification in status bar
+    await _notificationService.showRecordingNotification();
+  }
+
+  /// Configure audio session for background recording
+  Future<void> _configureAudioSession() async {
+    final session = await AudioSession.instance;
+    await session.configure(AudioSessionConfiguration(
+      avAudioSessionCategory: AVAudioSessionCategory.playAndRecord,
+      avAudioSessionCategoryOptions: AVAudioSessionCategoryOptions.defaultToSpeaker |
+          AVAudioSessionCategoryOptions.allowBluetooth |
+          AVAudioSessionCategoryOptions.mixWithOthers,
+      avAudioSessionMode: AVAudioSessionMode.spokenAudio,
+      avAudioSessionRouteSharingPolicy: AVAudioSessionRouteSharingPolicy.defaultPolicy,
+      avAudioSessionSetActiveOptions: AVAudioSessionSetActiveOptions.none,
+      androidAudioAttributes: const AndroidAudioAttributes(
+        contentType: AndroidAudioContentType.speech,
+        flags: AndroidAudioFlags.none,
+        usage: AndroidAudioUsage.voiceCommunication,
+      ),
+      androidAudioFocusGainType: AndroidAudioFocusGainType.gain,
+      androidWillPauseWhenDucked: false,
+    ));
+    await session.setActive(true);
   }
 
   @override
@@ -120,6 +155,14 @@ class RecordingService implements IRecordingService {
     _timer = null;
 
     final path = await _recorder.stop();
+
+    // Disable wakelock and deactivate audio session
+    await WakelockPlus.disable();
+    await _deactivateAudioSession();
+
+    // Cancel recording notification
+    await _notificationService.cancelRecordingNotification();
+
     if (path == null) {
       return null;
     }
@@ -148,10 +191,19 @@ class RecordingService implements IRecordingService {
     return audioFile;
   }
 
+  /// Deactivate audio session when recording stops
+  Future<void> _deactivateAudioSession() async {
+    final session = await AudioSession.instance;
+    await session.setActive(false);
+  }
+
   @override
   Future<void> pauseRecording() async {
     await _recorder.pause();
     _timer?.cancel();
+
+    // Update notification to show paused state
+    await _notificationService.showPausedNotification();
   }
 
   @override
@@ -161,6 +213,9 @@ class RecordingService implements IRecordingService {
       _currentDuration += const Duration(seconds: 1);
       _durationController.add(_currentDuration);
     });
+
+    // Update notification to show recording state
+    await _notificationService.showRecordingNotification();
   }
 
   @override
@@ -169,6 +224,13 @@ class RecordingService implements IRecordingService {
     _timer = null;
 
     await _recorder.stop();
+
+    // Disable wakelock and deactivate audio session
+    await WakelockPlus.disable();
+    await _deactivateAudioSession();
+
+    // Cancel recording notification
+    await _notificationService.cancelRecordingNotification();
 
     // Delete the recording file
     if (_recordingPath != null) {

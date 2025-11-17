@@ -16,6 +16,7 @@ class CollapsibleTextSection extends StatefulWidget {
   final Widget? metadata;
   final Widget? actionButton;
   final VoidCallback? onExpandChanged;
+  final double maxExpandedHeight;
 
   const CollapsibleTextSection({
     super.key,
@@ -29,6 +30,7 @@ class CollapsibleTextSection extends StatefulWidget {
     this.metadata,
     this.actionButton,
     this.onExpandChanged,
+    this.maxExpandedHeight = 600,
   });
 
   @override
@@ -96,7 +98,7 @@ class _CollapsibleTextSectionState extends State<CollapsibleTextSection>
 
     if (_isExpanded) {
       return Container(
-        constraints: const BoxConstraints(maxHeight: 400),
+        constraints: BoxConstraints(maxHeight: widget.maxExpandedHeight),
         child: Scrollbar(
           controller: _scrollController,
           thumbVisibility: true,

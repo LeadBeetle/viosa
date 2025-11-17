@@ -22,13 +22,15 @@ class TranscriptionHistoryAdapter extends TypeAdapter<TranscriptionHistory> {
       transcription: fields[2] as TranscriptionResult,
       promptResults: (fields[3] as List?)?.cast<PromptResult>(),
       createdAt: fields[4] as DateTime?,
+      splitJobId: fields[5] as String?,
+      isSplitTranscription: (fields[6] as bool?) ?? false,
     );
   }
 
   @override
   void write(BinaryWriter writer, TranscriptionHistory obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(7)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -38,7 +40,11 @@ class TranscriptionHistoryAdapter extends TypeAdapter<TranscriptionHistory> {
       ..writeByte(3)
       ..write(obj.promptResults)
       ..writeByte(4)
-      ..write(obj.createdAt);
+      ..write(obj.createdAt)
+      ..writeByte(5)
+      ..write(obj.splitJobId)
+      ..writeByte(6)
+      ..write(obj.isSplitTranscription);
   }
 
   @override

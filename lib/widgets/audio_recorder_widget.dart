@@ -25,7 +25,7 @@ class AudioRecorderWidget extends StatefulWidget {
   State<AudioRecorderWidget> createState() => _AudioRecorderWidgetState();
 }
 
-class _AudioRecorderWidgetState extends State<AudioRecorderWidget> {
+class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsBindingObserver {
   final IRecordingService _recordingService = RecordingService();
   RecordState _recordState = RecordState.stop;
   Duration _duration = Duration.zero;
@@ -38,6 +38,7 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _checkPermission();
 
     // Initialize visualization controller
@@ -64,7 +65,29 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Keep recording running in background - WakeLock and AudioSession handle this
+    // We only need to handle visualization pause/resume
+    if (state == AppLifecycleState.paused && _recordState == RecordState.record) {
+      // App went to background while recording - pause visualization only
+      try {
+        _visualizationController.pause();
+      } catch (e) {
+        debugPrint('Visualization pause on background failed: $e');
+      }
+    } else if (state == AppLifecycleState.resumed && _recordState == RecordState.record) {
+      // App came back to foreground while recording - resume visualization
+      try {
+        _visualizationController.record();
+      } catch (e) {
+        debugPrint('Visualization resume on foreground failed: $e');
+      }
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _recordingService.dispose();
     _visualizationController.dispose();
     super.dispose();

@@ -23,12 +23,20 @@ class TranscriptionHistory {
   @HiveField(4)
   final DateTime createdAt;
 
+  @HiveField(5)
+  final String? splitJobId;
+
+  @HiveField(6)
+  final bool isSplitTranscription;
+
   TranscriptionHistory({
     String? id,
     required this.audioFileName,
     required this.transcription,
     List<PromptResult>? promptResults,
     DateTime? createdAt,
+    this.splitJobId,
+    this.isSplitTranscription = false,
   })  : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
         promptResults = promptResults ?? [],
         createdAt = createdAt ?? DateTime.now();
@@ -46,6 +54,8 @@ class TranscriptionHistory {
               .toList() ??
           [],
       createdAt: DateTime.parse(json['createdAt'] as String),
+      splitJobId: json['splitJobId'] as String?,
+      isSplitTranscription: json['isSplitTranscription'] as bool? ?? false,
     );
   }
 
@@ -57,6 +67,8 @@ class TranscriptionHistory {
       'transcription': transcription.toJson(),
       'promptResults': promptResults.map((e) => e.toJson()).toList(),
       'createdAt': createdAt.toIso8601String(),
+      'splitJobId': splitJobId,
+      'isSplitTranscription': isSplitTranscription,
     };
   }
 
@@ -75,6 +87,8 @@ class TranscriptionHistory {
     TranscriptionResult? transcription,
     List<PromptResult>? promptResults,
     DateTime? createdAt,
+    String? splitJobId,
+    bool? isSplitTranscription,
   }) {
     return TranscriptionHistory(
       id: id ?? this.id,
@@ -82,6 +96,8 @@ class TranscriptionHistory {
       transcription: transcription ?? this.transcription,
       promptResults: promptResults ?? this.promptResults,
       createdAt: createdAt ?? this.createdAt,
+      splitJobId: splitJobId ?? this.splitJobId,
+      isSplitTranscription: isSplitTranscription ?? this.isSplitTranscription,
     );
   }
 }

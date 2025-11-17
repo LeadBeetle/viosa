@@ -79,7 +79,7 @@ class SessionStateProvider with ChangeNotifier {
       // Restore session data from Hive
       final sessionData = _sessionBox!.get(_sessionDataKey);
       if (sessionData != null) {
-        final Map<String, dynamic> data = Map<String, dynamic>.from(sessionData);
+        final Map<String, dynamic> data = _convertToStringMap(sessionData);
         final session = SessionData.fromJson(data);
 
         _selectedFile = session.selectedFile;
@@ -153,6 +153,32 @@ class SessionStateProvider with ChangeNotifier {
     if (_sessionBox != null) {
       await _sessionBox!.delete(_sessionDataKey);
     }
+  }
+
+  /// Converts a dynamic map to a properly typed Map<String, dynamic>
+  /// Recursively handles nested maps and lists
+  Map<String, dynamic> _convertToStringMap(dynamic input) {
+    if (input is Map) {
+      return Map<String, dynamic>.fromEntries(
+        input.entries.map((entry) {
+          final key = entry.key.toString();
+          final value = entry.value;
+
+          if (value is Map) {
+            return MapEntry(key, _convertToStringMap(value));
+          } else if (value is List) {
+            return MapEntry(key, value.map((item) {
+              if (item is Map) {
+                return _convertToStringMap(item);
+              }
+              return item;
+            }).toList());
+          }
+          return MapEntry(key, value);
+        }),
+      );
+    }
+    return {};
   }
 
   /// Persist current session state to storage
