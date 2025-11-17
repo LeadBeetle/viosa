@@ -13,8 +13,9 @@ abstract class IFileService {
 }
 
 /// Service for handling file operations
-/// Single Responsibility Principle (SRP): Only handles file picking and conversion
+/// Single Responsibility Principle (SRP): Only handles file picking
 class FileService implements IFileService {
+
   @override
   Future<AudioFile?> pickAudioFile(BuildContext context) async {
     try {

@@ -21,8 +21,6 @@ enum AudioFileType {
   mp3,
   wav,
   m4a,
-  flac,
-  ogg,
   other,
 }
 
@@ -217,12 +215,8 @@ class _CustomAudioFilePickerState extends State<CustomAudioFilePicker> {
           return ext == 'wav';
         case AudioFileType.m4a:
           return ext == 'm4a' || ext == 'mp4';
-        case AudioFileType.flac:
-          return ext == 'flac';
-        case AudioFileType.ogg:
-          return ext == 'ogg' || ext == 'oga';
         case AudioFileType.other:
-          return !['mp3', 'wav', 'm4a', 'mp4', 'flac', 'ogg', 'oga'].contains(ext);
+          return !['mp3', 'wav', 'm4a', 'mp4'].contains(ext);
       }
     }).toList();
   }
@@ -264,10 +258,6 @@ class _CustomAudioFilePickerState extends State<CustomAudioFilePicker> {
         return 'WAV';
       case AudioFileType.m4a:
         return 'M4A/MP4';
-      case AudioFileType.flac:
-        return 'FLAC';
-      case AudioFileType.ogg:
-        return 'OGG';
       case AudioFileType.other:
         return 'Andere';
     }
@@ -283,10 +273,6 @@ class _CustomAudioFilePickerState extends State<CustomAudioFilePicker> {
       case AudioFileType.wav:
         return Icons.graphic_eq;
       case AudioFileType.m4a:
-        return Icons.music_note;
-      case AudioFileType.flac:
-        return Icons.high_quality;
-      case AudioFileType.ogg:
         return Icons.music_note;
       case AudioFileType.other:
         return Icons.audio_file;

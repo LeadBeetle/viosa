@@ -254,11 +254,30 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final language = settingsProvider.language;
 
+      // OpenRouter officially supports MP3 and WAV
+      // For M4A/AAC files, we send them directly with 'audio/mpeg' mimeType
+      // Most LLMs can handle M4A even if not officially documented
+      AudioFile audioToTranscribe = _selectedFile!;
+
+      // Override mimeType for M4A/AAC to MP3 for better compatibility
+      if (_selectedFile!.mimeType.contains('mp4') ||
+          _selectedFile!.mimeType.contains('m4a') ||
+          _selectedFile!.mimeType.contains('aac')) {
+        debugPrint('M4A/AAC detected, sending as audio/mpeg to OpenRouter');
+        audioToTranscribe = AudioFile(
+          path: _selectedFile!.path,
+          name: _selectedFile!.name,
+          base64Data: _selectedFile!.base64Data,
+          mimeType: 'audio/mpeg', // Override to MP3 for OpenRouter compatibility
+          size: _selectedFile!.size,
+        );
+      }
+
       // Start streaming transcription
       final stream = _transcriptionService.transcribeAudioStreaming(
         apiKey: apiKey,
-        base64Audio: _selectedFile!.base64Data,
-        mimeType: _selectedFile!.mimeType,
+        base64Audio: audioToTranscribe.base64Data,
+        mimeType: audioToTranscribe.mimeType,
         language: language,
         cancelToken: _transcriptionCancelToken,
       );

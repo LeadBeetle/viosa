@@ -47,12 +47,18 @@ class _HistoryItemCardState extends State<HistoryItemCard> {
             title: Text(
               widget.history.audioFileName,
               style: const TextStyle(fontWeight: FontWeight.bold),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 4),
-                Text(widget.history.formattedCreatedAt),
+                Text(
+                  widget.history.formattedCreatedAt,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
                 const SizedBox(height: 2),
                 Wrap(
                   spacing: 16,
@@ -63,9 +69,12 @@ class _HistoryItemCardState extends State<HistoryItemCard> {
                       children: [
                         Icon(Icons.language, size: 14, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
                         const SizedBox(width: 4),
-                        Text(
-                          widget.history.transcription.languageName,
-                          style: Theme.of(context).textTheme.bodySmall,
+                        Flexible(
+                          child: Text(
+                            widget.history.transcription.languageName,
+                            style: Theme.of(context).textTheme.bodySmall,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ],
                     ),
@@ -180,6 +189,8 @@ class _HistoryItemCardState extends State<HistoryItemCard> {
                                   child: Text(
                                     promptResult.promptName,
                                     style: const TextStyle(fontWeight: FontWeight.bold),
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
                                   ),
                                 ),
                                 IconButton(

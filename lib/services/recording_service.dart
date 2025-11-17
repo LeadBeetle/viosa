@@ -92,7 +92,7 @@ class RecordingService implements IRecordingService {
       directory = await getApplicationDocumentsDirectory();
     }
 
-    // Generate unique filename
+    // Generate unique filename with .m4a extension (actual recording format)
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     _recordingPath = '${directory.path}/recording_$timestamp.m4a';
 
@@ -138,7 +138,7 @@ class RecordingService implements IRecordingService {
       path: path,
       name: path.split('/').last,
       base64Data: base64Data,
-      mimeType: 'audio/mp4',
+      mimeType: 'audio/mp4', // M4A MIME type (will be converted to MP3 before transcription)
       size: size,
     );
 

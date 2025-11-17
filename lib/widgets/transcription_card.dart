@@ -41,11 +41,14 @@ class TranscriptionCard extends StatelessWidget {
                   size: 20,
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  'Transkriptions-Ergebnis',
-                  style: Theme.of(context).textTheme.titleLarge,
+                Expanded(
+                  child: Text(
+                    'Transkriptions-Ergebnis',
+                    style: Theme.of(context).textTheme.titleLarge,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
                 ),
-                const Spacer(),
                 IconButton(
                   icon: const Icon(Icons.copy),
                   onPressed: () => _copyToClipboard(context, result.text),

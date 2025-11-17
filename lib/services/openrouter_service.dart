@@ -150,13 +150,17 @@ class OpenRouterService implements ITranscriptionService {
   }
 
   String _getAudioFormat(String mimeType) {
-    // Extract format from mimeType (e.g., 'audio/mp3' -> 'mp3', 'audio/wav' -> 'wav')
+    // Extract format from mimeType and map to OpenRouter-supported formats
+    // OpenRouter only supports: mp3, wav
     if (mimeType.contains('mp3') || mimeType.contains('mpeg')) {
       return 'mp3';
     } else if (mimeType.contains('wav')) {
       return 'wav';
     }
-    // Default to mp3 if format is unclear
+
+    // Unsupported formats - should have been converted before calling this service
+    // Log a warning and default to mp3 (the file should be converted client-side)
+    debugPrint('WARNING: Unsupported audio format detected: $mimeType. File should be converted to MP3 or WAV before transcription.');
     return 'mp3';
   }
 

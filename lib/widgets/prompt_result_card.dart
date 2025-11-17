@@ -44,7 +44,11 @@ class _PromptResultCardState extends State<PromptResultCard> {
               Icons.auto_awesome,
               color: Theme.of(context).colorScheme.primary,
             ),
-            title: Text(widget.result.promptName),
+            title: Text(
+              widget.result.promptName,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
             subtitle: Text(
               widget.result.formattedTimestamp,
               style: Theme.of(context).textTheme.bodySmall,
