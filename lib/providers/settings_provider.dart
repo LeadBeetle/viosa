@@ -10,6 +10,7 @@ class SettingsProvider with ChangeNotifier {
   String _language = 'auto';
   String? _audioSavePath;
   double _textSize = 16.0; // Default text size
+  String _selectedModel = 'google/gemini-2.5-flash'; // Default model
   bool _isInitialized = false;
   bool _isLoading = false;
 
@@ -20,6 +21,7 @@ class SettingsProvider with ChangeNotifier {
   String get language => _language;
   String? get audioSavePath => _audioSavePath;
   double get textSize => _textSize;
+  String get selectedModel => _selectedModel;
   bool get isInitialized => _isInitialized;
   bool get isLoading => _isLoading;
   bool get hasApiKey => _apiKey != null && _apiKey!.isNotEmpty;
@@ -36,6 +38,7 @@ class SettingsProvider with ChangeNotifier {
       _language = await _settingsService.getLanguage();
       _audioSavePath = await _settingsService.getAudioSavePath();
       _textSize = await _settingsService.getTextSize();
+      _selectedModel = await _settingsService.getModel();
       _isInitialized = true;
     } catch (e) {
       debugPrint('Error initializing settings: $e');
@@ -73,6 +76,13 @@ class SettingsProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  /// Save selected model and update state
+  Future<void> saveModel(String model) async {
+    await _settingsService.saveModel(model);
+    _selectedModel = model;
+    notifyListeners();
+  }
+
   /// Clear all settings
   Future<void> clearSettings() async {
     await _settingsService.clearAllSettings();
@@ -80,6 +90,7 @@ class SettingsProvider with ChangeNotifier {
     _language = 'auto';
     _audioSavePath = null;
     _textSize = 16.0;
+    _selectedModel = 'google/gemini-2.5-flash';
     notifyListeners();
   }
 }

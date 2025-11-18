@@ -21,6 +21,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   String _selectedLanguage = 'auto';
   String? _audioSavePath;
+  String _selectedModel = 'google/gemini-2.5-flash';
   bool _isSaving = false;
   bool _isApiKeyVisible = false;
 
@@ -44,6 +45,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
     _selectedLanguage = settingsProvider.language;
     _audioSavePath = settingsProvider.audioSavePath;
+    _selectedModel = settingsProvider.selectedModel;
   }
 
   Future<void> _saveSettings() async {
@@ -63,6 +65,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       await settingsProvider.saveApiKey(apiKey);
       await settingsProvider.saveLanguage(_selectedLanguage);
+      await settingsProvider.saveModel(_selectedModel);
 
       if (_audioSavePath != null && _audioSavePath!.isNotEmpty) {
         await settingsProvider.saveAudioSavePath(_audioSavePath!);
@@ -231,6 +234,156 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
+                            'KI-Modell',
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Wählen Sie das Modell für Transkription und Prompts',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withOpacity(0.6),
+                                ),
+                          ),
+                          const SizedBox(height: 16),
+                          ...AppConstants.supportedModels.map((model) {
+                            final isSelected = _selectedModel == model.id;
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: InkWell(
+                                onTap: () {
+                                  setState(() {
+                                    _selectedModel = model.id;
+                                  });
+                                },
+                                borderRadius: BorderRadius.circular(12),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? Theme.of(context).colorScheme.primary
+                                          : Theme.of(context).colorScheme.outline.withOpacity(0.5),
+                                      width: isSelected ? 2 : 1,
+                                    ),
+                                    borderRadius: BorderRadius.circular(12),
+                                    color: isSelected
+                                        ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3)
+                                        : null,
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(12),
+                                    child: Row(
+                                      children: [
+                                        Radio<String>(
+                                          value: model.id,
+                                          groupValue: _selectedModel,
+                                          onChanged: (value) {
+                                            if (value != null) {
+                                              setState(() {
+                                                _selectedModel = value;
+                                              });
+                                            }
+                                          },
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                children: [
+                                                  Expanded(
+                                                    child: Text(
+                                                      model.name,
+                                                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                                          ),
+                                                    ),
+                                                  ),
+                                                  Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                    decoration: BoxDecoration(
+                                                      color: model.provider == 'Google'
+                                                          ? Colors.blue.withOpacity(0.1)
+                                                          : Colors.orange.withOpacity(0.1),
+                                                      borderRadius: BorderRadius.circular(8),
+                                                    ),
+                                                    child: Text(
+                                                      model.provider,
+                                                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                                            color: model.provider == 'Google'
+                                                                ? Colors.blue.shade700
+                                                                : Colors.orange.shade700,
+                                                            fontWeight: FontWeight.w500,
+                                                          ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Row(
+                                                children: [
+                                                  Icon(
+                                                    model.tier == 'Schnell & günstig'
+                                                        ? Icons.flash_on
+                                                        : model.tier == 'Ausgewogen'
+                                                            ? Icons.balance
+                                                            : Icons.star,
+                                                    size: 14,
+                                                    color: model.tier == 'Schnell & günstig'
+                                                        ? Colors.green
+                                                        : model.tier == 'Ausgewogen'
+                                                            ? Colors.blue
+                                                            : Colors.amber,
+                                                  ),
+                                                  const SizedBox(width: 4),
+                                                  Text(
+                                                    model.tier,
+                                                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                                          color: model.tier == 'Schnell & günstig'
+                                                              ? Colors.green
+                                                              : model.tier == 'Ausgewogen'
+                                                                  ? Colors.blue
+                                                                  : Colors.amber,
+                                                          fontWeight: FontWeight.w500,
+                                                        ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                model.description,
+                                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                      color: Theme.of(context)
+                                                          .colorScheme
+                                                          .onSurface
+                                                          .withOpacity(0.6),
+                                                    ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppConstants.defaultPadding),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
                             'Audio-Einstellungen',
                             style: Theme.of(context).textTheme.titleLarge,
                           ),
@@ -360,7 +513,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'VIOSA nutzt die OpenRouter API mit Gemini Flash 1.5 für Audio-Transkription. '
+                            'VIOSA nutzt die OpenRouter API für Audio-Transkription. '
                             'Ihr API-Key wird sicher auf Ihrem Gerät gespeichert.',
                             style: Theme.of(context).textTheme.bodySmall,
                           ),

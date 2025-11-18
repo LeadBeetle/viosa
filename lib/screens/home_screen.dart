@@ -8,7 +8,6 @@ import '../models/transcription_history.dart';
 import '../models/split_transcription_job.dart';
 import '../services/file_service.dart';
 import '../services/audio_service.dart';
-import '../services/openrouter_service.dart';
 import '../services/prompt_service.dart';
 import '../services/snackbar_service.dart';
 import '../providers/settings_provider.dart';
@@ -46,9 +45,13 @@ class _HomeScreenState extends State<HomeScreen> {
   // Only keep services that are not managed by providers
   final IFileService _fileService = FileService();
   final IAudioService _audioService = AudioService();
-  final ITranscriptionService _transcriptionService = OpenRouterService();
-  final IStreamingLLMService _streamingLLMService = StreamingLLMService();
   final IPromptService _promptService = PromptService();
+
+  // Services that need the model from settings - created on demand
+  IStreamingLLMService _getStreamingLLMService() {
+    final model = context.read<SettingsProvider>().selectedModel;
+    return StreamingLLMService(model: model);
+  }
 
   AudioFile? _selectedFile;
   TranscriptionResult? _transcriptionResult;
@@ -250,72 +253,11 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
-    // Check if audio file is longer than 10 minutes
+    // Get audio duration and show transcription dialog
     final duration = await AudioUtils.getAudioDuration(_selectedFile!.path);
-    final shouldSplit = duration > const Duration(minutes: 10);
 
-    if (shouldSplit) {
-      // Show dialog and start split transcription
-      await _startSplitTranscription(duration);
-      return;
-    }
-
-    // Create new cancel token
-    _transcriptionCancelToken = CancelToken();
-
-    setState(() {
-      _isTranscribing = true;
-      _errorMessage = null;
-      _transcriptionResult = null;
-      _transcriptionBuffer.clear();
-      _isSplitTranscription = false;
-    });
-
-    try {
-      final language = settingsProvider.language;
-
-      // OpenRouter officially supports MP3 and WAV
-      // For M4A/AAC files, we send them directly with 'audio/mpeg' mimeType
-      // Most LLMs can handle M4A even if not officially documented
-      AudioFile audioToTranscribe = _selectedFile!;
-
-      // Override mimeType for M4A/AAC to MP3 for better compatibility
-      if (_selectedFile!.mimeType.contains('mp4') ||
-          _selectedFile!.mimeType.contains('m4a') ||
-          _selectedFile!.mimeType.contains('aac')) {
-        debugPrint('M4A/AAC detected, sending as audio/mpeg to OpenRouter');
-        audioToTranscribe = AudioFile(
-          path: _selectedFile!.path,
-          name: _selectedFile!.name,
-          base64Data: _selectedFile!.base64Data,
-          mimeType: 'audio/mpeg', // Override to MP3 for OpenRouter compatibility
-          size: _selectedFile!.size,
-        );
-      }
-
-      // Start streaming transcription
-      final stream = _transcriptionService.transcribeAudioStreaming(
-        apiKey: apiKey,
-        base64Audio: audioToTranscribe.base64Data,
-        mimeType: audioToTranscribe.mimeType,
-        language: language,
-        cancelToken: _transcriptionCancelToken,
-      );
-
-      setState(() {
-        _transcriptionStream = stream;
-      });
-    } catch (e) {
-      setState(() {
-        _errorMessage = e.toString();
-        _isTranscribing = false;
-        _transcriptionStream = null;
-        _transcriptionCancelToken = null;
-      });
-      if (mounted) {
-        _showErrorSnackBar(_errorMessage!);
-      }
-    }
+    // Always show the transcription dialog with model info
+    await _startSplitTranscription(duration);
   }
 
   void _cancelTranscription() {
@@ -388,22 +330,77 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  /// Shows dialog and starts split transcription for long audio files
+  /// Shows dialog and starts transcription
   Future<void> _startSplitTranscription(Duration duration) async {
     if (_selectedFile == null) return;
 
     final settingsProvider = context.read<SettingsProvider>();
-    final splitCount = await AudioUtils.calculateSplitCount(_selectedFile!.path);
+    final shouldSplit = duration > const Duration(minutes: 10);
+    final splitCount = shouldSplit
+        ? await AudioUtils.calculateSplitCount(_selectedFile!.path)
+        : 1;
+
+    // Get selected model info for display
+    final selectedModelId = settingsProvider.selectedModel;
+    final selectedModel = AppConstants.supportedModels.firstWhere(
+      (m) => m.id == selectedModelId,
+      orElse: () => AppConstants.supportedModels.first,
+    );
 
     // Show confirmation dialog
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Lange Audiodatei erkannt'),
-        content: Text(
-          'Diese Audiodatei ist ${AudioUtils.formatDurationShort(duration)} lang und '
-          'wird in $splitCount Segmente aufgeteilt (je ~10 Minuten).\n\n'
-          'Die Transkription läuft im Hintergrund und kann einige Minuten dauern.',
+        title: Text(shouldSplit ? 'Lange Audiodatei erkannt' : 'Transkription starten'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              shouldSplit
+                  ? 'Diese Audiodatei ist ${AudioUtils.formatDurationShort(duration)} lang und '
+                    'wird in $splitCount Segmente aufgeteilt (je ~10 Minuten).\n\n'
+                    'Die Transkription läuft im Hintergrund und kann einige Minuten dauern.'
+                  : 'Diese Audiodatei ist ${AudioUtils.formatDurationShort(duration)} lang.',
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.smart_toy_outlined,
+                    size: 20,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Modell: ${selectedModel.name}',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w500,
+                              ),
+                        ),
+                        Text(
+                          selectedModel.tier,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -437,11 +434,13 @@ class _HomeScreenState extends State<HomeScreen> {
         _errorMessage = null;
       });
 
+      final model = context.read<SettingsProvider>().selectedModel;
       final job = await splitProvider.startTranscription(
         audioPath: audioPath,
         fileName: fileName,
         language: language,
         apiKey: apiKey,
+        model: model,
       );
 
       if (mounted) {
@@ -686,7 +685,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _transcriptionResult!.text,
       );
 
-      final stream = _streamingLLMService.applyPromptStreaming(
+      final stream = _getStreamingLLMService().applyPromptStreaming(
         apiKey: apiKey,
         promptName: promptName,
         promptTemplate: promptText,

@@ -25,7 +25,7 @@
 - **Echtzeit-Updates:** Live-Anzeige der Wiedergabeposition
 
 #### Transkription
-- **API-Integration:** OpenRouter API mit Gemini Flash 1.5
+- **API-Integration:** OpenRouter API
 - **Base64-Encoding:** Automatische Konvertierung für API-Upload
 - **Sprachauswahl:**
   - Auto-Detect (automatische Spracherkennung)

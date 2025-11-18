@@ -10,6 +10,7 @@ class SplitTranscriptionProvider extends ChangeNotifier {
 
   SplitTranscriptionJob? _currentJob;
   String? _apiKey;
+  String? _model;
 
   SplitTranscriptionProvider({
     SplitTranscriptionService? service,
@@ -30,10 +31,12 @@ class SplitTranscriptionProvider extends ChangeNotifier {
     required String fileName,
     required String language,
     required String apiKey,
+    String? model,
     Duration maxDuration = const Duration(minutes: 10),
     Duration overlap = const Duration(seconds: 5),
   }) async {
     _apiKey = apiKey;
+    _model = model;
 
     final job = await _service.createJob(
       audioPath: audioPath,
@@ -61,6 +64,7 @@ class SplitTranscriptionProvider extends ChangeNotifier {
       await _service.processJob(
         job,
         _apiKey!,
+        model: _model,
         onProgress: (updatedJob) {
           _currentJob = updatedJob;
           _jobUpdateController.add(updatedJob);

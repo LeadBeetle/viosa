@@ -4,23 +4,26 @@ import '../models/audio_split.dart';
 import '../models/split_transcription_job.dart';
 import '../models/transcription_result.dart';
 import '../models/transcription_history.dart';
+import '../utils/constants.dart';
 import 'audio_splitter_service.dart';
 import 'openrouter_service.dart';
 
 /// Service for managing split transcription jobs
 class SplitTranscriptionService {
   final AudioSplitterService _splitterService;
-  final OpenRouterService _openRouterService;
   final Map<String, SplitTranscriptionJob> _jobs = {};
+  String _currentModel = AppConstants.defaultModel;
 
   static const int maxRetries = 3;
   static const Duration retryDelay = Duration(seconds: 5);
 
   SplitTranscriptionService({
     AudioSplitterService? splitterService,
-    OpenRouterService? openRouterService,
-  })  : _splitterService = splitterService ?? AudioSplitterService(),
-        _openRouterService = openRouterService ?? OpenRouterService();
+  })  : _splitterService = splitterService ?? AudioSplitterService();
+
+  OpenRouterService _getOpenRouterService() {
+    return OpenRouterService(model: _currentModel);
+  }
 
   /// Creates a new split transcription job
   Future<SplitTranscriptionJob> createJob({
@@ -55,8 +58,12 @@ class SplitTranscriptionService {
   Future<void> processJob(
     SplitTranscriptionJob job,
     String apiKey, {
+    String? model,
     void Function(SplitTranscriptionJob)? onProgress,
   }) async {
+    if (model != null) {
+      _currentModel = model;
+    }
     job.status = JobStatus.processing;
     job.lastUpdatedAt = DateTime.now();
     onProgress?.call(job);
@@ -111,7 +118,7 @@ class SplitTranscriptionService {
         final audioBytes = await audioFile.readAsBytes();
         final base64Audio = base64Encode(audioBytes);
 
-        final result = await _openRouterService.transcribeAudio(
+        final result = await _getOpenRouterService().transcribeAudio(
           apiKey: apiKey,
           base64Audio: base64Audio,
           mimeType: split.mimeType,
@@ -208,7 +215,7 @@ class SplitTranscriptionService {
       transcription: TranscriptionResult(
         text: mergedText,
         language: job.language,
-        modelUsed: _openRouterService.model,
+        modelUsed: _currentModel,
         timestamp: job.completedAt ?? DateTime.now(),
       ),
       createdAt: job.createdAt,

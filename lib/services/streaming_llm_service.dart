@@ -18,6 +18,11 @@ abstract class IStreamingLLMService {
 /// Follows Single Responsibility Principle: Only handles LLM streaming
 class StreamingLLMService implements IStreamingLLMService {
   final Dio _dio = Dio();
+  final String model;
+
+  StreamingLLMService({
+    this.model = AppConstants.llmModel,
+  });
 
   @override
   Stream<String> applyPromptStreaming({
@@ -39,7 +44,7 @@ class StreamingLLMService implements IStreamingLLMService {
           responseType: ResponseType.stream,
         ),
         data: {
-          'model': AppConstants.llmModel,
+          'model': model,
           'messages': [
             {
               'role': 'user',

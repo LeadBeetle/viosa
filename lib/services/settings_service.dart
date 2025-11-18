@@ -15,6 +15,9 @@ abstract class ISettingsService {
   Future<void> deleteAudioSavePath();
   Future<void> saveTextSize(double size);
   Future<double> getTextSize();
+  Future<void> saveModel(String model);
+  Future<String> getModel();
+  Future<void> deleteModel();
   Future<void> clearAllSettings();
 }
 
@@ -27,8 +30,10 @@ class SettingsService implements ISettingsService {
   static const String _languageKey = 'transcription_language';
   static const String _audioSavePathKey = 'audio_save_path';
   static const String _textSizeKey = 'text_size';
+  static const String _modelKey = 'selected_model';
   static const String _defaultLanguage = 'auto';
   static const double _defaultTextSize = 16.0;
+  static const String _defaultModel = 'google/gemini-2.5-flash';
 
   SettingsService({FlutterSecureStorage? storage})
       : _storage = storage ?? const FlutterSecureStorage();
@@ -110,12 +115,31 @@ class SettingsService implements ISettingsService {
   }
 
   @override
+  Future<void> saveModel(String model) async {
+    if (model.trim().isEmpty) {
+      throw ArgumentError('Model cannot be empty');
+    }
+    await _storage.write(key: _modelKey, value: model);
+  }
+
+  @override
+  Future<String> getModel() async {
+    return await _storage.read(key: _modelKey) ?? _defaultModel;
+  }
+
+  @override
+  Future<void> deleteModel() async {
+    await _storage.delete(key: _modelKey);
+  }
+
+  @override
   Future<void> clearAllSettings() async {
     await Future.wait([
       _storage.delete(key: _apiKeyKey),
       _storage.delete(key: _languageKey),
       _storage.delete(key: _audioSavePathKey),
       _storage.delete(key: _textSizeKey),
+      _storage.delete(key: _modelKey),
     ]);
   }
 }

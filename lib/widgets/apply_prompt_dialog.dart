@@ -22,8 +22,12 @@ class ApplyPromptDialog extends StatefulWidget {
 }
 
 class _ApplyPromptDialogState extends State<ApplyPromptDialog> {
-  final ILLMService _llmService = LLMService();
   final IPromptService _promptService = PromptService();
+
+  ILLMService _getLLMService() {
+    final model = context.read<SettingsProvider>().selectedModel;
+    return LLMService(model: model);
+  }
 
   List<Prompt> _prompts = [];
   Prompt? _selectedPrompt;
@@ -83,7 +87,7 @@ class _ApplyPromptDialogState extends State<ApplyPromptDialog> {
         widget.transcriptionText,
       );
 
-      final result = await _llmService.applyPrompt(
+      final result = await _getLLMService().applyPrompt(
         apiKey: apiKey,
         promptName: _selectedPrompt!.name,
         promptTemplate: promptText,

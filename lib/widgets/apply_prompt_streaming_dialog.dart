@@ -24,8 +24,12 @@ class ApplyPromptStreamingDialog extends StatefulWidget {
 }
 
 class _ApplyPromptStreamingDialogState extends State<ApplyPromptStreamingDialog> {
-  final IStreamingLLMService _streamingLLMService = StreamingLLMService();
   final IPromptService _promptService = PromptService();
+
+  IStreamingLLMService _getStreamingLLMService() {
+    final model = context.read<SettingsProvider>().selectedModel;
+    return StreamingLLMService(model: model);
+  }
 
   List<Prompt> _prompts = [];
   Prompt? _selectedPrompt;
@@ -87,7 +91,7 @@ class _ApplyPromptStreamingDialogState extends State<ApplyPromptStreamingDialog>
         widget.transcriptionText,
       );
 
-      final stream = _streamingLLMService.applyPromptStreaming(
+      final stream = _getStreamingLLMService().applyPromptStreaming(
         apiKey: apiKey,
         promptName: _selectedPrompt!.name,
         promptTemplate: promptText,
@@ -101,13 +105,14 @@ class _ApplyPromptStreamingDialogState extends State<ApplyPromptStreamingDialog>
       }
 
       // Create result and return it
+      final model = context.read<SettingsProvider>().selectedModel;
       final result = PromptResult(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         promptName: _selectedPrompt!.name,
         promptTemplate: _selectedPrompt!.template,
         transcriptionText: widget.transcriptionText,
         llmResponse: _streamedResponse,
-        modelUsed: AppConstants.llmModel,
+        modelUsed: model,
         timestamp: DateTime.now(),
       );
 
@@ -125,13 +130,14 @@ class _ApplyPromptStreamingDialogState extends State<ApplyPromptStreamingDialog>
   void _cancelStreaming() {
     if (_streamedResponse.isNotEmpty) {
       // Create partial result
+      final model = context.read<SettingsProvider>().selectedModel;
       final result = PromptResult(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         promptName: '${_selectedPrompt!.name} (Abgebrochen)',
         promptTemplate: _selectedPrompt!.template,
         transcriptionText: widget.transcriptionText,
         llmResponse: _streamedResponse,
-        modelUsed: AppConstants.llmModel,
+        modelUsed: model,
         timestamp: DateTime.now(),
       );
       Navigator.pop(context, result);
