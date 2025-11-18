@@ -15,7 +15,22 @@ class PromptsScreen extends StatefulWidget {
   State<PromptsScreen> createState() => _PromptsScreenState();
 }
 
-class _PromptsScreenState extends State<PromptsScreen> {
+class _PromptsScreenState extends State<PromptsScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
   Future<void> _createNewPrompt() async {
     final result = await showModalBottomSheet<Prompt>(
       context: context,
@@ -105,80 +120,130 @@ class _PromptsScreenState extends State<PromptsScreen> {
         return Scaffold(
           appBar: AppBar(
             title: const Text('Prompts'),
+            bottom: TabBar(
+              controller: _tabController,
+              tabAlignment: TabAlignment.fill,
+              tabs: [
+                Tab(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.person, size: 16),
+                      const SizedBox(width: 4),
+                      Text(
+                        promptsProvider.customPrompts.isNotEmpty
+                            ? 'Eigene (${promptsProvider.customPrompts.length})'
+                            : 'Eigene',
+                      ),
+                    ],
+                  ),
+                ),
+                Tab(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.star, size: 16),
+                      const SizedBox(width: 4),
+                      Text('Standard (${promptsProvider.predefinedPrompts.length})'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
           body: promptsProvider.isLoading
               ? const Center(child: CircularProgressIndicator())
-              : ListView(
-                  padding: const EdgeInsets.all(AppConstants.defaultPadding),
+              : TabBarView(
+                  controller: _tabController,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Eigene Prompts',
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                        TextButton.icon(
-                          onPressed: _createNewPrompt,
-                          icon: const Icon(Icons.add),
-                          label: const Text('Neu'),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    if (promptsProvider.customPrompts.isEmpty)
-                  Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(32.0),
-                      child: Column(
-                        children: [
-                          Icon(
-                            Icons.text_snippet_outlined,
-                            size: 64,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .primary
-                                .withValues(alpha: 0.3),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Noch keine eigenen Prompts',
-                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurface
-                                      .withValues(alpha: 0.6),
-                                ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Erstellen Sie eigene Prompts für Ihre Transkriptionen',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurface
-                                      .withValues(alpha: 0.4),
-                                ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
-                else
-                  ...promptsProvider.customPrompts.map((prompt) => _buildPromptCard(prompt)),
-                    if (promptsProvider.customPrompts.isNotEmpty) const SizedBox(height: 24),
-                    if (promptsProvider.predefinedPrompts.isNotEmpty) ...[
-                      Text(
-                        'Vordefinierte Prompts',
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      const SizedBox(height: 8),
-                      ...promptsProvider.predefinedPrompts.map((prompt) => _buildPromptCard(prompt)),
-                    ],
-              ],
-            ),
+                    // Custom Prompts Tab
+                    _buildCustomPromptsTab(promptsProvider),
+                    // Predefined Prompts Tab
+                    _buildPredefinedPromptsTab(promptsProvider),
+                  ],
+                ),
+          floatingActionButton: FloatingActionButton(
+            onPressed: _createNewPrompt,
+            tooltip: 'Neuer Prompt',
+            child: const Icon(Icons.add),
+          ),
         );
+      },
+    );
+  }
+
+  Widget _buildCustomPromptsTab(PromptsProvider promptsProvider) {
+    if (promptsProvider.customPrompts.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.text_snippet_outlined,
+                size: 64,
+                color: Theme.of(context)
+                    .colorScheme
+                    .primary
+                    .withValues(alpha: 0.3),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Noch keine eigenen Prompts',
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.6),
+                    ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Erstellen Sie eigene Prompts für Ihre Transkriptionen',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.4),
+                    ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: _createNewPrompt,
+                icon: const Icon(Icons.add),
+                label: const Text('Prompt erstellen'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(AppConstants.defaultPadding),
+      itemCount: promptsProvider.customPrompts.length,
+      itemBuilder: (context, index) {
+        final prompt = promptsProvider.customPrompts[index];
+        return _buildPromptCard(prompt);
+      },
+    );
+  }
+
+  Widget _buildPredefinedPromptsTab(PromptsProvider promptsProvider) {
+    if (promptsProvider.predefinedPrompts.isEmpty) {
+      return const Center(
+        child: Text('Keine vordefinierten Prompts verfügbar'),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(AppConstants.defaultPadding),
+      itemCount: promptsProvider.predefinedPrompts.length,
+      itemBuilder: (context, index) {
+        final prompt = promptsProvider.predefinedPrompts[index];
+        return _buildPromptCard(prompt);
       },
     );
   }
@@ -193,7 +258,31 @@ class _PromptsScreenState extends State<PromptsScreen> {
               ? Colors.amber
               : Theme.of(context).colorScheme.primary,
         ),
-        title: Text(prompt.name),
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+                prompt.name,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (prompt.usageCount > 0)
+              Container(
+                margin: const EdgeInsets.only(left: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${prompt.usageCount}x',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      ),
+                ),
+              ),
+          ],
+        ),
         subtitle: Text(
           prompt.template,
           maxLines: 2,

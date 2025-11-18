@@ -22,13 +22,15 @@ class PromptAdapter extends TypeAdapter<Prompt> {
       template: fields[2] as String,
       isPredefined: fields[3] as bool,
       createdAt: fields[4] as DateTime?,
+      usageCount: (fields[5] as int?) ?? 0,
+      lastUsedAt: fields[6] as DateTime?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Prompt obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(7)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -38,7 +40,11 @@ class PromptAdapter extends TypeAdapter<Prompt> {
       ..writeByte(3)
       ..write(obj.isPredefined)
       ..writeByte(4)
-      ..write(obj.createdAt);
+      ..write(obj.createdAt)
+      ..writeByte(5)
+      ..write(obj.usageCount)
+      ..writeByte(6)
+      ..write(obj.lastUsedAt);
   }
 
   @override

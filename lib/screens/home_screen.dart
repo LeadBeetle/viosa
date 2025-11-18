@@ -15,6 +15,7 @@ import '../providers/settings_provider.dart';
 import '../providers/history_provider.dart';
 import '../providers/session_state_provider.dart';
 import '../providers/split_transcription_provider.dart';
+import '../providers/prompts_provider.dart';
 import '../widgets/audio_player_widget.dart';
 import '../widgets/file_info_card.dart';
 import '../widgets/audio_recorder_widget.dart';
@@ -648,8 +649,13 @@ class _HomeScreenState extends State<HomeScreen> {
     );
 
     if (result != null && mounted) {
+      final promptId = result['promptId']!;
       final promptName = result['promptName']!;
       final promptTemplate = result['promptTemplate']!;
+
+      // Track prompt usage
+      final promptsProvider = context.read<PromptsProvider>();
+      await promptsProvider.incrementUsage(promptId);
 
       // Start streaming prompt response on main page
       _startPromptStreaming(promptName, promptTemplate);

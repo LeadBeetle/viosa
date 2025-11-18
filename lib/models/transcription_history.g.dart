@@ -23,7 +23,7 @@ class TranscriptionHistoryAdapter extends TypeAdapter<TranscriptionHistory> {
       promptResults: (fields[3] as List?)?.cast<PromptResult>(),
       createdAt: fields[4] as DateTime?,
       splitJobId: fields[5] as String?,
-      isSplitTranscription: (fields[6] as bool?) ?? false,
+      isSplitTranscription: fields[6] as bool,
     );
   }
 

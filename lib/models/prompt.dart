@@ -21,12 +21,20 @@ class Prompt {
   @HiveField(4)
   final DateTime createdAt;
 
+  @HiveField(5)
+  final int usageCount;
+
+  @HiveField(6)
+  final DateTime? lastUsedAt;
+
   Prompt({
     required this.id,
     required this.name,
     required this.template,
     this.isPredefined = false,
     DateTime? createdAt,
+    this.usageCount = 0,
+    this.lastUsedAt,
   }) : createdAt = createdAt ?? DateTime.now();
 
   /// Creates a prompt from JSON
@@ -37,6 +45,10 @@ class Prompt {
       template: json['template'] as String,
       isPredefined: json['isPredefined'] as bool? ?? false,
       createdAt: DateTime.parse(json['createdAt'] as String),
+      usageCount: json['usageCount'] as int? ?? 0,
+      lastUsedAt: json['lastUsedAt'] != null
+          ? DateTime.parse(json['lastUsedAt'] as String)
+          : null,
     );
   }
 
@@ -48,6 +60,8 @@ class Prompt {
       'template': template,
       'isPredefined': isPredefined,
       'createdAt': createdAt.toIso8601String(),
+      'usageCount': usageCount,
+      'lastUsedAt': lastUsedAt?.toIso8601String(),
     };
   }
 
@@ -58,6 +72,8 @@ class Prompt {
     String? template,
     bool? isPredefined,
     DateTime? createdAt,
+    int? usageCount,
+    DateTime? lastUsedAt,
   }) {
     return Prompt(
       id: id ?? this.id,
@@ -65,6 +81,8 @@ class Prompt {
       template: template ?? this.template,
       isPredefined: isPredefined ?? this.isPredefined,
       createdAt: createdAt ?? this.createdAt,
+      usageCount: usageCount ?? this.usageCount,
+      lastUsedAt: lastUsedAt ?? this.lastUsedAt,
     );
   }
 }

@@ -5,7 +5,7 @@ import '../services/prompt_service.dart';
 /// Provider for prompts state management
 /// Wraps PromptService and provides reactive state updates
 class PromptsProvider with ChangeNotifier {
-  final IPromptService _promptService;
+  final PromptService _promptService;
 
   List<Prompt> _predefinedPrompts = [];
   List<Prompt> _customPrompts = [];
@@ -14,10 +14,27 @@ class PromptsProvider with ChangeNotifier {
 
   PromptsProvider(this._promptService);
 
-  // Getters
-  List<Prompt> get predefinedPrompts => List.unmodifiable(_predefinedPrompts);
-  List<Prompt> get customPrompts => List.unmodifiable(_customPrompts);
-  List<Prompt> get allPrompts => [..._customPrompts, ..._predefinedPrompts];
+  // Getters - sorted by usage count (descending)
+  List<Prompt> get predefinedPrompts {
+    final sorted = List<Prompt>.from(_predefinedPrompts);
+    sorted.sort((a, b) => b.usageCount.compareTo(a.usageCount));
+    return List.unmodifiable(sorted);
+  }
+
+  List<Prompt> get customPrompts {
+    final sorted = List<Prompt>.from(_customPrompts);
+    sorted.sort((a, b) => b.usageCount.compareTo(a.usageCount));
+    return List.unmodifiable(sorted);
+  }
+
+  List<Prompt> get allPrompts {
+    final custom = List<Prompt>.from(_customPrompts);
+    final predefined = List<Prompt>.from(_predefinedPrompts);
+    custom.sort((a, b) => b.usageCount.compareTo(a.usageCount));
+    predefined.sort((a, b) => b.usageCount.compareTo(a.usageCount));
+    return [...custom, ...predefined];
+  }
+
   bool get isInitialized => _isInitialized;
   bool get isLoading => _isLoading;
 
@@ -31,8 +48,14 @@ class PromptsProvider with ChangeNotifier {
     try {
       // Initialize the prompt service (opens Hive box and migrates data)
       await _promptService.initialize();
-      _predefinedPrompts = _promptService.getPredefinedPrompts();
-      _customPrompts = await _promptService.getCustomPrompts();
+
+      // Load prompts with usage stats
+      final predefined = _promptService.getPredefinedPrompts();
+      final custom = await _promptService.getCustomPrompts();
+
+      _predefinedPrompts = await _promptService.getPromptsWithUsageStats(predefined);
+      _customPrompts = await _promptService.getPromptsWithUsageStats(custom);
+
       _isInitialized = true;
     } catch (e) {
       debugPrint('Error initializing prompts: $e');
@@ -92,7 +115,8 @@ class PromptsProvider with ChangeNotifier {
 
   /// Reload custom prompts from storage
   Future<void> _reloadCustomPrompts() async {
-    _customPrompts = await _promptService.getCustomPrompts();
+    final custom = await _promptService.getCustomPrompts();
+    _customPrompts = await _promptService.getPromptsWithUsageStats(custom);
     notifyListeners();
   }
 
@@ -102,11 +126,28 @@ class PromptsProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      _predefinedPrompts = _promptService.getPredefinedPrompts();
-      _customPrompts = await _promptService.getCustomPrompts();
+      final predefined = _promptService.getPredefinedPrompts();
+      final custom = await _promptService.getCustomPrompts();
+
+      _predefinedPrompts = await _promptService.getPromptsWithUsageStats(predefined);
+      _customPrompts = await _promptService.getPromptsWithUsageStats(custom);
     } finally {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  /// Increment usage count for a prompt
+  Future<void> incrementUsage(String promptId) async {
+    await _promptService.incrementPromptUsage(promptId);
+
+    // Reload prompts to get updated usage stats
+    final predefined = _promptService.getPredefinedPrompts();
+    final custom = await _promptService.getCustomPrompts();
+
+    _predefinedPrompts = await _promptService.getPromptsWithUsageStats(predefined);
+    _customPrompts = await _promptService.getPromptsWithUsageStats(custom);
+
+    notifyListeners();
   }
 }
