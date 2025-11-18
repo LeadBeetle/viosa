@@ -176,12 +176,39 @@ class OpenRouterService implements ITranscriptionService {
   String _getPromptForLanguage(String language) {
     switch (language) {
       case 'de':
-        return 'Transkribiere die folgende Audiodatei auf Deutsch. Gib nur den transkribierten Text zurück, ohne zusätzliche Erklärungen.';
+        return '''Transkribiere die folgende Audiodatei auf Deutsch.
+
+Bereinige das Transkript wie folgt:
+- Entferne Füllwörter (ähm, äh, hmm, also, halt, irgendwie, sozusagen, quasi, ja also)
+- Entferne Wortwiederholungen und Stotterer
+- Korrigiere offensichtliche Versprecher
+- Wandle unvollständige Sätze in vollständige um, wenn der Kontext klar ist
+- Behalte Fachbegriffe und Namen bei
+
+Gib nur den bereinigten Text zurück, ohne zusätzliche Erklärungen.''';
       case 'en':
-        return 'Transcribe the following audio file in English. Return only the transcribed text without additional explanations.';
+        return '''Transcribe the following audio file in English.
+
+Clean up the transcript as follows:
+- Remove filler words (um, uh, like, you know, basically, actually, I mean)
+- Remove word repetitions and stutters
+- Correct obvious verbal slips
+- Convert incomplete sentences to complete ones when context is clear
+- Preserve technical terms and names
+
+Return only the cleaned text without additional explanations.''';
       case 'auto':
       default:
-        return 'Transcribe the following audio file in its original language. Return only the transcribed text without additional explanations.';
+        return '''Transcribe the following audio file in its original language.
+
+Clean up the transcript as follows:
+- Remove filler words and verbal hesitations
+- Remove word repetitions and stutters
+- Correct obvious verbal slips
+- Convert incomplete sentences to complete ones when context is clear
+- Preserve technical terms and names
+
+Return only the cleaned text without additional explanations.''';
     }
   }
 
