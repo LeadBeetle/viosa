@@ -2,14 +2,16 @@ import 'package:flutter/material.dart';
 import '../models/audio_file.dart';
 import '../utils/constants.dart';
 
-/// Widget displaying file information
+/// Widget displaying file information with optional rename action
 /// Follows Single Responsibility Principle: Only displays file info
 class FileInfoCard extends StatelessWidget {
   final AudioFile file;
+  final VoidCallback? onRename;
 
   const FileInfoCard({
     super.key,
     required this.file,
+    this.onRename,
   });
 
   IconData _getIconForExtension(String extension) {
@@ -65,12 +67,18 @@ class FileInfoCard extends StatelessWidget {
                           color: Theme.of(context)
                               .colorScheme
                               .onSurface
-                              .withOpacity(0.6),
+                              .withValues(alpha: 0.6),
                         ),
                   ),
                 ],
               ),
             ),
+            if (onRename != null)
+              IconButton(
+                onPressed: onRename,
+                icon: const Icon(Icons.edit_outlined),
+                tooltip: 'Umbenennen',
+              ),
           ],
         ),
       ),

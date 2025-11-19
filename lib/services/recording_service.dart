@@ -14,7 +14,7 @@ import 'recording_notification_service.dart';
 /// Follows Interface Segregation Principle: Only recording-related methods
 abstract class IRecordingService {
   Future<void> startRecording();
-  Future<AudioFile?> stopRecording();
+  Future<AudioFile?> stopRecording({String? customName});
   Future<void> pauseRecording();
   Future<void> resumeRecording();
   Future<void> cancelRecording();
@@ -150,7 +150,7 @@ class RecordingService implements IRecordingService {
   }
 
   @override
-  Future<AudioFile?> stopRecording() async {
+  Future<AudioFile?> stopRecording({String? customName}) async {
     _timer?.cancel();
     _timer = null;
 
@@ -177,9 +177,24 @@ class RecordingService implements IRecordingService {
     final base64Data = base64Encode(bytes);
     final size = await file.length();
 
+    // Use custom name if provided, otherwise generate a user-friendly name
+    final String displayName;
+    if (customName != null && customName.isNotEmpty) {
+      displayName = '$customName.m4a';
+    } else {
+      // Generate user-friendly name with date/time
+      final now = DateTime.now();
+      final formattedDate = '${now.day.toString().padLeft(2, '0')}.'
+          '${now.month.toString().padLeft(2, '0')}.'
+          '${now.year} '
+          '${now.hour.toString().padLeft(2, '0')}:'
+          '${now.minute.toString().padLeft(2, '0')}';
+      displayName = 'Aufnahme $formattedDate.m4a';
+    }
+
     final audioFile = AudioFile(
       path: path,
-      name: path.split('/').last,
+      name: displayName,
       base64Data: base64Data,
       mimeType: 'audio/mp4', // M4A MIME type (will be converted to MP3 before transcription)
       size: size,

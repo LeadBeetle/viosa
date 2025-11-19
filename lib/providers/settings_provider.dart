@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../services/settings_service.dart';
+import '../repositories/model_repository.dart';
 
 /// Provider for app-wide settings state management
 /// Wraps SettingsService and provides reactive state updates
@@ -9,8 +10,8 @@ class SettingsProvider with ChangeNotifier {
   String? _apiKey;
   String _language = 'auto';
   String? _audioSavePath;
-  double _textSize = 16.0; // Default text size
-  String _selectedModel = 'google/gemini-2.5-flash'; // Default model
+  double _textSize = 16.0;
+  String _selectedModel = ModelRepository.defaultModelId;
   bool _isInitialized = false;
   bool _isLoading = false;
 
@@ -90,7 +91,7 @@ class SettingsProvider with ChangeNotifier {
     _language = 'auto';
     _audioSavePath = null;
     _textSize = 16.0;
-    _selectedModel = 'google/gemini-2.5-flash';
+    _selectedModel = ModelRepository.defaultModelId;
     notifyListeners();
   }
 }

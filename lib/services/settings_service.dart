@@ -1,4 +1,5 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../repositories/model_repository.dart';
 
 /// Interface for settings storage operations
 /// Following Interface Segregation Principle (ISP)
@@ -33,7 +34,6 @@ class SettingsService implements ISettingsService {
   static const String _modelKey = 'selected_model';
   static const String _defaultLanguage = 'auto';
   static const double _defaultTextSize = 16.0;
-  static const String _defaultModel = 'google/gemini-2.5-flash';
 
   SettingsService({FlutterSecureStorage? storage})
       : _storage = storage ?? const FlutterSecureStorage();
@@ -124,7 +124,7 @@ class SettingsService implements ISettingsService {
 
   @override
   Future<String> getModel() async {
-    return await _storage.read(key: _modelKey) ?? _defaultModel;
+    return await _storage.read(key: _modelKey) ?? ModelRepository.defaultModelId;
   }
 
   @override

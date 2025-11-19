@@ -3,7 +3,8 @@ import 'package:provider/provider.dart';
 import '../models/prompt.dart';
 import '../providers/prompts_provider.dart';
 import '../providers/settings_provider.dart';
-import '../services/llm_service.dart';
+import '../services/llm_provider.dart';
+import '../services/llm_provider_factory.dart';
 import '../services/prompt_service.dart';
 import '../utils/constants.dart';
 
@@ -24,9 +25,9 @@ class ApplyPromptDialog extends StatefulWidget {
 class _ApplyPromptDialogState extends State<ApplyPromptDialog> {
   final IPromptService _promptService = PromptService();
 
-  ILLMService _getLLMService() {
+  ILLMProvider _getLLMProvider() {
     final model = context.read<SettingsProvider>().selectedModel;
-    return LLMService(model: model);
+    return LLMProviderFactory.createForModel(model);
   }
 
   List<Prompt> _prompts = [];
@@ -87,7 +88,7 @@ class _ApplyPromptDialogState extends State<ApplyPromptDialog> {
         widget.transcriptionText,
       );
 
-      final result = await _getLLMService().applyPrompt(
+      final result = await _getLLMProvider().applyPrompt(
         apiKey: apiKey,
         promptName: _selectedPrompt!.name,
         promptTemplate: promptText,

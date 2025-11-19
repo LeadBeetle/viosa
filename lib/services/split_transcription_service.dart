@@ -4,15 +4,17 @@ import '../models/audio_split.dart';
 import '../models/split_transcription_job.dart';
 import '../models/transcription_result.dart';
 import '../models/transcription_history.dart';
-import '../utils/constants.dart';
+import '../repositories/model_repository.dart';
 import 'audio_splitter_service.dart';
-import 'openrouter_service.dart';
+import 'llm_provider.dart';
+import 'llm_provider_factory.dart';
 
 /// Service for managing split transcription jobs
 class SplitTranscriptionService {
   final AudioSplitterService _splitterService;
   final Map<String, SplitTranscriptionJob> _jobs = {};
-  String _currentModel = AppConstants.defaultModel;
+  String _currentModel = ModelRepository.defaultModelId;
+  ILLMProvider? _provider;
 
   static const int maxRetries = 3;
   static const Duration retryDelay = Duration(seconds: 5);
@@ -21,8 +23,9 @@ class SplitTranscriptionService {
     AudioSplitterService? splitterService,
   })  : _splitterService = splitterService ?? AudioSplitterService();
 
-  OpenRouterService _getOpenRouterService() {
-    return OpenRouterService(model: _currentModel);
+  ILLMProvider _getProvider() {
+    _provider ??= LLMProviderFactory.createForModel(_currentModel);
+    return _provider!;
   }
 
   /// Creates a new split transcription job
@@ -63,6 +66,7 @@ class SplitTranscriptionService {
   }) async {
     if (model != null) {
       _currentModel = model;
+      _provider = LLMProviderFactory.createForModel(_currentModel);
     }
     job.status = JobStatus.processing;
     job.lastUpdatedAt = DateTime.now();
@@ -118,7 +122,7 @@ class SplitTranscriptionService {
         final audioBytes = await audioFile.readAsBytes();
         final base64Audio = base64Encode(audioBytes);
 
-        final result = await _getOpenRouterService().transcribeAudio(
+        final result = await _getProvider().transcribeAudio(
           apiKey: apiKey,
           base64Audio: base64Audio,
           mimeType: split.mimeType,

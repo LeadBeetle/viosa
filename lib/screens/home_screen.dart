@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:dio/dio.dart';
@@ -25,7 +27,10 @@ import '../widgets/speed_dial_fab.dart';
 import '../widgets/new_transcription_button.dart';
 import '../widgets/split_transcription_progress_card.dart';
 import '../widgets/info_chip.dart';
-import '../services/streaming_llm_service.dart';
+import '../widgets/recording_name_dialog.dart';
+import '../services/llm_provider.dart';
+import '../services/llm_provider_factory.dart';
+import '../repositories/model_repository.dart';
 import '../utils/constants.dart';
 import '../utils/audio_utils.dart';
 import 'settings_screen.dart';
@@ -49,9 +54,9 @@ class _HomeScreenState extends State<HomeScreen> {
   final IPromptService _promptService = PromptService();
 
   // Services that need the model from settings - created on demand
-  IStreamingLLMService _getStreamingLLMService() {
+  ILLMProvider _getLLMProvider() {
     final model = context.read<SettingsProvider>().selectedModel;
-    return StreamingLLMService(model: model);
+    return LLMProviderFactory.createForModel(model);
   }
 
   AudioFile? _selectedFile;
@@ -289,7 +294,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final result = TranscriptionResult(
         text: transcribedText,
         language: settingsProvider.language,
-        modelUsed: AppConstants.llmModel,
+        modelUsed: settingsProvider.selectedModel,
         timestamp: DateTime.now(),
       );
 
@@ -343,10 +348,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // Get selected model info for display
     final selectedModelId = settingsProvider.selectedModel;
-    final selectedModel = AppConstants.supportedModels.firstWhere(
-      (m) => m.id == selectedModelId,
-      orElse: () => AppConstants.supportedModels.first,
-    );
+    final selectedModel = ModelRepository.getModelByIdOrDefault(selectedModelId);
 
     // Show confirmation dialog
     final confirmed = await showDialog<bool>(
@@ -498,10 +500,11 @@ class _HomeScreenState extends State<HomeScreen> {
       final mergedText = job.mergedTranscription;
 
       if (mergedText != null && mergedText.isNotEmpty) {
+        final settingsProvider = context.read<SettingsProvider>();
         final result = TranscriptionResult(
           text: mergedText,
           language: job.language,
-          modelUsed: AppConstants.llmModel,
+          modelUsed: settingsProvider.selectedModel,
           timestamp: job.completedAt ?? DateTime.now(),
         );
 
@@ -686,7 +689,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _transcriptionResult!.text,
       );
 
-      final stream = _getStreamingLLMService().applyPromptStreaming(
+      final stream = _getLLMProvider().applyPromptStreaming(
         apiKey: apiKey,
         promptName: promptName,
         promptTemplate: promptText,
@@ -709,13 +712,14 @@ class _HomeScreenState extends State<HomeScreen> {
     final promptResponse = _promptBuffer.toString();
 
     if (promptResponse.isNotEmpty && _currentPromptName != null) {
+      final settingsProvider = context.read<SettingsProvider>();
       final result = PromptResult(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         promptName: _currentPromptName!,
         promptTemplate: _currentPromptTemplate!,
         transcriptionText: _transcriptionResult!.text,
         llmResponse: promptResponse,
-        modelUsed: AppConstants.llmModel,
+        modelUsed: settingsProvider.selectedModel,
         timestamp: DateTime.now(),
       );
 
@@ -779,9 +783,69 @@ class _HomeScreenState extends State<HomeScreen> {
         currentHistoryId: null,
       );
 
-      // Scroll to top and show success
+      // Scroll to top and show success with recording name
       await _scrollToTop();
-      _showSuccessSnackBar('Aufnahme erfolgreich abgeschlossen');
+      // Extract display name without extension for user-friendly message
+      final displayName = audioFile.name.endsWith('.m4a')
+          ? audioFile.name.substring(0, audioFile.name.length - 4)
+          : audioFile.name;
+      _showSuccessSnackBar('Aufnahme "$displayName" gespeichert');
+    }
+  }
+
+  Future<void> _renameRecording() async {
+    if (_selectedFile == null) return;
+
+    final newName = await RecordingNameDialog.show(
+      context,
+      initialName: _selectedFile!.name,
+    );
+
+    if (newName == null || !mounted) return;
+
+    try {
+      // Rename the actual file on disk
+      final oldFile = File(_selectedFile!.path);
+      final directory = oldFile.parent.path;
+      final newPath = '$directory/$newName.m4a';
+      final newFile = await oldFile.rename(newPath);
+
+      // Reload the file data with new path
+      final bytes = await newFile.readAsBytes();
+      final base64Data = base64Encode(bytes);
+
+      // Create updated AudioFile with new name and path
+      final updatedFile = AudioFile(
+        path: newPath,
+        name: '$newName.m4a',
+        base64Data: base64Data,
+        mimeType: _selectedFile!.mimeType,
+        size: _selectedFile!.size,
+      );
+
+      // Reload audio in player with new path
+      await _audioService.loadAudio(newPath);
+
+      setState(() {
+        _selectedFile = updatedFile;
+      });
+
+      // Update session state
+      if (mounted) {
+        final sessionProvider = context.read<SessionStateProvider>();
+        await sessionProvider.updateSession(
+          selectedFile: updatedFile,
+          transcriptionResult: _transcriptionResult,
+          promptResults: _promptResults,
+          currentHistoryId: _currentHistoryId,
+        );
+
+        _showSuccessSnackBar('Aufnahme umbenannt zu "$newName"');
+      }
+    } catch (e) {
+      if (mounted) {
+        SnackBarService.showError(context, 'Fehler beim Umbenennen: $e');
+      }
     }
   }
 
@@ -855,11 +919,15 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: AppConstants.defaultPadding),
             ] else if (_selectedFile != null) ...[
-              FileInfoCard(file: _selectedFile!),
+              FileInfoCard(
+                file: _selectedFile!,
+                onRename: _renameRecording,
+              ),
               const SizedBox(height: AppConstants.defaultPadding),
               AudioPlayerWidget(
                 audioService: _audioService,
                 fileName: _selectedFile!.name,
+                filePath: _selectedFile!.path,
               ),
               const SizedBox(height: AppConstants.defaultPadding),
               ElevatedButton.icon(
@@ -982,7 +1050,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         icon: Icons.language,
                       ),
                       InfoChip(
-                        label: 'Modell: ${AppConstants.llmModel}',
+                        label: 'Modell: ${settings.selectedModel}',
                         icon: Icons.memory,
                       ),
                     ],
@@ -1045,7 +1113,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     spacing: 8,
                     children: [
                       InfoChip(
-                        label: 'Modell: ${AppConstants.llmModel}',
+                        label: 'Modell: ${settings.selectedModel}',
                         icon: Icons.memory,
                       ),
                     ],

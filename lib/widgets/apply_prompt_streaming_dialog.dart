@@ -6,7 +6,8 @@ import '../models/prompt_result.dart';
 import '../providers/prompts_provider.dart';
 import '../providers/settings_provider.dart';
 import '../services/prompt_service.dart';
-import '../services/streaming_llm_service.dart';
+import '../services/llm_provider.dart';
+import '../services/llm_provider_factory.dart';
 import '../utils/constants.dart';
 
 /// Dialog for selecting and applying a prompt with streaming response
@@ -26,9 +27,9 @@ class ApplyPromptStreamingDialog extends StatefulWidget {
 class _ApplyPromptStreamingDialogState extends State<ApplyPromptStreamingDialog> {
   final IPromptService _promptService = PromptService();
 
-  IStreamingLLMService _getStreamingLLMService() {
+  ILLMProvider _getLLMProvider() {
     final model = context.read<SettingsProvider>().selectedModel;
-    return StreamingLLMService(model: model);
+    return LLMProviderFactory.createForModel(model);
   }
 
   List<Prompt> _prompts = [];
@@ -91,7 +92,7 @@ class _ApplyPromptStreamingDialogState extends State<ApplyPromptStreamingDialog>
         widget.transcriptionText,
       );
 
-      final stream = _getStreamingLLMService().applyPromptStreaming(
+      final stream = _getLLMProvider().applyPromptStreaming(
         apiKey: apiKey,
         promptName: _selectedPrompt!.name,
         promptTemplate: promptText,

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../providers/settings_provider.dart';
 import '../utils/constants.dart';
+import '../repositories/model_repository.dart';
 import '../services/snackbar_service.dart';
 
 /// Settings screen for configuring API key and language
@@ -21,7 +22,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   String _selectedLanguage = 'auto';
   String? _audioSavePath;
-  String _selectedModel = 'google/gemini-2.5-flash';
+  String _selectedModel = ModelRepository.defaultModelId;
   bool _isSaving = false;
   bool _isApiKeyVisible = false;
 

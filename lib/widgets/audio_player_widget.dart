@@ -9,11 +9,13 @@ import '../services/snackbar_service.dart';
 class AudioPlayerWidget extends StatefulWidget {
   final IAudioService audioService;
   final String fileName;
+  final String filePath;
 
   const AudioPlayerWidget({
     super.key,
     required this.audioService,
     required this.fileName,
+    required this.filePath,
   });
 
   @override
@@ -38,32 +40,30 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
   }
 
   Future<void> _prepareWaveform() async {
-    final filePath = widget.audioService.currentFilePath;
-    if (filePath != null) {
-      try {
-        await _playerController.preparePlayer(
-          path: filePath,
-          shouldExtractWaveform: true,
-        );
+    final filePath = widget.filePath;
+    try {
+      await _playerController.preparePlayer(
+        path: filePath,
+        shouldExtractWaveform: true,
+      );
 
-        // Listen to waveform controller's onCurrentDurationChanged to sync seeking
-        _playerController.onCurrentDurationChanged.listen((duration) {
-          // When waveform position changes (via user seeking), sync with audio service
-          final currentAudioPosition = _position.inMilliseconds;
-          if ((duration - currentAudioPosition).abs() > 500) {
-            // Only sync if difference is > 500ms (to avoid fighting with natural playback)
-            widget.audioService.seek(Duration(milliseconds: duration));
-          }
-        });
-
-        if (mounted) {
-          setState(() {
-            _isWaveformReady = true;
-          });
+      // Listen to waveform controller's onCurrentDurationChanged to sync seeking
+      _playerController.onCurrentDurationChanged.listen((duration) {
+        // When waveform position changes (via user seeking), sync with audio service
+        final currentAudioPosition = _position.inMilliseconds;
+        if ((duration - currentAudioPosition).abs() > 500) {
+          // Only sync if difference is > 500ms (to avoid fighting with natural playback)
+          widget.audioService.seek(Duration(milliseconds: duration));
         }
-      } catch (e) {
-        debugPrint('Failed to prepare waveform: $e');
+      });
+
+      if (mounted) {
+        setState(() {
+          _isWaveformReady = true;
+        });
       }
+    } catch (e) {
+      debugPrint('Failed to prepare waveform: $e');
     }
   }
 

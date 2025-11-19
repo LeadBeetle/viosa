@@ -1,21 +1,6 @@
 import 'package:flutter/material.dart';
-
-/// Represents an AI model option with metadata for display
-class ModelOption {
-  final String id;
-  final String name;
-  final String provider;
-  final String tier;
-  final String description;
-
-  const ModelOption({
-    required this.id,
-    required this.name,
-    required this.provider,
-    required this.tier,
-    required this.description,
-  });
-}
+import '../repositories/model_repository.dart';
+import '../models/model_config.dart';
 
 class AppConstants {
   // App Info
@@ -24,28 +9,10 @@ class AppConstants {
 
   // API
   static const String openRouterApiUrl = 'https://openrouter.ai/api/v1/chat/completions';
-  static const String defaultModel = 'google/gemini-2.5-flash';
 
-  // Supported Models
-  static const List<ModelOption> supportedModels = [
-    ModelOption(
-      id: 'google/gemini-2.5-flash',
-      name: 'Gemini 2.5 Flash',
-      provider: 'Google',
-      tier: 'Schnell & günstig',
-      description: 'Ideal für einfache Transkriptionen und schnelle Ergebnisse',
-    ),
-    ModelOption(
-      id: 'google/gemini-2.5-pro',
-      name: 'Gemini 2.5 Pro',
-      provider: 'Google',
-      tier: 'Premium',
-      description: 'Bessere Qualität für komplexe Audio-Inhalte',
-    ),
-  ];
-
-  // Legacy constant for backward compatibility
-  static const String llmModel = defaultModel;
+  // Model configuration - delegate to ModelRepository for single source of truth
+  static String get defaultModel => ModelRepository.defaultModelId;
+  static List<ModelConfig> get supportedModels => ModelRepository.supportedModels;
 
   // Supported Languages
   static const List<LanguageOption> supportedLanguages = [
