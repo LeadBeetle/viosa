@@ -39,15 +39,8 @@ class AppConstants {
       id: 'google/gemini-2.5-pro',
       name: 'Gemini 2.5 Pro',
       provider: 'Google',
-      tier: 'Ausgewogen',
-      description: 'Bessere Qualität für komplexe Audio-Inhalte',
-    ),
-    ModelOption(
-      id: 'anthropic/claude-sonnet-4.5',
-      name: 'Claude Sonnet 4.5',
-      provider: 'Anthropic',
       tier: 'Premium',
-      description: 'Höchste Qualität für anspruchsvolle Aufgaben',
+      description: 'Bessere Qualität für komplexe Audio-Inhalte',
     ),
   ];
 

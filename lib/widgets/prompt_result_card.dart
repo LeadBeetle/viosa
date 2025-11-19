@@ -4,6 +4,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import '../models/prompt_result.dart';
 import '../utils/constants.dart';
 import '../services/snackbar_service.dart';
+import 'info_chip.dart';
 
 /// Widget displaying prompt application results
 /// Follows Single Responsibility Principle: Only displays prompt result data
@@ -158,10 +159,9 @@ class _PromptResultCardState extends State<PromptResultCard> {
                   Wrap(
                     spacing: 8,
                     children: [
-                      Chip(
-                        label: Text(widget.result.modelUsed),
-                        avatar: const Icon(Icons.model_training, size: 16),
-                        visualDensity: VisualDensity.compact,
+                      InfoChip(
+                        label: widget.result.modelUsed,
+                        icon: Icons.memory,
                       ),
                     ],
                   ),

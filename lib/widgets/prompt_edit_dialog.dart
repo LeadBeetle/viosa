@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/prompt.dart';
 import '../utils/constants.dart';
 import 'placeholder_text_editing_controller.dart';
+import 'info_chip.dart';
 
 /// Modal bottom sheet for creating or editing a prompt
 /// Follows Single Responsibility Principle: Only handles prompt editing UI
@@ -242,16 +243,10 @@ class _PromptEditDialogState extends State<PromptEditDialog> {
                               if (_advancedMode && _templateController.text.contains('{transcription}'))
                                 Padding(
                                   padding: const EdgeInsets.only(right: 8),
-                                  child: Chip(
-                                    avatar: Icon(
-                                      Icons.check_circle,
-                                      size: 16,
-                                      color: Theme.of(context).colorScheme.primary,
-                                    ),
-                                    label: const Text('{transcription} gefunden'),
-                                    padding: EdgeInsets.zero,
-                                    visualDensity: VisualDensity.compact,
-                                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  child: InfoChip(
+                                    label: '{transcription} gefunden',
+                                    icon: Icons.check_circle,
+                                    iconColor: Theme.of(context).colorScheme.primary,
                                   ),
                                 ),
                               Expanded(

@@ -24,6 +24,7 @@ import '../widgets/prompt_selector_dialog.dart';
 import '../widgets/speed_dial_fab.dart';
 import '../widgets/new_transcription_button.dart';
 import '../widgets/split_transcription_progress_card.dart';
+import '../widgets/info_chip.dart';
 import '../services/streaming_llm_service.dart';
 import '../utils/constants.dart';
 import '../utils/audio_utils.dart';
@@ -976,13 +977,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   metadata: Wrap(
                     spacing: 8,
                     children: [
-                      Chip(
-                        label: Text('Sprache: ${settings.language}'),
-                        avatar: const Icon(Icons.language, size: 16),
+                      InfoChip(
+                        label: 'Sprache: ${settings.language}',
+                        icon: Icons.language,
                       ),
-                      Chip(
-                        label: Text('Modell: ${AppConstants.llmModel}'),
-                        avatar: const Icon(Icons.memory, size: 16),
+                      InfoChip(
+                        label: 'Modell: ${AppConstants.llmModel}',
+                        icon: Icons.memory,
                       ),
                     ],
                   ),
@@ -1006,13 +1007,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   metadata: Wrap(
                     spacing: 8,
                     children: [
-                      Chip(
-                        label: Text('Sprache: ${_transcriptionResult!.language}'),
-                        avatar: const Icon(Icons.language, size: 16),
+                      InfoChip(
+                        label: 'Sprache: ${_transcriptionResult!.language}',
+                        icon: Icons.language,
                       ),
-                      Chip(
-                        label: Text('Modell: ${_transcriptionResult!.modelUsed}'),
-                        avatar: const Icon(Icons.memory, size: 16),
+                      InfoChip(
+                        label: 'Modell: ${_transcriptionResult!.modelUsed}',
+                        icon: Icons.memory,
                       ),
                     ],
                   ),
@@ -1043,9 +1044,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   metadata: Wrap(
                     spacing: 8,
                     children: [
-                      Chip(
-                        label: Text('Modell: ${AppConstants.llmModel}'),
-                        avatar: const Icon(Icons.memory, size: 16),
+                      InfoChip(
+                        label: 'Modell: ${AppConstants.llmModel}',
+                        icon: Icons.memory,
                       ),
                     ],
                   ),
@@ -1129,15 +1130,13 @@ class _HomeScreenState extends State<HomeScreen> {
                         metadata: Wrap(
                           spacing: 8,
                           children: [
-                            Chip(
-                              label: Text('Modell: ${result.modelUsed}'),
-                              avatar: const Icon(Icons.memory, size: 16),
+                            InfoChip(
+                              label: 'Modell: ${result.modelUsed}',
+                              icon: Icons.memory,
                             ),
-                            Chip(
-                              label: Text(
-                                '${result.timestamp.day}.${result.timestamp.month}.${result.timestamp.year} ${result.timestamp.hour}:${result.timestamp.minute.toString().padLeft(2, '0')}',
-                              ),
-                              avatar: const Icon(Icons.access_time, size: 16),
+                            InfoChip(
+                              label: '${result.timestamp.day}.${result.timestamp.month}.${result.timestamp.year} ${result.timestamp.hour}:${result.timestamp.minute.toString().padLeft(2, '0')}',
+                              icon: Icons.access_time,
                             ),
                           ],
                         ),
