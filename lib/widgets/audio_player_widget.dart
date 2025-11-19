@@ -28,8 +28,11 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
   bool _isPlaying = false;
 
   // Waveform visualization controller
-  late final PlayerController _playerController;
+  late PlayerController _playerController;
   bool _isWaveformReady = false;
+
+  // Flag to prevent feedback loop when seeking
+  bool _isSeeking = false;
 
   @override
   void initState() {
@@ -37,6 +40,18 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
     _playerController = PlayerController();
     _setupListeners();
     _prepareWaveform();
+  }
+
+  @override
+  void didUpdateWidget(AudioPlayerWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Re-prepare waveform if file path changed
+    if (oldWidget.filePath != widget.filePath) {
+      _isWaveformReady = false;
+      _playerController.dispose();
+      _playerController = PlayerController();
+      _prepareWaveform();
+    }
   }
 
   Future<void> _prepareWaveform() async {
@@ -48,12 +63,19 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
       );
 
       // Listen to waveform controller's onCurrentDurationChanged to sync seeking
-      _playerController.onCurrentDurationChanged.listen((duration) {
-        // When waveform position changes (via user seeking), sync with audio service
+      _playerController.onCurrentDurationChanged.listen((waveformPosition) {
+        // Prevent feedback loop
+        if (_isSeeking) return;
+
+        // Use waveform position directly - it's already in milliseconds
+        // The PlayerController's position should match the actual audio duration
         final currentAudioPosition = _position.inMilliseconds;
-        if ((duration - currentAudioPosition).abs() > 500) {
+        if ((waveformPosition - currentAudioPosition).abs() > 500) {
           // Only sync if difference is > 500ms (to avoid fighting with natural playback)
-          widget.audioService.seek(Duration(milliseconds: duration));
+          _isSeeking = true;
+          widget.audioService.seek(Duration(milliseconds: waveformPosition)).then((_) {
+            _isSeeking = false;
+          });
         }
       });
 
@@ -73,9 +95,8 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
         setState(() {
           _position = position;
         });
-
-        // Don't continuously sync waveform - it interferes with seeking
-        // The waveform controller handles its own playback position
+        // Don't sync waveform position - let it just be a static visualization
+        // The timer below shows the actual position
       }
     });
 
@@ -100,24 +121,8 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
     try {
       if (_isPlaying) {
         await widget.audioService.pause();
-        // Pause waveform animation
-        if (_isWaveformReady) {
-          try {
-            await _playerController.pausePlayer();
-          } catch (e) {
-            debugPrint('Failed to pause waveform: $e');
-          }
-        }
       } else {
         await widget.audioService.play();
-        // Start waveform animation
-        if (_isWaveformReady) {
-          try {
-            await _playerController.startPlayer();
-          } catch (e) {
-            debugPrint('Failed to start waveform: $e');
-          }
-        }
       }
     } catch (e) {
       if (mounted) {
@@ -196,6 +201,7 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
                   playerController: _playerController,
                   enableSeekGesture: true,
                   waveformType: WaveformType.fitWidth,
+                  continuousWaveform: true,
                   playerWaveStyle: PlayerWaveStyle(
                     fixedWaveColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
                     liveWaveColor: Theme.of(context).colorScheme.primary,
