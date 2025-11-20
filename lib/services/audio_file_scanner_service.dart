@@ -1,11 +1,13 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/audio_file_info.dart';
+import 'i_audio_file_scanner_service.dart';
 import 'settings_service.dart';
 
 /// Service for scanning directories and finding audio files
 /// Follows Single Responsibility Principle: Only handles file system scanning
-class AudioFileScannerService {
+class AudioFileScannerService implements IAudioFileScannerService {
   final ISettingsService _settingsService = SettingsService();
   static const List<String> _supportedExtensions = [
     'mp3',   // MPEG Audio Layer 3
@@ -40,6 +42,7 @@ class AudioFileScannerService {
   ];
 
   /// Get common audio directories based on platform
+  @override
   Future<List<Directory>> getCommonAudioDirectories() async {
     final List<Directory> directories = [];
     final Set<String> addedPaths = {}; // Track added paths to avoid duplicates
@@ -121,7 +124,7 @@ class AudioFileScannerService {
     } catch (e) {
       // If we can't access standard directories, return what we have
       // Log error for debugging but don't throw
-      print('Error getting audio directories: $e');
+      debugPrint('Error getting audio directories: $e');
     }
 
     return directories;
@@ -164,6 +167,7 @@ class AudioFileScannerService {
 
   /// Scan a directory for audio files
   /// Returns list of AudioFileInfo sorted by creation date (newest first)
+  @override
   Future<List<AudioFileInfo>> scanDirectory(
     Directory directory, {
     bool recursive = false,
@@ -174,7 +178,7 @@ class AudioFileScannerService {
     try {
       // Check if directory exists before scanning
       if (!await directory.exists()) {
-        print('Directory does not exist: ${directory.path}');
+        debugPrint('Directory does not exist: ${directory.path}');
         return audioFiles;
       }
 
@@ -199,7 +203,7 @@ class AudioFileScannerService {
                 audioFiles.add(audioFileInfo);
               } catch (e) {
                 // Skip files that can't be accessed
-                print('Could not access file ${entity.path}: $e');
+                debugPrint('Could not access file ${entity.path}: $e');
               }
             }
           }
@@ -210,13 +214,14 @@ class AudioFileScannerService {
       audioFiles.sort((a, b) => b.createdDate.compareTo(a.createdDate));
     } catch (e) {
       // Log error but return what we have so far
-      print('Error scanning directory ${directory.path}: $e');
+      debugPrint('Error scanning directory ${directory.path}: $e');
     }
 
     return audioFiles;
   }
 
   /// Scan multiple directories and combine results
+  @override
   Future<List<AudioFileInfo>> scanMultipleDirectories(
     List<Directory> directories, {
     bool recursive = false,
@@ -249,6 +254,7 @@ class AudioFileScannerService {
   }
 
   /// Scan a custom directory path
+  @override
   Future<List<AudioFileInfo>> scanCustomPath(
     String path, {
     bool recursive = false,
@@ -273,6 +279,7 @@ class AudioFileScannerService {
   }
 
   /// Get all audio files from common directories
+  @override
   Future<List<AudioFileInfo>> getAllAudioFiles({
     bool recursive = false,
     int maxFilesPerDirectory = 200,

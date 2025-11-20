@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import '../services/snackbar_service.dart';
+import '../mixins/copyable_content_mixin.dart';
+import '../utils/markdown_styles.dart';
 
 /// A collapsible text section widget with expand/collapse functionality
 /// Optimized for displaying long text content with better UX
@@ -38,7 +38,7 @@ class CollapsibleTextSection extends StatefulWidget {
 }
 
 class _CollapsibleTextSectionState extends State<CollapsibleTextSection>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, CopyableContentMixin {
   late bool _isExpanded;
   final ScrollController _scrollController = ScrollController();
   late AnimationController _animationController;
@@ -84,10 +84,6 @@ class _CollapsibleTextSectionState extends State<CollapsibleTextSection>
     widget.onExpandChanged?.call();
   }
 
-  void _copyToClipboard() {
-    Clipboard.setData(ClipboardData(text: widget.content));
-    SnackBarService.showInfo(context, 'In Zwischenablage kopiert');
-  }
 
   Widget _buildContent() {
     final textStyle = widget.contentStyle ??
@@ -109,25 +105,7 @@ class _CollapsibleTextSectionState extends State<CollapsibleTextSection>
               child: MarkdownBody(
                 data: widget.content,
                 selectable: true,
-                styleSheet: MarkdownStyleSheet(
-                  p: textStyle,
-                  h1: textStyle.copyWith(
-                    fontSize: (textStyle.fontSize ?? 16) * 1.5,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  h2: textStyle.copyWith(
-                    fontSize: (textStyle.fontSize ?? 16) * 1.3,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  h3: textStyle.copyWith(
-                    fontSize: (textStyle.fontSize ?? 16) * 1.1,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  code: textStyle.copyWith(
-                    fontFamily: 'monospace',
-                  ),
-                  listBullet: textStyle,
-                ),
+                styleSheet: MarkdownStyles.custom(textStyle),
               ),
             ),
           ),
@@ -170,7 +148,7 @@ class _CollapsibleTextSectionState extends State<CollapsibleTextSection>
                 if (widget.showCopyButton)
                   IconButton(
                     icon: const Icon(Icons.copy, size: 20),
-                    onPressed: _copyToClipboard,
+                    onPressed: () => copyToClipboard(widget.content),
                     tooltip: 'Kopieren',
                   ),
                 IconButton(

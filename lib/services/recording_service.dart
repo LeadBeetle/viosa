@@ -7,6 +7,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:audio_session/audio_session.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import '../models/audio_file.dart';
+import '../utils/audio_config.dart';
 import 'settings_service.dart';
 import 'recording_notification_service.dart';
 
@@ -110,8 +111,8 @@ class RecordingService implements IRecordingService {
     await _recorder.start(
       const RecordConfig(
         encoder: AudioEncoder.aacLc,
-        bitRate: 128000,
-        sampleRate: 44100,
+        bitRate: AudioConfig.bitRate,
+        sampleRate: AudioConfig.sampleRate,
       ),
       path: _recordingPath!,
     );

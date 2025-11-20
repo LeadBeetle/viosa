@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import '../utils/constants.dart';
+import 'i_snackbar_service.dart';
 
 /// A service for displaying improved snackbars with consistent styling
-class SnackBarService {
+class SnackBarService implements ISnackBarService {
+  static final SnackBarService _instance = SnackBarService._internal();
+  factory SnackBarService() => _instance;
+  SnackBarService._internal();
+
   /// Shows an error snackbar
-  static void showError(BuildContext context, String message) {
+  @override
+  void showError(BuildContext context, String message) {
     _showSnackBar(
       context,
       message,
@@ -13,7 +19,8 @@ class SnackBarService {
   }
 
   /// Shows a success snackbar
-  static void showSuccess(BuildContext context, String message) {
+  @override
+  void showSuccess(BuildContext context, String message) {
     _showSnackBar(
       context,
       message,
@@ -22,7 +29,8 @@ class SnackBarService {
   }
 
   /// Shows a simple info snackbar (for clipboard notifications, etc.)
-  static void showInfo(
+  @override
+  void showInfo(
     BuildContext context,
     String message, {
     Duration duration = const Duration(seconds: 2),
@@ -35,7 +43,7 @@ class SnackBarService {
   }
 
   /// Internal method to show a snackbar with consistent styling
-  static void _showSnackBar(
+  void _showSnackBar(
     BuildContext context,
     String message, {
     Color? backgroundColor,
@@ -53,4 +61,5 @@ class SnackBarService {
       ),
     );
   }
+
 }

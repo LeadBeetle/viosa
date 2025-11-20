@@ -8,6 +8,7 @@ import 'package:audio_waveforms/audio_waveforms.dart';
 import '../models/audio_file.dart';
 import '../services/recording_service.dart';
 import '../providers/settings_provider.dart';
+import '../utils/audio_config.dart';
 import '../utils/constants.dart';
 import '../services/snackbar_service.dart';
 
@@ -46,7 +47,7 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
       ..androidEncoder = AndroidEncoder.aac
       ..androidOutputFormat = AndroidOutputFormat.mpeg4
       ..iosEncoder = IosEncoder.kAudioFormatMPEG4AAC
-      ..sampleRate = 44100;
+      ..sampleRate = AudioConfig.sampleRate;
 
     _recordingService.recordStateStream.listen((state) {
       if (mounted) {
@@ -299,7 +300,7 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
   }
 
   void _showErrorSnackBar(String message) {
-    SnackBarService.showError(context, message);
+    SnackBarService().showError(context, message);
   }
 
   String _formatDuration(Duration duration) {

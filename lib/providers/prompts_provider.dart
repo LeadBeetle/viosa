@@ -14,24 +14,25 @@ class PromptsProvider with ChangeNotifier {
 
   PromptsProvider(this._promptService);
 
+  /// Helper method to sort prompts by usage count (descending)
+  List<Prompt> _sortByUsageCount(List<Prompt> prompts) {
+    final sorted = List<Prompt>.from(prompts);
+    sorted.sort((a, b) => b.usageCount.compareTo(a.usageCount));
+    return sorted;
+  }
+
   // Getters - sorted by usage count (descending)
   List<Prompt> get predefinedPrompts {
-    final sorted = List<Prompt>.from(_predefinedPrompts);
-    sorted.sort((a, b) => b.usageCount.compareTo(a.usageCount));
-    return List.unmodifiable(sorted);
+    return List.unmodifiable(_sortByUsageCount(_predefinedPrompts));
   }
 
   List<Prompt> get customPrompts {
-    final sorted = List<Prompt>.from(_customPrompts);
-    sorted.sort((a, b) => b.usageCount.compareTo(a.usageCount));
-    return List.unmodifiable(sorted);
+    return List.unmodifiable(_sortByUsageCount(_customPrompts));
   }
 
   List<Prompt> get allPrompts {
-    final custom = List<Prompt>.from(_customPrompts);
-    final predefined = List<Prompt>.from(_predefinedPrompts);
-    custom.sort((a, b) => b.usageCount.compareTo(a.usageCount));
-    predefined.sort((a, b) => b.usageCount.compareTo(a.usageCount));
+    final custom = _sortByUsageCount(_customPrompts);
+    final predefined = _sortByUsageCount(_predefinedPrompts);
     return [...custom, ...predefined];
   }
 
@@ -113,6 +114,15 @@ class PromptsProvider with ChangeNotifier {
     return _isPredefined(id);
   }
 
+  /// Reload all prompts from storage
+  Future<void> _reloadAllPrompts() async {
+    final predefined = _promptService.getPredefinedPrompts();
+    final custom = await _promptService.getCustomPrompts();
+
+    _predefinedPrompts = await _promptService.getPromptsWithUsageStats(predefined);
+    _customPrompts = await _promptService.getPromptsWithUsageStats(custom);
+  }
+
   /// Reload custom prompts from storage
   Future<void> _reloadCustomPrompts() async {
     final custom = await _promptService.getCustomPrompts();
@@ -126,11 +136,7 @@ class PromptsProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      final predefined = _promptService.getPredefinedPrompts();
-      final custom = await _promptService.getCustomPrompts();
-
-      _predefinedPrompts = await _promptService.getPromptsWithUsageStats(predefined);
-      _customPrompts = await _promptService.getPromptsWithUsageStats(custom);
+      await _reloadAllPrompts();
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -140,14 +146,7 @@ class PromptsProvider with ChangeNotifier {
   /// Increment usage count for a prompt
   Future<void> incrementUsage(String promptId) async {
     await _promptService.incrementPromptUsage(promptId);
-
-    // Reload prompts to get updated usage stats
-    final predefined = _promptService.getPredefinedPrompts();
-    final custom = await _promptService.getCustomPrompts();
-
-    _predefinedPrompts = await _promptService.getPromptsWithUsageStats(predefined);
-    _customPrompts = await _promptService.getPromptsWithUsageStats(custom);
-
+    await _reloadAllPrompts();
     notifyListeners();
   }
 }

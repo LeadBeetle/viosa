@@ -74,7 +74,9 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
           // Only sync if difference is > 500ms (to avoid fighting with natural playback)
           _isSeeking = true;
           widget.audioService.seek(Duration(milliseconds: waveformPosition)).then((_) {
-            _isSeeking = false;
+            if (mounted) {
+              _isSeeking = false;
+            }
           });
         }
       });
@@ -126,7 +128,7 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
       }
     } catch (e) {
       if (mounted) {
-        SnackBarService.showError(context, 'Error: $e');
+        SnackBarService().showError(context, 'Error: $e');
       }
     }
   }

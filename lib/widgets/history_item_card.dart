@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import '../mixins/copyable_content_mixin.dart';
 import '../models/transcription_history.dart';
 import '../utils/constants.dart';
-import '../services/snackbar_service.dart';
 
 /// Widget displaying a single history entry
 /// Follows Single Responsibility Principle: Only displays history item
@@ -21,15 +20,9 @@ class HistoryItemCard extends StatefulWidget {
   State<HistoryItemCard> createState() => _HistoryItemCardState();
 }
 
-class _HistoryItemCardState extends State<HistoryItemCard> {
+class _HistoryItemCardState extends State<HistoryItemCard>
+    with CopyableContentMixin {
   bool _isExpanded = false;
-
-  Future<void> _copyToClipboard(String text) async {
-    await Clipboard.setData(ClipboardData(text: text));
-    if (mounted) {
-      SnackBarService.showInfo(context, 'In Zwischenablage kopiert');
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -133,7 +126,7 @@ class _HistoryItemCardState extends State<HistoryItemCard> {
                       ),
                       IconButton(
                         icon: const Icon(Icons.copy, size: 20),
-                        onPressed: () => _copyToClipboard(widget.history.transcription.text),
+                        onPressed: () => copyToClipboard(widget.history.transcription.text),
                         tooltip: 'Kopieren',
                       ),
                     ],
@@ -195,7 +188,7 @@ class _HistoryItemCardState extends State<HistoryItemCard> {
                                 ),
                                 IconButton(
                                   icon: const Icon(Icons.copy, size: 16),
-                                  onPressed: () => _copyToClipboard(promptResult.llmResponse),
+                                  onPressed: () => copyToClipboard(promptResult.llmResponse),
                                   tooltip: 'Kopieren',
                                 ),
                               ],

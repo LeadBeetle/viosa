@@ -287,18 +287,31 @@ Text:
   }
 
   /// Get prompts with usage stats populated
+  /// Optimized to batch-load usage stats instead of N+1 queries
   Future<List<Prompt>> getPromptsWithUsageStats(List<Prompt> prompts) async {
     _ensureInitialized();
 
-    final List<Prompt> result = [];
+    // Batch load all usage stats at once
+    final usageStatsMap = <String, Map<String, dynamic>>{};
     for (final prompt in prompts) {
-      final usageCount = await getPromptUsageCount(prompt.id);
-      final lastUsedAt = await getPromptLastUsed(prompt.id);
-      result.add(prompt.copyWith(
-        usageCount: usageCount,
-        lastUsedAt: lastUsedAt,
-      ));
+      final countKey = 'count_${prompt.id}';
+      final lastUsedKey = 'last_used_${prompt.id}';
+
+      usageStatsMap[prompt.id] = {
+        'count': _usageStatsBox?.get(countKey, defaultValue: 0) ?? 0,
+        'lastUsed': _usageStatsBox?.get(lastUsedKey),
+      };
     }
-    return result;
+
+    // Map prompts with their usage stats
+    return prompts.map((prompt) {
+      final stats = usageStatsMap[prompt.id]!;
+      final lastUsedStr = stats['lastUsed'] as String?;
+
+      return prompt.copyWith(
+        usageCount: stats['count'] as int,
+        lastUsedAt: lastUsedStr != null ? DateTime.parse(lastUsedStr) : null,
+      );
+    }).toList();
   }
 }

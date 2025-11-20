@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import '../mixins/copyable_content_mixin.dart';
 import '../models/prompt_result.dart';
 import '../utils/constants.dart';
-import '../services/snackbar_service.dart';
+import '../utils/markdown_styles.dart';
 import 'info_chip.dart';
 
 /// Widget displaying prompt application results
@@ -22,15 +22,9 @@ class PromptResultCard extends StatefulWidget {
   State<PromptResultCard> createState() => _PromptResultCardState();
 }
 
-class _PromptResultCardState extends State<PromptResultCard> {
+class _PromptResultCardState extends State<PromptResultCard>
+    with CopyableContentMixin {
   bool _isExpanded = true;
-
-  Future<void> _copyToClipboard(String text) async {
-    await Clipboard.setData(ClipboardData(text: text));
-    if (mounted) {
-      SnackBarService.showInfo(context, 'In Zwischenablage kopiert');
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -93,7 +87,7 @@ class _PromptResultCardState extends State<PromptResultCard> {
                       ),
                       IconButton(
                         icon: const Icon(Icons.copy, size: 20),
-                        onPressed: () => _copyToClipboard(widget.result.llmResponse),
+                        onPressed: () => copyToClipboard(widget.result.llmResponse),
                         tooltip: 'Antwort kopieren',
                       ),
                     ],
@@ -113,19 +107,7 @@ class _PromptResultCardState extends State<PromptResultCard> {
                     child: MarkdownBody(
                       data: widget.result.llmResponse,
                       selectable: true,
-                      styleSheet: MarkdownStyleSheet(
-                        p: Theme.of(context).textTheme.bodyMedium,
-                        h1: Theme.of(context).textTheme.headlineSmall,
-                        h2: Theme.of(context).textTheme.titleLarge,
-                        h3: Theme.of(context).textTheme.titleMedium,
-                        code: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              fontFamily: 'monospace',
-                              backgroundColor: Theme.of(context)
-                                  .colorScheme
-                                  .surfaceContainerHigh,
-                            ),
-                        listBullet: Theme.of(context).textTheme.bodyMedium,
-                      ),
+                      styleSheet: MarkdownStyles.medium(context),
                     ),
                   ),
                   const SizedBox(height: 16),

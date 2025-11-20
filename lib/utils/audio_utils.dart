@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 import 'dart:io';
 
@@ -24,7 +25,7 @@ class AudioUtils {
         await player.dispose();
       }
     } catch (e) {
-      print('Error getting audio duration: $e');
+      debugPrint('Error getting audio duration: $e');
       return Duration.zero;
     }
   }
@@ -98,7 +99,7 @@ class AudioUtils {
       }
       return await file.length();
     } catch (e) {
-      print('Error getting file size: $e');
+      debugPrint('Error getting file size: $e');
       return 0;
     }
   }

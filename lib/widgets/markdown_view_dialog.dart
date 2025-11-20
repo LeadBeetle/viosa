@@ -38,7 +38,7 @@ class MarkdownViewDialog extends StatelessWidget {
 
   void _copyToClipboard(BuildContext context) {
     Clipboard.setData(ClipboardData(text: content));
-    SnackBarService.showInfo(context, 'In Zwischenablage kopiert');
+    SnackBarService().showInfo(context, 'In Zwischenablage kopiert');
   }
 
   @override

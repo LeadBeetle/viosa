@@ -5,12 +5,14 @@ import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import '../models/audio_split.dart';
 import '../utils/audio_utils.dart';
+import 'i_audio_splitter_service.dart';
 
 /// Service for splitting audio files into smaller segments
 /// Following Single Responsibility Principle (SRP)
-class AudioSplitterService {
+class AudioSplitterService implements IAudioSplitterService {
   /// Splits an audio file into segments with optional overlap
   /// Returns a list of AudioSplit objects representing each segment
+  @override
   Future<List<AudioSplit>> splitAudio(
     String audioPath, {
     Duration maxDuration = const Duration(minutes: 10),
@@ -180,6 +182,7 @@ class AudioSplitterService {
   }
 
   /// Deletes split files to free up space
+  @override
   Future<void> cleanupSplits(List<AudioSplit> splits) async {
     for (final split in splits) {
       try {
@@ -194,6 +197,7 @@ class AudioSplitterService {
   }
 
   /// Deletes all split files in the temp directory
+  @override
   Future<void> cleanupAllSplits() async {
     try {
       final splitsDir = await _getTempDirectory();
@@ -206,6 +210,7 @@ class AudioSplitterService {
   }
 
   /// Gets total size of all split files
+  @override
   Future<int> getSplitsTotalSize(List<AudioSplit> splits) async {
     int totalSize = 0;
     for (final split in splits) {

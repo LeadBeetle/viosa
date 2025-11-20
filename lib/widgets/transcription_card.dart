@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import '../models/transcription_result.dart';
 import '../utils/constants.dart';
+import '../utils/markdown_styles.dart';
 import '../services/snackbar_service.dart';
 
 /// Widget displaying transcription results
@@ -20,7 +21,7 @@ class TranscriptionCard extends StatelessWidget {
   Future<void> _copyToClipboard(BuildContext context, String text) async {
     await Clipboard.setData(ClipboardData(text: text));
     if (context.mounted) {
-      SnackBarService.showInfo(context, 'In Zwischenablage kopiert');
+      SnackBarService().showInfo(context, 'In Zwischenablage kopiert');
     }
   }
 
@@ -70,19 +71,7 @@ class TranscriptionCard extends StatelessWidget {
                   MarkdownBody(
                     data: result.text,
                     selectable: true,
-                    styleSheet: MarkdownStyleSheet(
-                      p: Theme.of(context).textTheme.bodyLarge,
-                      h1: Theme.of(context).textTheme.headlineSmall,
-                      h2: Theme.of(context).textTheme.titleLarge,
-                      h3: Theme.of(context).textTheme.titleMedium,
-                      code: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            fontFamily: 'monospace',
-                            backgroundColor: Theme.of(context)
-                                .colorScheme
-                                .surfaceContainerHigh,
-                          ),
-                      listBullet: Theme.of(context).textTheme.bodyLarge,
-                    ),
+                    styleSheet: MarkdownStyles.standard(context),
                   ),
                   const SizedBox(height: 16),
                   Divider(color: Theme.of(context).colorScheme.outlineVariant),

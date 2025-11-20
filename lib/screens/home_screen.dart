@@ -1,5 +1,3 @@
-import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:dio/dio.dart';
@@ -11,7 +9,6 @@ import '../models/split_transcription_job.dart';
 import '../services/file_service.dart';
 import '../services/audio_service.dart';
 import '../services/prompt_service.dart';
-import '../services/snackbar_service.dart';
 import '../providers/settings_provider.dart';
 import '../providers/history_provider.dart';
 import '../providers/session_state_provider.dart';
@@ -20,19 +17,27 @@ import '../providers/prompts_provider.dart';
 import '../widgets/audio_player_widget.dart';
 import '../widgets/file_info_card.dart';
 import '../widgets/audio_recorder_widget.dart';
-import '../widgets/streaming_text_display.dart';
-import '../widgets/collapsible_text_section.dart';
 import '../widgets/prompt_selector_dialog.dart';
 import '../widgets/speed_dial_fab.dart';
 import '../widgets/new_transcription_button.dart';
 import '../widgets/split_transcription_progress_card.dart';
-import '../widgets/info_chip.dart';
 import '../widgets/recording_name_dialog.dart';
+import '../widgets/empty_audio_file_state.dart';
+import '../widgets/transcription_button.dart';
+import '../widgets/prompt_results_list.dart';
+import '../widgets/app_bar_title_with_logo.dart';
+import '../widgets/split_loading_card.dart';
+import '../widgets/streaming_transcription_card.dart';
+import '../widgets/completed_transcription_card.dart';
+import '../widgets/streaming_prompt_card.dart';
+import '../dialogs/session_discard_dialog.dart';
+import '../dialogs/transcription_confirmation_dialog.dart';
 import '../services/llm_provider.dart';
 import '../services/llm_provider_factory.dart';
 import '../repositories/model_repository.dart';
 import '../utils/constants.dart';
 import '../utils/audio_utils.dart';
+import '../utils/screen_helpers.dart';
 import 'settings_screen.dart';
 import 'prompts_screen.dart';
 import 'history_screen.dart';
@@ -46,7 +51,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with ScreenHelpers {
   // Dependency injection for better testability (Dependency Inversion Principle)
   // Only keep services that are not managed by providers
   final IFileService _fileService = FileService();
@@ -62,7 +67,6 @@ class _HomeScreenState extends State<HomeScreen> {
   AudioFile? _selectedFile;
   TranscriptionResult? _transcriptionResult;
   bool _isTranscribing = false;
-  String? _errorMessage;
   final List<PromptResult> _promptResults = [];
   bool _showRecorder = false;
   String? _currentHistoryId;
@@ -129,13 +133,13 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       } catch (e) {
         // File might not exist anymore, clear session
+        safeSetState(() {
+          _selectedFile = null;
+          _transcriptionResult = null;
+          _promptResults.clear();
+          _currentHistoryId = null;
+        });
         if (mounted) {
-          setState(() {
-            _selectedFile = null;
-            _transcriptionResult = null;
-            _promptResults.clear();
-            _currentHistoryId = null;
-          });
           await sessionProvider.clearSession();
         }
       }
@@ -149,33 +153,7 @@ class _HomeScreenState extends State<HomeScreen> {
       return true;
     }
 
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Aktuelle Session verwerfen?'),
-          content: const Text(
-            'Sie haben bereits eine Audiodatei ausgewählt oder transkribiert. '
-            'Möchten Sie diese Session verwerfen und eine neue starten?',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Abbrechen'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              style: FilledButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.primary,
-              ),
-              child: const Text('Neue Session starten'),
-            ),
-          ],
-        );
-      },
-    );
-
-    return result ?? false;
+    return await SessionDiscardDialog.show(context);
   }
 
   /// Scroll to top of the page with smooth animation
@@ -189,64 +167,62 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _clearSessionState() async {
+    setState(() {
+      _selectedFile = null;
+      _transcriptionResult = null;
+      _promptResults.clear();
+      _currentHistoryId = null;
+      _showRecorder = false;
+    });
+
+    if (mounted) {
+      final sessionProvider = context.read<SessionStateProvider>();
+      await sessionProvider.clearSession();
+    }
+  }
+
   Future<void> _pickFile() async {
-    // Confirm if there's an active session
     final shouldProceed = await _confirmDiscardSession();
     if (!shouldProceed || !mounted) return;
 
+    final context = this.context;
     try {
-      setState(() {
-        _errorMessage = null;
-      });
-
+      await _clearSessionState();
       final file = await _fileService.pickAudioFile(context);
 
       if (file != null && mounted) {
         setState(() {
           _selectedFile = file;
-          _transcriptionResult = null;
-          _promptResults.clear();
-          _currentHistoryId = null;
-          _showRecorder = false;
         });
 
         await _audioService.loadAudio(file.path);
+        await _updateSessionState(
+          selectedFile: file,
+          transcriptionResult: null,
+          promptResults: [],
+          currentHistoryId: null,
+        );
 
-        // Update session state
         if (mounted) {
-          final sessionProvider = context.read<SessionStateProvider>();
-          await sessionProvider.updateSession(
-            selectedFile: file,
-            transcriptionResult: null,
-            promptResults: [],
-            currentHistoryId: null,
-          );
-
-          // Scroll to top and show success
           await _scrollToTop();
-          _showSuccessSnackBar('Datei erfolgreich geladen');
+          showSuccessSnackBar('Datei erfolgreich geladen');
         }
       }
     } catch (e) {
       String errorMsg = 'Fehler beim Laden der Datei: $e';
-
-      // Better error message for permission issues
       if (e.toString().contains('Speicherberechtigung')) {
         errorMsg = 'Zugriff auf Dateien verweigert. Bitte erlauben Sie den Zugriff in den App-Einstellungen.';
       }
-
       if (mounted) {
-        setState(() {
-          _errorMessage = errorMsg;
-        });
-        _showErrorSnackBar(_errorMessage!);
+        showErrorSnackBar(errorMsg);
       }
     }
   }
 
   Future<void> _transcribe() async {
     if (_selectedFile == null) {
-      _showErrorSnackBar('Bitte wählen Sie zuerst eine Audio-Datei aus');
+      showErrorSnackBar('Bitte wählen Sie zuerst eine Audio-Datei aus');
       return;
     }
 
@@ -255,7 +231,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final apiKey = settingsProvider.apiKey;
 
     if (apiKey == null || apiKey.isEmpty) {
-      _showErrorSnackBar('Bitte konfigurieren Sie Ihren API-Key in den Einstellungen');
+      showErrorSnackBar('Bitte konfigurieren Sie Ihren API-Key in den Einstellungen');
       return;
     }
 
@@ -278,7 +254,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _transcriptionCancelToken = null;
     });
 
-    _showErrorSnackBar('Transkription abgebrochen');
+    showErrorSnackBar('Transkription abgebrochen');
   }
 
   void _onTranscriptionComplete() async {
@@ -313,7 +289,7 @@ class _HomeScreenState extends State<HomeScreen> {
       }
 
       if (mounted) {
-        _showSuccessSnackBar('Transkription erfolgreich abgeschlossen');
+        showSuccessSnackBar('Transkription erfolgreich abgeschlossen');
       }
     }
   }
@@ -326,13 +302,12 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     setState(() {
-      _errorMessage = error;
       _isTranscribing = false;
       _transcriptionStream = null;
       _transcriptionCancelToken = null;
     });
     if (mounted) {
-      _showErrorSnackBar(error);
+      showErrorSnackBar(error);
     }
   }
 
@@ -351,74 +326,15 @@ class _HomeScreenState extends State<HomeScreen> {
     final selectedModel = ModelRepository.getModelByIdOrDefault(selectedModelId);
 
     // Show confirmation dialog
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(shouldSplit ? 'Lange Audiodatei erkannt' : 'Transkription starten'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              shouldSplit
-                  ? 'Diese Audiodatei ist ${AudioUtils.formatDurationShort(duration)} lang und '
-                    'wird in $splitCount Segmente aufgeteilt (je ~10 Minuten).\n\n'
-                    'Die Transkription läuft im Hintergrund und kann einige Minuten dauern.'
-                  : 'Diese Audiodatei ist ${AudioUtils.formatDurationShort(duration)} lang.',
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.smart_toy_outlined,
-                    size: 20,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Modell: ${selectedModel.name}',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                fontWeight: FontWeight.w500,
-                              ),
-                        ),
-                        Text(
-                          selectedModel.tier,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                              ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Abbrechen'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Starten'),
-          ),
-        ],
-      ),
+    final confirmed = await TranscriptionConfirmationDialog.show(
+      context,
+      duration: duration,
+      shouldSplit: shouldSplit,
+      splitCount: splitCount,
+      selectedModel: selectedModel,
     );
 
-    if (confirmed != true || !mounted) return;
+    if (!confirmed || !mounted) return;
 
     // Get provider before async operations
     final splitProvider = context.read<SplitTranscriptionProvider>();
@@ -434,7 +350,6 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _isSplitTranscription = true;
         _isTranscribing = true;
-        _errorMessage = null;
       });
 
       final model = context.read<SettingsProvider>().selectedModel;
@@ -454,17 +369,16 @@ class _HomeScreenState extends State<HomeScreen> {
           _activeSplitJob = job;
         });
 
-        _showSuccessSnackBar('Split-Transkription gestartet');
+        showSuccessSnackBar('Split-Transkription gestartet');
       }
     } catch (e) {
+      safeSetState(() {
+        _isTranscribing = false;
+        _isSplitTranscription = false;
+        _activeSplitJob = null;
+      });
       if (mounted) {
-        setState(() {
-          _errorMessage = e.toString();
-          _isTranscribing = false;
-          _isSplitTranscription = false;
-          _activeSplitJob = null;
-        });
-        _showErrorSnackBar('Fehler beim Starten der Split-Transkription: $e');
+        showErrorSnackBar('Fehler beim Starten der Split-Transkription: $e');
       }
     }
   }
@@ -524,11 +438,11 @@ class _HomeScreenState extends State<HomeScreen> {
         }
 
         if (job.failedCount > 0) {
-          _showSuccessSnackBar(
+          showSuccessSnackBar(
             'Transkription abgeschlossen mit ${job.failedCount} fehlgeschlagenen Segmenten',
           );
         } else {
-          _showSuccessSnackBar('Transkription erfolgreich abgeschlossen');
+          showSuccessSnackBar('Transkription erfolgreich abgeschlossen');
         }
       }
     } else {
@@ -537,7 +451,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _activeSplitJob = null;
         _isSplitTranscription = false;
       });
-      _showErrorSnackBar('Transkription fehlgeschlagen');
+      showErrorSnackBar('Transkription fehlgeschlagen');
     }
   }
 
@@ -577,12 +491,23 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _showErrorSnackBar(String message) {
-    SnackBarService.showError(context, message);
-  }
+  /// Updates the session state with current data
+  /// Centralizes session state updates to avoid duplication
+  Future<void> _updateSessionState({
+    AudioFile? selectedFile,
+    TranscriptionResult? transcriptionResult,
+    List<PromptResult>? promptResults,
+    String? currentHistoryId,
+  }) async {
+    if (!mounted) return;
 
-  void _showSuccessSnackBar(String message) {
-    SnackBarService.showSuccess(context, message);
+    final sessionProvider = context.read<SessionStateProvider>();
+    await sessionProvider.updateSession(
+      selectedFile: selectedFile ?? _selectedFile,
+      transcriptionResult: transcriptionResult ?? _transcriptionResult,
+      promptResults: promptResults ?? _promptResults,
+      currentHistoryId: currentHistoryId ?? _currentHistoryId,
+    );
   }
 
   Future<void> _navigateToSettings() async {
@@ -670,7 +595,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final apiKey = settingsProvider.apiKey;
 
     if (apiKey == null || apiKey.isEmpty) {
-      _showErrorSnackBar('Bitte konfigurieren Sie Ihren API-Key in den Einstellungen');
+      showErrorSnackBar('Bitte konfigurieren Sie Ihren API-Key in den Einstellungen');
       return;
     }
 
@@ -700,7 +625,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _promptStream = stream;
       });
     } catch (e) {
-      _showErrorSnackBar('Fehler beim Starten des Prompts: $e');
+      showErrorSnackBar('Fehler beim Starten des Prompts: $e');
       setState(() {
         _currentPromptName = null;
         _currentPromptTemplate = null;
@@ -738,13 +663,13 @@ class _HomeScreenState extends State<HomeScreen> {
         // Update history with new prompt result using HistoryProvider
         await _saveToHistory();
 
-        _showSuccessSnackBar('Prompt erfolgreich angewendet');
+        showSuccessSnackBar('Prompt erfolgreich angewendet');
       }
     }
   }
 
   void _onPromptError(String error) {
-    _showErrorSnackBar('Prompt-Fehler: $error');
+    showErrorSnackBar('Prompt-Fehler: $error');
     setState(() {
       _promptStream = null;
       _currentPromptName = null;
@@ -774,14 +699,14 @@ class _HomeScreenState extends State<HomeScreen> {
     await _audioService.loadAudio(audioFile.path);
 
     // Update session state
+    await _updateSessionState(
+      selectedFile: audioFile,
+      transcriptionResult: null,
+      promptResults: [],
+      currentHistoryId: null,
+    );
+
     if (mounted) {
-      final sessionProvider = context.read<SessionStateProvider>();
-      await sessionProvider.updateSession(
-        selectedFile: audioFile,
-        transcriptionResult: null,
-        promptResults: [],
-        currentHistoryId: null,
-      );
 
       // Scroll to top and show success with recording name
       await _scrollToTop();
@@ -789,7 +714,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final displayName = audioFile.name.endsWith('.m4a')
           ? audioFile.name.substring(0, audioFile.name.length - 4)
           : audioFile.name;
-      _showSuccessSnackBar('Aufnahme "$displayName" gespeichert');
+      showSuccessSnackBar('Aufnahme "$displayName" gespeichert');
     }
   }
 
@@ -804,71 +729,39 @@ class _HomeScreenState extends State<HomeScreen> {
     if (newName == null || !mounted) return;
 
     try {
-      // Rename the actual file on disk
-      final oldFile = File(_selectedFile!.path);
-      final directory = oldFile.parent.path;
-      final newPath = '$directory/$newName.m4a';
-      final newFile = await oldFile.rename(newPath);
-
-      // Reload the file data with new path
-      final bytes = await newFile.readAsBytes();
-      final base64Data = base64Encode(bytes);
-
-      // Create updated AudioFile with new name and path
-      final updatedFile = AudioFile(
-        path: newPath,
-        name: '$newName.m4a',
-        base64Data: base64Data,
-        mimeType: _selectedFile!.mimeType,
-        size: _selectedFile!.size,
-      );
+      // Use FileService to rename the file
+      final updatedFile = await _fileService.renameAudioFile(_selectedFile!, newName);
 
       // Reload audio in player with new path
-      await _audioService.loadAudio(newPath);
+      await _audioService.loadAudio(updatedFile.path);
 
       setState(() {
         _selectedFile = updatedFile;
       });
 
       // Update session state
-      if (mounted) {
-        final sessionProvider = context.read<SessionStateProvider>();
-        await sessionProvider.updateSession(
-          selectedFile: updatedFile,
-          transcriptionResult: _transcriptionResult,
-          promptResults: _promptResults,
-          currentHistoryId: _currentHistoryId,
-        );
+      await _updateSessionState(selectedFile: updatedFile);
 
-        _showSuccessSnackBar('Aufnahme umbenannt zu "$newName"');
+      if (mounted) {
+        showSuccessSnackBar('Aufnahme umbenannt zu "$newName"');
       }
     } catch (e) {
       if (mounted) {
-        SnackBarService.showError(context, 'Fehler beim Umbenennen: $e');
+        showErrorSnackBar('Fehler beim Umbenennen: $e');
       }
     }
   }
 
   Future<void> _startNewRecording() async {
-    // Confirm if there's an active session
     final shouldProceed = await _confirmDiscardSession();
     if (!shouldProceed || !mounted) return;
 
-    // Clear session and show recorder
+    await _clearSessionState();
     setState(() {
-      _selectedFile = null;
-      _transcriptionResult = null;
-      _promptResults.clear();
-      _currentHistoryId = null;
       _showRecorder = true;
     });
 
-    // Update session state
     if (mounted) {
-      final sessionProvider = context.read<SessionStateProvider>();
-      await sessionProvider.clearSession();
-
-      // Scroll to top to show recorder
       await _scrollToTop();
     }
   }
@@ -877,18 +770,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Image.asset(
-              'assets/viosa_icon.png',
-              height: 32,
-              width: 32,
-            ),
-            const SizedBox(width: 8),
-            const Text(AppConstants.appName),
-          ],
-        ),
+        title: const AppBarTitleWithLogo(),
         actions: [
           IconButton(
             icon: const Icon(Icons.history),
@@ -930,58 +812,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 filePath: _selectedFile!.path,
               ),
               const SizedBox(height: AppConstants.defaultPadding),
-              ElevatedButton.icon(
+              TranscriptionButton(
+                isTranscribing: _isTranscribing,
                 onPressed: _isTranscribing ? _cancelTranscription : _transcribe,
-                icon: _isTranscribing
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      )
-                    : const Icon(Icons.transcribe),
-                label: Text(_isTranscribing ? 'Abbrechen' : 'Transkribieren'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.all(16),
-                  backgroundColor: _isTranscribing ? Colors.red : null,
-                  foregroundColor: _isTranscribing ? Colors.white : null,
-                ),
               ),
               const SizedBox(height: AppConstants.defaultPadding),
             ] else
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(32.0),
-                  child: Column(
-                    children: [
-                      Image.asset(
-                        'assets/viosa_icon.png',
-                        width: 120,
-                        height: 120,
-                        opacity: const AlwaysStoppedAnimation(0.5),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Keine Audio-Datei ausgewählt',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                            ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Tippen Sie auf das Symbol unten rechts, um eine Audio-Datei auszuwählen',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
-                            ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              const EmptyAudioFileState(),
             // Split transcription progress card
             if (_isSplitTranscription) ...[
               if (_activeSplitJob != null)
@@ -1004,217 +841,37 @@ class _HomeScreenState extends State<HomeScreen> {
                       : null,
                 )
               else
-                Card(
-                  elevation: 4,
-                  margin: const EdgeInsets.all(16),
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      children: [
-                        const CircularProgressIndicator(),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Audio-Datei wird in Segmente aufgeteilt...',
-                          style: Theme.of(context).textTheme.titleMedium,
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Dies kann einen Moment dauern',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                              ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                const SplitLoadingCard(),
               const SizedBox(height: AppConstants.defaultPadding),
             ],
             // Streaming transcription display
-            if (_transcriptionStream != null) ...[
-              Consumer<SettingsProvider>(
-                builder: (context, settings, _) => StreamingTextDisplay(
-                  title: 'Transkription',
-                  textStream: _transcriptionStream,
-                  contentStyle: TextStyle(
-                    fontSize: settings.textSize,
-                    height: 1.5,
-                  ),
-                  metadata: Wrap(
-                    spacing: 8,
-                    children: [
-                      InfoChip(
-                        label: 'Sprache: ${settings.language}',
-                        icon: Icons.language,
-                      ),
-                      InfoChip(
-                        label: 'Modell: ${settings.selectedModel}',
-                        icon: Icons.memory,
-                      ),
-                    ],
-                  ),
-                  onStreamComplete: _onTranscriptionComplete,
-                  onStreamError: _onTranscriptionError,
-                  onChunk: (chunk) => _transcriptionBuffer.write(chunk),
-                ),
+            if (_transcriptionStream != null)
+              StreamingTranscriptionCard(
+                textStream: _transcriptionStream,
+                onStreamComplete: _onTranscriptionComplete,
+                onStreamError: _onTranscriptionError,
+                onChunk: (chunk) => _transcriptionBuffer.write(chunk),
+              )
+            else if (_transcriptionResult != null)
+              CompletedTranscriptionCard(
+                transcriptionResult: _transcriptionResult!,
+                isPromptActive: _promptStream != null,
+                onApplyPrompt: _applyPromptStreaming,
               ),
-              const SizedBox(height: AppConstants.defaultPadding),
-            ] else if (_transcriptionResult != null) ...[
-              // Completed transcription (collapsible)
-              Consumer<SettingsProvider>(
-                builder: (context, settings, _) => CollapsibleTextSection(
-                  title: 'Transkription',
-                  content: _transcriptionResult!.text,
-                  isExpanded: true,
-                  contentStyle: TextStyle(
-                    fontSize: settings.textSize,
-                    height: 1.5,
-                  ),
-                  metadata: Wrap(
-                    spacing: 8,
-                    children: [
-                      InfoChip(
-                        label: 'Sprache: ${_transcriptionResult!.language}',
-                        icon: Icons.language,
-                      ),
-                      InfoChip(
-                        label: 'Modell: ${_transcriptionResult!.modelUsed}',
-                        icon: Icons.memory,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppConstants.defaultPadding),
-              // Apply prompt button
-              ElevatedButton.icon(
-                onPressed: _promptStream == null ? _applyPromptStreaming : null,
-                icon: const Icon(Icons.auto_awesome),
-                label: const Text('Prompt anwenden'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.all(16),
-                ),
-              ),
-              const SizedBox(height: AppConstants.defaultPadding),
-            ],
             // Streaming prompt response display
-            if (_promptStream != null) ...[
-              Consumer<SettingsProvider>(
-                builder: (context, settings, _) => StreamingTextDisplay(
-                  title: 'Prompt: $_currentPromptName',
-                  textStream: _promptStream,
-                  contentStyle: TextStyle(
-                    fontSize: settings.textSize,
-                    height: 1.5,
-                  ),
-                  metadata: Wrap(
-                    spacing: 8,
-                    children: [
-                      InfoChip(
-                        label: 'Modell: ${settings.selectedModel}',
-                        icon: Icons.memory,
-                      ),
-                    ],
-                  ),
-                  onStreamComplete: _onPromptComplete,
-                  onStreamError: _onPromptError,
-                  onChunk: (chunk) => _promptBuffer.write(chunk),
-                ),
+            if (_promptStream != null)
+              StreamingPromptCard(
+                promptName: _currentPromptName ?? '',
+                textStream: _promptStream,
+                onStreamComplete: _onPromptComplete,
+                onStreamError: _onPromptError,
+                onChunk: (chunk) => _promptBuffer.write(chunk),
               ),
-              const SizedBox(height: AppConstants.defaultPadding),
-            ],
             // Completed prompt results (collapsible)
-            if (_promptResults.isNotEmpty) ...[
-              Text(
-                'Prompt-Ergebnisse',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 8),
-              Consumer<SettingsProvider>(
-                builder: (context, settings, _) => Column(
-                  children: _promptResults.map(
-                    (result) => Dismissible(
-                      key: Key(result.id),
-                      direction: DismissDirection.endToStart,
-                      background: Container(
-                        alignment: Alignment.centerRight,
-                        padding: const EdgeInsets.only(right: 20),
-                        margin: const EdgeInsets.symmetric(vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(
-                          Icons.delete,
-                          color: Colors.white,
-                          size: 32,
-                        ),
-                      ),
-                      confirmDismiss: (direction) async {
-                        return await showDialog<bool>(
-                          context: context,
-                          builder: (BuildContext context) {
-                            return AlertDialog(
-                              title: const Text('Prompt-Ergebnis löschen?'),
-                              content: Text(
-                                'Möchten Sie das Ergebnis "${result.promptName}" wirklich löschen?',
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.of(context).pop(false),
-                                  child: const Text('Abbrechen'),
-                                ),
-                                FilledButton(
-                                  onPressed: () => Navigator.of(context).pop(true),
-                                  style: FilledButton.styleFrom(
-                                    backgroundColor: Colors.red,
-                                  ),
-                                  child: const Text('Löschen'),
-                                ),
-                              ],
-                            );
-                          },
-                        ) ?? false;
-                      },
-                      onDismissed: (direction) {
-                        _removePromptResult(result.id);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('${result.promptName} gelöscht'),
-                            duration: const Duration(seconds: 2),
-                          ),
-                        );
-                      },
-                      child: CollapsibleTextSection(
-                        title: 'Prompt: ${result.promptName}',
-                        content: result.llmResponse,
-                        isExpanded: false,
-                        contentStyle: TextStyle(
-                          fontSize: settings.textSize,
-                          height: 1.5,
-                        ),
-                        metadata: Wrap(
-                          spacing: 8,
-                          children: [
-                            InfoChip(
-                              label: 'Modell: ${result.modelUsed}',
-                              icon: Icons.memory,
-                            ),
-                            InfoChip(
-                              label: '${result.timestamp.day}.${result.timestamp.month}.${result.timestamp.year} ${result.timestamp.hour}:${result.timestamp.minute.toString().padLeft(2, '0')}',
-                              icon: Icons.access_time,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ).toList(),
-                ),
-              ),
-              const SizedBox(height: AppConstants.defaultPadding),
-            ],
+            PromptResultsList(
+              results: _promptResults,
+              onDelete: _removePromptResult,
+            ),
             // "Neue Transkription" button - only show when transcription is complete
             if (_transcriptionResult != null && _promptStream == null) ...[
               NewTranscriptionButton(

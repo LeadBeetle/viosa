@@ -10,6 +10,7 @@ import '../widgets/custom_audio_file_picker.dart';
 abstract class IFileService {
   Future<AudioFile?> pickAudioFile(BuildContext context);
   Future<AudioFile?> reloadAudioFile(AudioFile audioFile);
+  Future<AudioFile> renameAudioFile(AudioFile audioFile, String newName);
 }
 
 /// Service for handling file operations
@@ -80,6 +81,29 @@ class FileService implements IFileService {
     } catch (e) {
       rethrow;
     }
+  }
+
+  /// Renames an audio file on disk and returns updated AudioFile
+  @override
+  Future<AudioFile> renameAudioFile(AudioFile audioFile, String newName) async {
+    // Rename the actual file on disk
+    final oldFile = File(audioFile.path);
+    final directory = oldFile.parent.path;
+    final newPath = '$directory/$newName.m4a';
+    final newFile = await oldFile.rename(newPath);
+
+    // Reload the file data with new path
+    final bytes = await newFile.readAsBytes();
+    final base64Data = base64Encode(bytes);
+
+    // Create updated AudioFile with new name and path
+    return AudioFile(
+      path: newPath,
+      name: '$newName.m4a',
+      base64Data: base64Data,
+      mimeType: audioFile.mimeType,
+      size: audioFile.size,
+    );
   }
 
   String _getMimeType(String extension) {

@@ -1,8 +1,9 @@
 import 'dart:io';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+import 'i_recording_notification_service.dart';
 
 /// Service to manage recording foreground service notification
-class RecordingNotificationService {
+class RecordingNotificationService implements IRecordingNotificationService {
   static final RecordingNotificationService _instance = RecordingNotificationService._internal();
   factory RecordingNotificationService() => _instance;
   RecordingNotificationService._internal();
@@ -10,6 +11,7 @@ class RecordingNotificationService {
   bool _isInitialized = false;
 
   /// Initialize the foreground task service
+  @override
   Future<void> initialize() async {
     if (_isInitialized) return;
 
@@ -44,6 +46,7 @@ class RecordingNotificationService {
   }
 
   /// Start foreground service with recording notification
+  @override
   Future<void> showRecordingNotification() async {
     // Only show on Android - iOS uses system recording indicator
     if (!Platform.isAndroid) return;
@@ -68,6 +71,7 @@ class RecordingNotificationService {
   }
 
   /// Update notification to show paused state
+  @override
   Future<void> showPausedNotification() async {
     if (!Platform.isAndroid) return;
 
@@ -78,6 +82,7 @@ class RecordingNotificationService {
   }
 
   /// Update notification back to recording state
+  @override
   Future<void> showResumedNotification() async {
     if (!Platform.isAndroid) return;
 
@@ -88,6 +93,7 @@ class RecordingNotificationService {
   }
 
   /// Stop the foreground service
+  @override
   Future<void> cancelRecordingNotification() async {
     if (!Platform.isAndroid) return;
 

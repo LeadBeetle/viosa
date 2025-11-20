@@ -153,11 +153,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showErrorSnackBar(String message) {
-    SnackBarService.showError(context, message);
+    SnackBarService().showError(context, message);
   }
 
   void _showSuccessSnackBar(String message) {
-    SnackBarService.showSuccess(context, message);
+    SnackBarService().showSuccess(context, message);
   }
 
   @override

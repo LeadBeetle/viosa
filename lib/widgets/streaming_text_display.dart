@@ -137,7 +137,7 @@ class _StreamingTextDisplayState extends State<StreamingTextDisplay> {
 
   void _copyToClipboard() {
     Clipboard.setData(ClipboardData(text: _contentBuffer.toString()));
-    SnackBarService.showInfo(context, 'In Zwischenablage kopiert');
+    SnackBarService().showInfo(context, 'In Zwischenablage kopiert');
   }
 
   void _showFullScreen() {

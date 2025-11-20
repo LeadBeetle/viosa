@@ -50,7 +50,7 @@ class _PromptSelectorDialogState extends State<PromptSelectorDialog>
         _isLoading = false;
       });
       if (mounted) {
-        SnackBarService.showError(context, 'Fehler beim Laden der Prompts: $e');
+        SnackBarService().showError(context, 'Fehler beim Laden der Prompts: $e');
       }
     }
   }
