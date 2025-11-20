@@ -176,7 +176,7 @@ class _SpeedDialFABState extends State<SpeedDialFAB>
         FloatingActionButton(
           heroTag: 'main',
           onPressed: _toggle,
-          tooltip: 'Neue Transkription',
+          tooltip: 'Neue Aufnahme oder Datei öffnen',
           child: AnimatedBuilder(
             animation: _rotationAnimation,
             builder: (context, child) {

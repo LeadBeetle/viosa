@@ -5,6 +5,7 @@ import '../providers/history_provider.dart';
 import '../utils/constants.dart';
 import '../widgets/history_item_card.dart';
 import '../services/snackbar_service.dart';
+import '../widgets/empty_state_widget.dart';
 
 /// Screen for displaying transcription history with search and filters
 /// Follows Single Responsibility Principle: Manages history UI
@@ -69,7 +70,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(
-              foregroundColor: AppConstants.errorColor,
+              foregroundColor: Theme.of(context).colorScheme.error,
             ),
             child: const Text('Löschen'),
           ),
@@ -109,7 +110,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(
-              foregroundColor: AppConstants.errorColor,
+              foregroundColor: Theme.of(context).colorScheme.error,
             ),
             child: const Text('Alles löschen'),
           ),
@@ -209,39 +210,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 child: historyProvider.isLoading
                     ? const Center(child: CircularProgressIndicator())
                 : _filteredHistory.isEmpty
-                    ? Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(32.0),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.history,
-                                size: 80,
-                                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                _searchController.text.isNotEmpty || _selectedLanguageFilter != 'all'
-                                    ? 'Keine Ergebnisse gefunden'
-                                    : 'Noch keine Transkriptionen',
-                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                                    ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                _searchController.text.isNotEmpty || _selectedLanguageFilter != 'all'
-                                    ? 'Versuchen Sie eine andere Suche oder Filter'
-                                    : 'Ihre Transkriptionen werden hier gespeichert',
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
-                                    ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
-                        ),
+                    ? EmptyStateWidget(
+                        icon: Icons.history,
+                        title: _searchController.text.isNotEmpty || _selectedLanguageFilter != 'all'
+                            ? 'Keine Ergebnisse gefunden'
+                            : 'Noch keine Transkriptionen',
+                        subtitle: _searchController.text.isNotEmpty || _selectedLanguageFilter != 'all'
+                            ? 'Versuchen Sie eine andere Suche oder Filter'
+                            : 'Ihre Transkriptionen werden hier gespeichert',
                       )
                     : ListView.builder(
                         padding: const EdgeInsets.all(AppConstants.defaultPadding),

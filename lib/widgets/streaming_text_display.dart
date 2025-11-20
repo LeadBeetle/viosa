@@ -290,7 +290,7 @@ class _StreamingTextDisplayState extends State<StreamingTextDisplay> {
 
             // Metadata (if provided) - now at the end
             if (widget.metadata != null) ...[
-              const SizedBox(height: 12),
+              const Divider(height: 24),
               widget.metadata!,
             ],
           ],

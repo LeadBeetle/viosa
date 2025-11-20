@@ -169,24 +169,24 @@ class _ApplyPromptStreamingDialogState extends State<ApplyPromptStreamingDialog>
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: AppConstants.errorColor.withValues(alpha: 0.1),
+                        color: Theme.of(context).colorScheme.error.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: AppConstants.errorColor.withValues(alpha: 0.3),
+                          color: Theme.of(context).colorScheme.error.withValues(alpha: 0.3),
                         ),
                       ),
                       child: Row(
                         children: [
                           Icon(
                             Icons.error_outline,
-                            color: AppConstants.errorColor,
+                            color: Theme.of(context).colorScheme.error,
                             size: 20,
                           ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               _errorMessage!,
-                              style: TextStyle(color: AppConstants.errorColor),
+                              style: TextStyle(color: Theme.of(context).colorScheme.error),
                             ),
                           ),
                         ],

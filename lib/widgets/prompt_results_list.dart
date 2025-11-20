@@ -7,19 +7,26 @@ import 'collapsible_text_section.dart';
 import 'info_chip.dart';
 
 /// Displays a list of prompt results with swipe-to-delete functionality
-class PromptResultsList extends StatelessWidget {
+class PromptResultsList extends StatefulWidget {
   final List<PromptResult> results;
   final Function(String) onDelete;
+  final Function(PromptResult)? onRestore;
 
   const PromptResultsList({
     super.key,
     required this.results,
     required this.onDelete,
+    this.onRestore,
   });
 
   @override
+  State<PromptResultsList> createState() => _PromptResultsListState();
+}
+
+class _PromptResultsListState extends State<PromptResultsList> {
+  @override
   Widget build(BuildContext context) {
-    if (results.isEmpty) {
+    if (widget.results.isEmpty) {
       return const SizedBox.shrink();
     }
 
@@ -27,21 +34,30 @@ class PromptResultsList extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Prompt-Ergebnisse',
+          'Prompt-Ergebnisse (${widget.results.length})',
           style: Theme.of(context).textTheme.titleLarge,
+          overflow: TextOverflow.ellipsis,
         ),
         const SizedBox(height: 8),
         Consumer<SettingsProvider>(
           builder: (context, settings, _) => Column(
-            children: results
-                .map(
-                  (result) => _DismissiblePromptResult(
-                    result: result,
-                    fontSize: settings.textSize,
-                    onDelete: onDelete,
-                  ),
-                )
-                .toList(),
+            children: widget.results.asMap().entries.map(
+              (entry) {
+                final index = entry.key;
+                final result = entry.value;
+                final isNewest = index == 0;
+
+                return _DismissiblePromptResult(
+                  key: ValueKey(result.id),
+                  result: result,
+                  fontSize: settings.textSize,
+                  onDelete: widget.onDelete,
+                  onRestore: widget.onRestore,
+                  isExpanded: true,
+                  showHighlight: isNewest,
+                );
+              },
+            ).toList(),
           ),
         ),
         const SizedBox(height: AppConstants.defaultPadding),
@@ -51,16 +67,45 @@ class PromptResultsList extends StatelessWidget {
 }
 
 /// Individual prompt result card with swipe-to-delete
-class _DismissiblePromptResult extends StatelessWidget {
+class _DismissiblePromptResult extends StatefulWidget {
   final PromptResult result;
   final double fontSize;
   final Function(String) onDelete;
+  final Function(PromptResult)? onRestore;
+  final bool isExpanded;
+  final bool showHighlight;
 
   const _DismissiblePromptResult({
+    super.key,
     required this.result,
     required this.fontSize,
     required this.onDelete,
+    this.onRestore,
+    this.isExpanded = false,
+    this.showHighlight = false,
   });
+
+  @override
+  State<_DismissiblePromptResult> createState() => _DismissiblePromptResultState();
+}
+
+class _DismissiblePromptResultState extends State<_DismissiblePromptResult> {
+  bool _showHighlight = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.showHighlight) {
+      _showHighlight = true;
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted) {
+          setState(() {
+            _showHighlight = false;
+          });
+        }
+      });
+    }
+  }
 
   Future<bool> _confirmDelete(BuildContext context) async {
     return await showDialog<bool>(
@@ -69,7 +114,7 @@ class _DismissiblePromptResult extends StatelessWidget {
             return AlertDialog(
               title: const Text('Prompt-Ergebnis löschen?'),
               content: Text(
-                'Möchten Sie das Ergebnis "${result.promptName}" wirklich löschen?',
+                'Möchten Sie das Ergebnis "${widget.result.promptName}" wirklich löschen?',
               ),
               actions: [
                 TextButton(
@@ -91,57 +136,78 @@ class _DismissiblePromptResult extends StatelessWidget {
   }
 
   void _handleDismissed(BuildContext context) {
-    onDelete(result.id);
+    widget.onDelete(widget.result.id);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('${result.promptName} gelöscht'),
-        duration: const Duration(seconds: 2),
+        content: Text('${widget.result.promptName} gelöscht'),
+        duration: const Duration(seconds: 5),
+        action: widget.onRestore != null
+            ? SnackBarAction(
+                label: 'Rückgängig',
+                onPressed: () {
+                  widget.onRestore!(widget.result);
+                },
+              )
+            : null,
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Dismissible(
-      key: Key(result.id),
-      direction: DismissDirection.endToStart,
-      background: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        margin: const EdgeInsets.symmetric(vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.red,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: const Icon(
-          Icons.delete,
-          color: Colors.white,
-          size: 32,
-        ),
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      decoration: BoxDecoration(
+        border: _showHighlight
+            ? Border.all(color: Colors.green, width: 3)
+            : null,
+        borderRadius: BorderRadius.circular(12),
       ),
-      confirmDismiss: (direction) => _confirmDelete(context),
-      onDismissed: (direction) => _handleDismissed(context),
-      child: CollapsibleTextSection(
-        title: 'Prompt: ${result.promptName}',
-        content: result.llmResponse,
-        isExpanded: false,
-        contentStyle: TextStyle(
-          fontSize: fontSize,
-          height: 1.5,
+      child: Dismissible(
+        key: Key(widget.result.id),
+        direction: DismissDirection.endToStart,
+        background: Container(
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.only(right: 20),
+          margin: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.red,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Icon(
+            Icons.delete,
+            color: Colors.white,
+            size: 32,
+          ),
         ),
-        metadata: Wrap(
-          spacing: 8,
-          children: [
-            InfoChip(
-              label: 'Modell: ${result.modelUsed}',
-              icon: Icons.memory,
-            ),
-            InfoChip(
-              label:
-                  '${result.timestamp.day}.${result.timestamp.month}.${result.timestamp.year} ${result.timestamp.hour}:${result.timestamp.minute.toString().padLeft(2, '0')}',
-              icon: Icons.access_time,
-            ),
-          ],
+        confirmDismiss: (direction) => _confirmDelete(context),
+        onDismissed: (direction) => _handleDismissed(context),
+        child: CollapsibleTextSection(
+          title: 'Prompt: ${widget.result.promptName}',
+          content: widget.result.llmResponse,
+          isExpanded: widget.isExpanded,
+          contentStyle: TextStyle(
+            fontSize: widget.fontSize,
+            height: 1.5,
+          ),
+          metadata: Wrap(
+            spacing: AppSpacing.s,
+            runSpacing: AppSpacing.s,
+            children: [
+              InfoChip(
+                label: 'Modell: ${widget.result.modelUsed}',
+                icon: Icons.memory,
+              ),
+              InfoChip(
+                label: '${widget.result.wordCount} Wörter',
+                icon: Icons.text_fields,
+              ),
+              InfoChip(
+                label: '${widget.result.characterCount} Zeichen',
+                icon: Icons.abc,
+              ),
+            ],
+          ),
         ),
       ),
     );

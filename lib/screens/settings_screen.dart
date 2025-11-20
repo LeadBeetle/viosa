@@ -269,7 +269,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     if (_isApiKeyValid)
                       Icon(
                         Icons.check_circle,
-                        color: AppConstants.successColor,
+                        color: Theme.of(context).colorScheme.tertiary,
                         size: 20,
                       ),
                     IconButton(

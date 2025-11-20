@@ -10,12 +10,18 @@ class AudioPlayerWidget extends StatefulWidget {
   final IAudioService audioService;
   final String fileName;
   final String filePath;
+  final bool isCollapsible;
+  final bool initiallyExpanded;
+  final ValueChanged<bool>? onExpansionChanged;
 
   const AudioPlayerWidget({
     super.key,
     required this.audioService,
     required this.fileName,
     required this.filePath,
+    this.isCollapsible = false,
+    this.initiallyExpanded = true,
+    this.onExpansionChanged,
   });
 
   @override
@@ -165,10 +171,140 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
     super.dispose();
   }
 
+  Widget _buildPlayerContent(BuildContext context) {
+    return Column(
+      children: [
+        // Waveform visualization or fallback to slider
+        if (_isWaveformReady) ...[
+          Container(
+            height: 80,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
+            ),
+            child: AudioFileWaveforms(
+              size: Size(MediaQuery.of(context).size.width - (AppConstants.defaultPadding * 4), 80),
+              playerController: _playerController,
+              enableSeekGesture: true,
+              waveformType: WaveformType.fitWidth,
+              continuousWaveform: true,
+              playerWaveStyle: PlayerWaveStyle(
+                fixedWaveColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                liveWaveColor: Theme.of(context).colorScheme.primary,
+                waveCap: StrokeCap.round,
+                waveThickness: 3.0,
+                spacing: 4.0,
+                showSeekLine: true,
+                seekLineColor: Theme.of(context).colorScheme.secondary,
+                seekLineThickness: 2.0,
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.s),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                _formatDuration(_position),
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              Text(
+                _formatDuration(_duration),
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ),
+        ] else ...[
+          // Fallback to slider while waveform is loading
+          Row(
+            children: [
+              Expanded(
+                child: Slider(
+                  value: _position.inMilliseconds.toDouble().clamp(
+                    0.0,
+                    _duration.inMilliseconds.toDouble().clamp(1.0, double.infinity),
+                  ),
+                  max: _duration.inMilliseconds.toDouble().clamp(1.0, double.infinity),
+                  onChanged: _onSeek,
+                ),
+              ),
+            ],
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                _formatDuration(_position),
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              Text(
+                _formatDuration(_duration),
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ),
+        ],
+        const SizedBox(height: AppSpacing.s),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            IconButton.filled(
+              onPressed: _togglePlayPause,
+              icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
+              iconSize: AppIconSize.xlarge,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (widget.isCollapsible) {
+      return Card(
+        elevation: AppElevation.medium,
+        child: Theme(
+          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+          child: ExpansionTile(
+            title: Row(
+              children: [
+                Icon(
+                  Icons.headphones,
+                  size: AppIconSize.medium,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: AppSpacing.s),
+                Text(
+                  'Audio Player',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+              ],
+            ),
+            initiallyExpanded: widget.initiallyExpanded,
+            onExpansionChanged: widget.onExpansionChanged,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppConstants.defaultPadding,
+                  0,
+                  AppConstants.defaultPadding,
+                  AppConstants.defaultPadding,
+                ),
+                child: _buildPlayerContent(context),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Non-collapsible version (original design)
     return Card(
-      elevation: AppConstants.cardElevation,
+      elevation: AppElevation.medium,
       child: Padding(
         padding: const EdgeInsets.all(AppConstants.defaultPadding),
         child: Column(
@@ -179,7 +315,7 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
                   Icons.headphones,
                   color: Theme.of(context).colorScheme.primary,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.s),
                 Expanded(
                   child: Text(
                     'Audio Player',
@@ -188,89 +324,8 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            // Waveform visualization or fallback to slider
-            if (_isWaveformReady) ...[
-              Container(
-                height: 80,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
-                ),
-                child: AudioFileWaveforms(
-                  size: Size(MediaQuery.of(context).size.width - (AppConstants.defaultPadding * 4), 80),
-                  playerController: _playerController,
-                  enableSeekGesture: true,
-                  waveformType: WaveformType.fitWidth,
-                  continuousWaveform: true,
-                  playerWaveStyle: PlayerWaveStyle(
-                    fixedWaveColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
-                    liveWaveColor: Theme.of(context).colorScheme.primary,
-                    waveCap: StrokeCap.round,
-                    waveThickness: 3.0,
-                    spacing: 4.0,
-                    showSeekLine: true,
-                    seekLineColor: Theme.of(context).colorScheme.secondary,
-                    seekLineThickness: 2.0,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    _formatDuration(_position),
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                  Text(
-                    _formatDuration(_duration),
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
-              ),
-            ] else ...[
-              // Fallback to slider while waveform is loading
-              Row(
-                children: [
-                  Expanded(
-                    child: Slider(
-                      value: _position.inMilliseconds.toDouble().clamp(
-                        0.0,
-                        _duration.inMilliseconds.toDouble().clamp(1.0, double.infinity),
-                      ),
-                      max: _duration.inMilliseconds.toDouble().clamp(1.0, double.infinity),
-                      onChanged: _onSeek,
-                    ),
-                  ),
-                ],
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    _formatDuration(_position),
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                  Text(
-                    _formatDuration(_duration),
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
-              ),
-            ],
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                IconButton.filled(
-                  onPressed: _togglePlayPause,
-                  icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
-                  iconSize: 32,
-                ),
-              ],
-            ),
+            const SizedBox(height: AppSpacing.m),
+            _buildPlayerContent(context),
           ],
         ),
       ),

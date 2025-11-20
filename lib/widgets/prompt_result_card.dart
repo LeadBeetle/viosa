@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
-import '../mixins/copyable_content_mixin.dart';
 import '../models/prompt_result.dart';
 import '../utils/constants.dart';
-import '../utils/markdown_styles.dart';
 import 'info_chip.dart';
+import 'collapsible_text_section.dart';
 
 /// Widget displaying prompt application results
 /// Follows Single Responsibility Principle: Only displays prompt result data
@@ -22,8 +20,7 @@ class PromptResultCard extends StatefulWidget {
   State<PromptResultCard> createState() => _PromptResultCardState();
 }
 
-class _PromptResultCardState extends State<PromptResultCard>
-    with CopyableContentMixin {
+class _PromptResultCardState extends State<PromptResultCard> {
   bool _isExpanded = true;
 
   @override
@@ -43,10 +40,6 @@ class _PromptResultCardState extends State<PromptResultCard>
               widget.result.promptName,
               overflow: TextOverflow.ellipsis,
               maxLines: 1,
-            ),
-            subtitle: Text(
-              widget.result.formattedTimestamp,
-              style: Theme.of(context).textTheme.bodySmall,
             ),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
@@ -76,41 +69,34 @@ class _PromptResultCardState extends State<PromptResultCard>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'AI-Antwort',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.copy, size: 20),
-                        onPressed: () => copyToClipboard(widget.result.llmResponse),
-                        tooltip: 'Antwort kopieren',
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                      borderRadius:
-                          BorderRadius.circular(AppConstants.defaultBorderRadius),
-                      border: Border.all(
-                        color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
-                      ),
+                  CollapsibleTextSection(
+                    title: 'AI-Antwort',
+                    content: widget.result.llmResponse,
+                    isExpanded: false,
+                    contentStyle: const TextStyle(
+                      fontSize: 16,
+                      height: 1.5,
                     ),
-                    child: MarkdownBody(
-                      data: widget.result.llmResponse,
-                      selectable: true,
-                      styleSheet: MarkdownStyles.medium(context),
+                    metadata: Wrap(
+                      spacing: AppSpacing.s,
+                      runSpacing: AppSpacing.s,
+                      children: [
+                        InfoChip(
+                          label: widget.result.modelUsed,
+                          icon: Icons.memory,
+                        ),
+                        InfoChip(
+                          label: '${widget.result.wordCount} Wörter',
+                          icon: Icons.text_fields,
+                        ),
+                        InfoChip(
+                          label: '${widget.result.characterCount} Zeichen',
+                          icon: Icons.abc,
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.m),
                   ExpansionTile(
                     title: const Text('Original-Transkription'),
                     tilePadding: EdgeInsets.zero,
@@ -134,16 +120,6 @@ class _PromptResultCardState extends State<PromptResultCard>
                           widget.result.transcriptionText,
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    children: [
-                      InfoChip(
-                        label: widget.result.modelUsed,
-                        icon: Icons.memory,
                       ),
                     ],
                   ),

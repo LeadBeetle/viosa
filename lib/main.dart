@@ -100,7 +100,7 @@ class VIOSAApp extends StatelessWidget {
         title: AppConstants.appName,
         theme: ThemeData(
           useMaterial3: true,
-          colorScheme: ColorScheme.fromSeed(seedColor: AppConstants.primaryColor),
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         ),
         home: const HomeScreen(),
       ),

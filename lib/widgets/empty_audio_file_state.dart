@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/constants.dart';
 
 /// Widget displayed when no audio file is selected
 /// Provides visual guidance to the user
@@ -9,16 +10,16 @@ class EmptyAudioFileState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32.0),
+        padding: const EdgeInsets.all(AppSpacing.xl),
         child: Column(
           children: [
             Image.asset(
               'assets/viosa_icon.png',
-              width: 120,
-              height: 120,
+              width: AppIconSize.logo,
+              height: AppIconSize.logo,
               opacity: const AlwaysStoppedAnimation(0.5),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.m),
             Text(
               'Keine Audio-Datei ausgewählt',
               textAlign: TextAlign.center,
@@ -26,10 +27,10 @@ class EmptyAudioFileState extends StatelessWidget {
                     color: Theme.of(context)
                         .colorScheme
                         .onSurface
-                        .withValues(alpha: 0.6),
+                        .withValues(alpha: AppOpacity.secondary),
                   ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.s),
             Text(
               'Tippen Sie auf das Symbol unten rechts, um eine Audio-Datei auszuwählen',
               textAlign: TextAlign.center,
@@ -37,7 +38,7 @@ class EmptyAudioFileState extends StatelessWidget {
                     color: Theme.of(context)
                         .colorScheme
                         .onSurface
-                        .withValues(alpha: 0.4),
+                        .withValues(alpha: AppOpacity.tertiary),
                   ),
             ),
           ],

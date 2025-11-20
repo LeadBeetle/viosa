@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -152,59 +153,76 @@ class RecordingService implements IRecordingService {
 
   @override
   Future<AudioFile?> stopRecording({String? customName}) async {
-    _timer?.cancel();
-    _timer = null;
+    try {
+      _timer?.cancel();
+      _timer = null;
 
-    final path = await _recorder.stop();
+      final path = await _recorder.stop();
 
-    // Disable wakelock and deactivate audio session
-    await WakelockPlus.disable();
-    await _deactivateAudioSession();
+      if (path == null) {
+        return null;
+      }
 
-    // Cancel recording notification
-    await _notificationService.cancelRecordingNotification();
+      final file = File(path);
+      if (!await file.exists()) {
+        return null;
+      }
 
-    if (path == null) {
-      return null;
+      // Convert to AudioFile
+      final bytes = await file.readAsBytes();
+      final base64Data = base64Encode(bytes);
+      final size = await file.length();
+
+      // Use custom name if provided, otherwise generate a user-friendly name
+      final String displayName;
+      if (customName != null && customName.isNotEmpty) {
+        displayName = '$customName.m4a';
+      } else {
+        // Generate user-friendly name with date/time
+        final now = DateTime.now();
+        final formattedDate = '${now.day.toString().padLeft(2, '0')}.'
+            '${now.month.toString().padLeft(2, '0')}.'
+            '${now.year} '
+            '${now.hour.toString().padLeft(2, '0')}:'
+            '${now.minute.toString().padLeft(2, '0')}';
+        displayName = 'Aufnahme $formattedDate.m4a';
+      }
+
+      final audioFile = AudioFile(
+        path: path,
+        name: displayName,
+        base64Data: base64Data,
+        mimeType: 'audio/mp4', // M4A MIME type (will be converted to MP3 before transcription)
+        size: size,
+      );
+
+      _recordingPath = null;
+      _currentDuration = Duration.zero;
+
+      return audioFile;
+    } catch (e) {
+      debugPrint('Error in stopRecording: $e');
+      rethrow;
+    } finally {
+      // Always cleanup notification, wakelock and audio session
+      try {
+        await WakelockPlus.disable();
+      } catch (e) {
+        debugPrint('Error disabling wakelock: $e');
+      }
+
+      try {
+        await _deactivateAudioSession();
+      } catch (e) {
+        debugPrint('Error deactivating audio session: $e');
+      }
+
+      try {
+        await _notificationService.cancelRecordingNotification();
+      } catch (e) {
+        debugPrint('Error canceling notification: $e');
+      }
     }
-
-    final file = File(path);
-    if (!await file.exists()) {
-      return null;
-    }
-
-    // Convert to AudioFile
-    final bytes = await file.readAsBytes();
-    final base64Data = base64Encode(bytes);
-    final size = await file.length();
-
-    // Use custom name if provided, otherwise generate a user-friendly name
-    final String displayName;
-    if (customName != null && customName.isNotEmpty) {
-      displayName = '$customName.m4a';
-    } else {
-      // Generate user-friendly name with date/time
-      final now = DateTime.now();
-      final formattedDate = '${now.day.toString().padLeft(2, '0')}.'
-          '${now.month.toString().padLeft(2, '0')}.'
-          '${now.year} '
-          '${now.hour.toString().padLeft(2, '0')}:'
-          '${now.minute.toString().padLeft(2, '0')}';
-      displayName = 'Aufnahme $formattedDate.m4a';
-    }
-
-    final audioFile = AudioFile(
-      path: path,
-      name: displayName,
-      base64Data: base64Data,
-      mimeType: 'audio/mp4', // M4A MIME type (will be converted to MP3 before transcription)
-      size: size,
-    );
-
-    _recordingPath = null;
-    _currentDuration = Duration.zero;
-
-    return audioFile;
   }
 
   /// Deactivate audio session when recording stops

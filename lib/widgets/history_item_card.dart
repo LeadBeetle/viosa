@@ -103,7 +103,7 @@ class _HistoryItemCardState extends State<HistoryItemCard>
                   icon: const Icon(Icons.delete),
                   onPressed: widget.onDelete,
                   tooltip: 'Löschen',
-                  color: AppConstants.errorColor,
+                  color: Theme.of(context).colorScheme.error,
                 ),
               ],
             ),

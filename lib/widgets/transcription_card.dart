@@ -38,7 +38,7 @@ class TranscriptionCard extends StatelessWidget {
               children: [
                 Icon(
                   Icons.check_circle,
-                  color: AppConstants.successColor,
+                  color: Theme.of(context).colorScheme.tertiary,
                   size: 20,
                 ),
                 const SizedBox(width: 8),

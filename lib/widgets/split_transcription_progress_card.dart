@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/split_transcription_job.dart';
 import '../providers/split_transcription_provider.dart';
+import '../utils/constants.dart';
 import 'split_item_widget.dart';
 
 /// Widget for displaying split transcription progress
@@ -21,8 +22,7 @@ class SplitTranscriptionProgressCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: 4,
-      margin: const EdgeInsets.all(16),
+      elevation: AppElevation.high,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -51,7 +51,7 @@ class SplitTranscriptionProgressCard extends StatelessWidget {
   /// Builds the header section
   Widget _buildHeader(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.m),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -61,7 +61,7 @@ class SplitTranscriptionProgressCard extends StatelessWidget {
                 Icons.audiotrack,
                 color: Theme.of(context).colorScheme.primary,
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.s),
               Expanded(
                 child: Text(
                   job.originalFileName,
@@ -78,12 +78,12 @@ class SplitTranscriptionProgressCard extends StatelessWidget {
                   onPressed: onCancel,
                   icon: const Icon(Icons.close),
                   tooltip: 'Transkription abbrechen',
-                  color: Colors.red,
-                  iconSize: 24,
+                  color: Theme.of(context).colorScheme.error,
+                  iconSize: AppIconSize.medium,
                 ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.s),
           _buildStatusChip(context),
         ],
       ),
@@ -100,7 +100,7 @@ class SplitTranscriptionProgressCard extends StatelessWidget {
       case JobStatus.queued:
         icon = Icons.schedule;
         text = 'In Warteschlange';
-        color = Colors.grey;
+        color = Theme.of(context).colorScheme.outline;
         break;
       case JobStatus.processing:
         icon = Icons.sync;
@@ -110,24 +110,24 @@ class SplitTranscriptionProgressCard extends StatelessWidget {
       case JobStatus.completed:
         icon = Icons.check_circle;
         text = 'Abgeschlossen';
-        color = Colors.green;
+        color = Theme.of(context).colorScheme.tertiary;
         break;
       case JobStatus.partialFailure:
         icon = Icons.warning;
         text = 'Teilweise fehlgeschlagen';
-        color = Colors.orange;
+        color = Theme.of(context).colorScheme.error;
         break;
       case JobStatus.cancelled:
         icon = Icons.cancel;
         text = 'Abgebrochen';
-        color = Colors.red;
+        color = Theme.of(context).colorScheme.error;
         break;
     }
 
     return Row(
       children: [
-        Icon(icon, size: 16, color: color),
-        const SizedBox(width: 4),
+        Icon(icon, size: AppIconSize.small, color: color),
+        const SizedBox(width: AppSpacing.xs),
         Text(
           text,
           style: TextStyle(
@@ -142,7 +142,7 @@ class SplitTranscriptionProgressCard extends StatelessWidget {
   /// Builds overall progress section
   Widget _buildOverallProgress(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.m),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -161,13 +161,13 @@ class SplitTranscriptionProgressCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.s),
           LinearProgressIndicator(
             value: job.progress,
             backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-            minHeight: 8,
+            minHeight: AppSpacing.s,
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -183,10 +183,10 @@ class SplitTranscriptionProgressCard extends StatelessWidget {
                   children: [
                     Icon(
                       Icons.schedule,
-                      size: 14,
+                      size: AppIconSize.small,
                       color: Theme.of(context).colorScheme.onSurface,
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: AppSpacing.xs),
                     Text(
                       'Noch ca. ${job.estimatedTimeRemainingText}',
                       style: Theme.of(context).textTheme.bodySmall,
@@ -196,21 +196,25 @@ class SplitTranscriptionProgressCard extends StatelessWidget {
             ],
           ),
           if (job.failedCount > 0) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.s),
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(AppSpacing.s),
               decoration: BoxDecoration(
-                color: Colors.orange.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
+                color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(AppRadius.small),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.warning_amber, color: Colors.orange, size: 20),
-                  const SizedBox(width: 8),
+                  Icon(
+                    Icons.warning_amber,
+                    color: Theme.of(context).colorScheme.error,
+                    size: AppIconSize.medium,
+                  ),
+                  const SizedBox(width: AppSpacing.s),
                   Text(
                     '${job.failedCount} Segment(e) fehlgeschlagen',
-                    style: const TextStyle(
-                      color: Colors.orange,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -229,7 +233,7 @@ class SplitTranscriptionProgressCard extends StatelessWidget {
     final currentSplit = job.currentSplit;
 
     return Container(
-      constraints: const BoxConstraints(maxHeight: 400),
+      constraints: const BoxConstraints(maxHeight: AppScrollThresholds.maxListHeight),
       child: ListView.builder(
         shrinkWrap: true,
         itemCount: job.splits.length,
@@ -258,7 +262,7 @@ class SplitTranscriptionProgressCard extends StatelessWidget {
     }
 
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.m),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
@@ -293,7 +297,7 @@ class SplitTranscriptionProgressCard extends StatelessWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Fehler beim erneuten Versuch: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: Theme.of(context).colorScheme.error,
             duration: const Duration(seconds: 3),
           ),
         );

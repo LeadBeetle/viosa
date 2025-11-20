@@ -71,6 +71,7 @@ class _HomeScreenState extends State<HomeScreen> with ScreenHelpers {
   bool _showRecorder = false;
   String? _currentHistoryId;
   final ScrollController _scrollController = ScrollController();
+  Duration? _audioDuration;
 
   // Streaming state
   Stream<String>? _transcriptionStream;
@@ -87,10 +88,32 @@ class _HomeScreenState extends State<HomeScreen> with ScreenHelpers {
   SplitTranscriptionJob? _activeSplitJob;
   bool _isSplitTranscription = false;
 
+  // Scroll-to-top state
+  bool _showScrollToTop = false;
+
+  // Audio player collapsed state
+  bool _isAudioPlayerExpanded = true;
+
+  // Global key for prompt results section
+  final GlobalKey _promptResultsKey = GlobalKey();
+
+  // Transcription success animation state
+  bool _showTranscriptionSuccess = false;
+
   @override
   void initState() {
     super.initState();
     _restoreSessionState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    final shouldShow = _scrollController.hasClients && _scrollController.offset > AppScrollThresholds.scrollToTopButton;
+    if (shouldShow != _showScrollToTop) {
+      setState(() {
+        _showScrollToTop = shouldShow;
+      });
+    }
   }
 
   @override
@@ -110,6 +133,9 @@ class _HomeScreenState extends State<HomeScreen> with ScreenHelpers {
     }
 
     // Restore state from session
+    final hadSession = sessionProvider.selectedFile != null ||
+                      sessionProvider.transcriptionResult != null;
+
     setState(() {
       _selectedFile = sessionProvider.selectedFile;
       _transcriptionResult = sessionProvider.transcriptionResult;
@@ -124,17 +150,27 @@ class _HomeScreenState extends State<HomeScreen> with ScreenHelpers {
         // Reload the audio file from disk to restore base64Data
         final reloadedFile = await _fileService.reloadAudioFile(_selectedFile!);
         if (reloadedFile != null && mounted) {
+          // Load audio duration
+          final duration = await AudioUtils.getAudioDuration(reloadedFile.path);
+
           setState(() {
             _selectedFile = reloadedFile;
+            _audioDuration = duration;
           });
           // Update session with reloaded file (but don't persist base64Data)
           await sessionProvider.setSelectedFile(reloadedFile);
           await _audioService.loadAudio(reloadedFile.path);
+
+          // Show session restored feedback
+          if (mounted && hadSession) {
+            showSuccessSnackBar('Session wiederhergestellt');
+          }
         }
       } catch (e) {
         // File might not exist anymore, clear session
         safeSetState(() {
           _selectedFile = null;
+          _audioDuration = null;
           _transcriptionResult = null;
           _promptResults.clear();
           _currentHistoryId = null;
@@ -143,6 +179,9 @@ class _HomeScreenState extends State<HomeScreen> with ScreenHelpers {
           await sessionProvider.clearSession();
         }
       }
+    } else if (hadSession && mounted && _transcriptionResult != null) {
+      // Had a session without file (shouldn't happen, but handle it)
+      showSuccessSnackBar('Session wiederhergestellt');
     }
   }
 
@@ -161,7 +200,7 @@ class _HomeScreenState extends State<HomeScreen> with ScreenHelpers {
     if (_scrollController.hasClients) {
       await _scrollController.animateTo(
         0,
-        duration: const Duration(milliseconds: 500),
+        duration: AppDuration.slow,
         curve: Curves.easeInOut,
       );
     }
@@ -192,8 +231,12 @@ class _HomeScreenState extends State<HomeScreen> with ScreenHelpers {
       final file = await _fileService.pickAudioFile(context);
 
       if (file != null && mounted) {
+        // Load audio duration
+        final duration = await AudioUtils.getAudioDuration(file.path);
+
         setState(() {
           _selectedFile = file;
+          _audioDuration = duration;
         });
 
         await _audioService.loadAudio(file.path);
@@ -261,6 +304,7 @@ class _HomeScreenState extends State<HomeScreen> with ScreenHelpers {
     setState(() {
       _isTranscribing = false;
       _transcriptionCancelToken = null;
+      _showTranscriptionSuccess = true;
     });
 
     final transcribedText = _transcriptionBuffer.toString();
@@ -291,6 +335,15 @@ class _HomeScreenState extends State<HomeScreen> with ScreenHelpers {
       if (mounted) {
         showSuccessSnackBar('Transkription erfolgreich abgeschlossen');
       }
+
+      // Reset success animation after delay
+      Future.delayed(const Duration(milliseconds: 1500), () {
+        if (mounted) {
+          setState(() {
+            _showTranscriptionSuccess = false;
+          });
+        }
+      });
     }
   }
 
@@ -325,6 +378,9 @@ class _HomeScreenState extends State<HomeScreen> with ScreenHelpers {
     final selectedModelId = settingsProvider.selectedModel;
     final selectedModel = ModelRepository.getModelByIdOrDefault(selectedModelId);
 
+    // Check if there's existing data
+    final hasExistingData = _transcriptionResult != null || _promptResults.isNotEmpty;
+
     // Show confirmation dialog
     final confirmed = await TranscriptionConfirmationDialog.show(
       context,
@@ -332,9 +388,18 @@ class _HomeScreenState extends State<HomeScreen> with ScreenHelpers {
       shouldSplit: shouldSplit,
       splitCount: splitCount,
       selectedModel: selectedModel,
+      hasExistingData: hasExistingData,
     );
 
     if (!confirmed || !mounted) return;
+
+    // Clear existing data if any
+    if (hasExistingData) {
+      setState(() {
+        _transcriptionResult = null;
+        _promptResults.clear();
+      });
+    }
 
     // Get provider before async operations
     final splitProvider = context.read<SplitTranscriptionProvider>();
@@ -408,6 +473,7 @@ class _HomeScreenState extends State<HomeScreen> with ScreenHelpers {
   Future<void> _onSplitTranscriptionComplete(SplitTranscriptionJob job) async {
     setState(() {
       _isTranscribing = false;
+      _showTranscriptionSuccess = true;
     });
 
     if (job.isFullySuccessful || (job.completedCount > 0 && job.failedCount < job.totalSplits)) {
@@ -444,12 +510,22 @@ class _HomeScreenState extends State<HomeScreen> with ScreenHelpers {
         } else {
           showSuccessSnackBar('Transkription erfolgreich abgeschlossen');
         }
+
+        // Reset success animation after delay
+        Future.delayed(const Duration(milliseconds: 1500), () {
+          if (mounted) {
+            setState(() {
+              _showTranscriptionSuccess = false;
+            });
+          }
+        });
       }
     } else {
       setState(() {
         // Clear split job UI on failure too
         _activeSplitJob = null;
         _isSplitTranscription = false;
+        _showTranscriptionSuccess = false;
       });
       showErrorSnackBar('Transkription fehlgeschlagen');
     }
@@ -649,7 +725,7 @@ class _HomeScreenState extends State<HomeScreen> with ScreenHelpers {
       );
 
       setState(() {
-        _promptResults.add(result);
+        _promptResults.insert(0, result);
         _promptStream = null;
         _currentPromptName = null;
         _currentPromptTemplate = null;
@@ -664,6 +740,24 @@ class _HomeScreenState extends State<HomeScreen> with ScreenHelpers {
         await _saveToHistory();
 
         showSuccessSnackBar('Prompt erfolgreich angewendet');
+
+        // Auto-scroll to the new result after a short delay
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (mounted && _scrollController.hasClients) {
+            final promptResultsContext = _promptResultsKey.currentContext;
+            if (promptResultsContext != null) {
+              final RenderBox renderBox = promptResultsContext.findRenderObject() as RenderBox;
+              final position = renderBox.localToGlobal(Offset.zero);
+              final scrollPosition = position.dy + _scrollController.offset - 60; // 80px offset for app bar
+
+              _scrollController.animateTo(
+                scrollPosition.clamp(0, _scrollController.position.maxScrollExtent),
+                duration: const Duration(milliseconds: 500),
+                curve: Curves.easeInOut,
+              );
+            }
+          }
+        });
       }
     }
   }
@@ -687,9 +781,23 @@ class _HomeScreenState extends State<HomeScreen> with ScreenHelpers {
     sessionProvider.setPromptResults(List.from(_promptResults));
   }
 
+  void _restorePromptResult(PromptResult result) {
+    setState(() {
+      _promptResults.add(result);
+    });
+
+    // Update session state
+    final sessionProvider = context.read<SessionStateProvider>();
+    sessionProvider.setPromptResults(List.from(_promptResults));
+  }
+
   void _onRecordingComplete(AudioFile audioFile) async {
+    // Load audio duration
+    final duration = await AudioUtils.getAudioDuration(audioFile.path);
+
     setState(() {
       _selectedFile = audioFile;
+      _audioDuration = duration;
       _transcriptionResult = null;
       _promptResults.clear();
       _currentHistoryId = null;
@@ -804,18 +912,48 @@ class _HomeScreenState extends State<HomeScreen> with ScreenHelpers {
               FileInfoCard(
                 file: _selectedFile!,
                 onRename: _renameRecording,
+                duration: _audioDuration,
               ),
               const SizedBox(height: AppConstants.defaultPadding),
               AudioPlayerWidget(
                 audioService: _audioService,
                 fileName: _selectedFile!.name,
                 filePath: _selectedFile!.path,
+                isCollapsible: true,
+                initiallyExpanded: _isAudioPlayerExpanded,
+                onExpansionChanged: (expanded) {
+                  setState(() {
+                    _isAudioPlayerExpanded = expanded;
+                  });
+                },
               ),
               const SizedBox(height: AppConstants.defaultPadding),
               TranscriptionButton(
                 isTranscribing: _isTranscribing,
                 onPressed: _isTranscribing ? _cancelTranscription : _transcribe,
+                showSuccessAnimation: _showTranscriptionSuccess,
               ),
+              if (!_isTranscribing && _transcriptionResult == null && !_showTranscriptionSuccess) ...[
+                const SizedBox(height: AppSpacing.xs),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      size: 16,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    Expanded(
+                      child: Text(
+                        'Konvertiere die Audiodatei in Text mit KI',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
               const SizedBox(height: AppConstants.defaultPadding),
             ] else
               const EmptyAudioFileState(),
@@ -857,6 +995,7 @@ class _HomeScreenState extends State<HomeScreen> with ScreenHelpers {
                 transcriptionResult: _transcriptionResult!,
                 isPromptActive: _promptStream != null,
                 onApplyPrompt: _applyPromptStreaming,
+                promptResultCount: _promptResults.length,
               ),
             // Streaming prompt response display
             if (_promptStream != null)
@@ -869,8 +1008,10 @@ class _HomeScreenState extends State<HomeScreen> with ScreenHelpers {
               ),
             // Completed prompt results (collapsible)
             PromptResultsList(
+              key: _promptResultsKey,
               results: _promptResults,
               onDelete: _removePromptResult,
+              onRestore: _restorePromptResult,
             ),
             // "Neue Transkription" button - only show when transcription is complete
             if (_transcriptionResult != null && _promptStream == null) ...[
@@ -883,10 +1024,34 @@ class _HomeScreenState extends State<HomeScreen> with ScreenHelpers {
           ],
         ),
       ),
-      floatingActionButton: SpeedDialFAB(
-        onRecordTap: _startNewRecording,
-        onFileTap: _pickFile,
+      floatingActionButton: Stack(
+        children: [
+          // Scroll to top button - positioned on the left
+          if (_showScrollToTop)
+            Positioned(
+              left: 30,
+              bottom: 0,
+              child: FloatingActionButton.small(
+                heroTag: 'scrollToTop',
+                onPressed: _scrollToTop,
+                tooltip: 'Nach oben scrollen',
+                backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
+                foregroundColor: Theme.of(context).colorScheme.onSecondaryContainer,
+                child: const Icon(Icons.arrow_upward),
+              ),
+            ),
+          // Main speed dial FAB - positioned on the right
+          Positioned(
+            right: 0,
+            bottom: 0,
+            child: SpeedDialFAB(
+              onRecordTap: _startNewRecording,
+              onFileTap: _pickFile,
+            ),
+          ),
+        ],
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 }

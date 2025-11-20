@@ -9,6 +9,7 @@ class TranscriptionConfirmationDialog extends StatelessWidget {
   final bool shouldSplit;
   final int splitCount;
   final ModelConfig selectedModel;
+  final bool hasExistingData;
 
   const TranscriptionConfirmationDialog({
     super.key,
@@ -16,6 +17,7 @@ class TranscriptionConfirmationDialog extends StatelessWidget {
     required this.shouldSplit,
     required this.splitCount,
     required this.selectedModel,
+    this.hasExistingData = false,
   });
 
   /// Shows the dialog and returns true if user confirms
@@ -25,6 +27,7 @@ class TranscriptionConfirmationDialog extends StatelessWidget {
     required bool shouldSplit,
     required int splitCount,
     required ModelConfig selectedModel,
+    bool hasExistingData = false,
   }) async {
     final result = await showDialog<bool>(
       context: context,
@@ -33,6 +36,7 @@ class TranscriptionConfirmationDialog extends StatelessWidget {
         shouldSplit: shouldSplit,
         splitCount: splitCount,
         selectedModel: selectedModel,
+        hasExistingData: hasExistingData,
       ),
     );
     return result == true;
@@ -46,6 +50,38 @@ class TranscriptionConfirmationDialog extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Warning if existing data
+          if (hasExistingData) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                border: Border.all(color: Colors.orange.shade300),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    size: 20,
+                    color: Colors.orange.shade700,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Achtung: Bestehende Transkription und Prompt-Ergebnisse werden gelöscht.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Colors.orange.shade900,
+                            fontWeight: FontWeight.w500,
+                          ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
           Text(
             shouldSplit
                 ? 'Diese Audiodatei ist ${AudioUtils.formatDurationShort(duration)} lang und '

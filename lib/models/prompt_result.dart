@@ -70,5 +70,17 @@ class PromptResult {
         '${_twoDigits(timestamp.hour)}:${_twoDigits(timestamp.minute)}';
   }
 
+  /// Returns character count of the LLM response
+  int get characterCount => llmResponse.length;
+
+  /// Returns word count of the LLM response
+  int get wordCount {
+    if (llmResponse.isEmpty) return 0;
+    return llmResponse
+        .split(RegExp(r'\s+'))
+        .where((word) => word.isNotEmpty)
+        .length;
+  }
+
   String _twoDigits(int n) => n.toString().padLeft(2, '0');
 }

@@ -5,6 +5,7 @@ import '../providers/prompts_provider.dart';
 import '../utils/constants.dart';
 import '../widgets/prompt_edit_dialog.dart';
 import '../services/snackbar_service.dart';
+import '../widgets/empty_state_widget.dart';
 
 /// Screen for managing prompt templates
 /// Follows Single Responsibility Principle: Manages prompt list UI
@@ -174,49 +175,14 @@ class _PromptsScreenState extends State<PromptsScreen>
 
   Widget _buildCustomPromptsTab(PromptsProvider promptsProvider) {
     if (promptsProvider.customPrompts.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.text_snippet_outlined,
-                size: 64,
-                color: Theme.of(context)
-                    .colorScheme
-                    .primary
-                    .withValues(alpha: 0.3),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Noch keine eigenen Prompts',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withValues(alpha: 0.6),
-                    ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Erstellen Sie eigene Prompts für Ihre Transkriptionen',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withValues(alpha: 0.4),
-                    ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton.icon(
-                onPressed: _createNewPrompt,
-                icon: const Icon(Icons.add),
-                label: const Text('Prompt erstellen'),
-              ),
-            ],
-          ),
+      return EmptyStateWidget(
+        icon: Icons.text_snippet_outlined,
+        title: 'Noch keine eigenen Prompts',
+        subtitle: 'Erstellen Sie eigene Prompts für Ihre Transkriptionen',
+        action: ElevatedButton.icon(
+          onPressed: _createNewPrompt,
+          icon: const Icon(Icons.add),
+          label: const Text('Prompt erstellen'),
         ),
       );
     }

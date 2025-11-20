@@ -33,7 +33,8 @@ class StreamingTranscriptionCard extends StatelessWidget {
               height: 1.5,
             ),
             metadata: Wrap(
-              spacing: 8,
+              spacing: AppSpacing.s,
+              runSpacing: AppSpacing.s,
               children: [
                 InfoChip(
                   label: 'Sprache: ${settings.language}',

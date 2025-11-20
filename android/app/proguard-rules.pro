@@ -110,3 +110,15 @@
 # Prevent class merging and inlining for Flutter plugins
 -keep,allowshrinking class io.flutter.plugins.** { *; }
 -keep,allowshrinking class dev.flutter.pigeon.** { *; }
+
+# Remove verbose and debug logs in release builds
+-assumenosideeffects class android.util.Log {
+    public static int v(...);
+    public static int d(...);
+    public static int w(...);
+}
+
+# Remove verbose logging specifically for media/audio components
+-assumenosideeffects class * {
+    public void trace(...);
+}

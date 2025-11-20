@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import '../utils/constants.dart';
 
 /// A styled info chip that displays a label with an optional icon
-/// Uses the same design as the model selection box in the transcription dialog
+/// Uses consistent design system constants for spacing and styling
 class InfoChip extends StatelessWidget {
   final String label;
   final IconData? icon;
@@ -29,10 +30,13 @@ class InfoChip extends StatelessWidget {
         theme.colorScheme.primary;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.s + 2,
+        vertical: AppSpacing.xs + 2,
+      ),
       decoration: BoxDecoration(
         color: effectiveBackgroundColor,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadius.small),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -40,10 +44,10 @@ class InfoChip extends StatelessWidget {
           if (icon != null) ...[
             Icon(
               icon,
-              size: 16,
+              size: AppIconSize.small,
               color: effectiveIconColor,
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: AppSpacing.xs + 2),
           ],
           Text(
             label,

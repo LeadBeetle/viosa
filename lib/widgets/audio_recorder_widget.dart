@@ -8,9 +8,9 @@ import 'package:audio_waveforms/audio_waveforms.dart';
 import '../models/audio_file.dart';
 import '../services/recording_service.dart';
 import '../providers/settings_provider.dart';
-import '../utils/audio_config.dart';
 import '../utils/constants.dart';
 import '../services/snackbar_service.dart';
+import 'app_loading_indicator.dart';
 
 /// Widget for audio recording with controls
 /// Follows Single Responsibility Principle: Only handles recording UI
@@ -43,11 +43,7 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
     _checkPermission();
 
     // Initialize visualization controller
-    _visualizationController = RecorderController()
-      ..androidEncoder = AndroidEncoder.aac
-      ..androidOutputFormat = AndroidOutputFormat.mpeg4
-      ..iosEncoder = IosEncoder.kAudioFormatMPEG4AAC
-      ..sampleRate = AudioConfig.sampleRate;
+    _visualizationController = RecorderController();
 
     _recordingService.recordStateStream.listen((state) {
       if (mounted) {
@@ -115,12 +111,13 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
         }
       }
 
-      // Start the actual recording service
+      // Start the actual recording service FIRST
       await _recordingService.startRecording();
 
-      // Start visualization controller (parallel recording for visualization only)
+      // Then start visualization controller (may fail on some devices)
       try {
         await _visualizationController.record();
+        debugPrint('Visualization controller started successfully');
       } catch (e) {
         // Visualization failure shouldn't stop the recording
         debugPrint('Visualization recording failed: $e');
@@ -129,6 +126,10 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
       if (mounted) {
         _showErrorSnackBar('Fehler beim Starten der Aufnahme: $e');
       }
+      // Cleanup visualization on error
+      try {
+        await _visualizationController.stop();
+      } catch (_) {}
     }
   }
 
@@ -218,6 +219,8 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
   }
 
   Future<void> _stopRecording() async {
+    if (_isStopping) return;
+
     setState(() {
       _isStopping = true;
     });
@@ -232,18 +235,25 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
 
       // Stop the actual recording service
       final audioFile = await _recordingService.stopRecording();
+
       if (audioFile != null && mounted) {
         widget.onRecordingComplete(audioFile);
+      } else if (audioFile == null && mounted) {
+        _showErrorSnackBar('Fehler: Aufnahme konnte nicht gespeichert werden');
       }
     } catch (e) {
+      debugPrint('Error stopping recording: $e');
       if (mounted) {
         _showErrorSnackBar('Fehler beim Beenden der Aufnahme: $e');
       }
     } finally {
+      // Always reset state, even if not mounted
       if (mounted) {
         setState(() {
           _isStopping = false;
         });
+      } else {
+        _isStopping = false;
       }
     }
   }
@@ -319,18 +329,22 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
           padding: const EdgeInsets.all(AppConstants.defaultPadding),
           child: Column(
             children: [
-              const Icon(Icons.mic_off, size: 48, color: Colors.red),
-              const SizedBox(height: 16),
+              Icon(
+                Icons.mic_off,
+                size: AppIconSize.xxlarge,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              const SizedBox(height: AppSpacing.m),
               const Text(
                 'Mikrofon-Berechtigung erforderlich',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.s),
               const Text(
                 'Bitte erteilen Sie die Berechtigung in den Einstellungen',
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.m),
               ElevatedButton(
                 onPressed: _checkPermission,
                 child: const Text('Erneut prüfen'),
@@ -350,9 +364,9 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
               children: [
                 Icon(
                   _recordState == RecordState.record ? Icons.fiber_manual_record : Icons.mic,
-                  color: _recordState == RecordState.record ? Colors.red : null,
+                  color: _recordState == RecordState.record ? Theme.of(context).colorScheme.error : null,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.s),
                 Text(
                   _recordState == RecordState.record
                       ? 'Aufnahme läuft'
@@ -363,7 +377,7 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.m),
             Text(
               _formatDuration(_duration),
               style: Theme.of(context).textTheme.displaySmall?.copyWith(
@@ -371,7 +385,7 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
                     fontFeatures: [const FontFeature.tabularFigures()],
                   ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.m),
             // Audio waveform visualization (shows when recording or paused)
             if (_recordState == RecordState.record || _recordState == RecordState.pause) ...[
               Container(
@@ -395,11 +409,11 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
                     ),
                     showMiddleLine: false,
                     extendWaveform: true,
-                    waveThickness: 3.0,
+                    waveThickness: AppStrokeWidth.normal,
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.m),
             ],
             if (_recordState == RecordState.stop) ...[
               FilledButton.icon(
@@ -408,18 +422,18 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
                 label: const Text('Aufnahme starten'),
                 style: FilledButton.styleFrom(
                   minimumSize: const Size(double.infinity, 48),
-                  backgroundColor: Colors.red,
+                  backgroundColor: Theme.of(context).colorScheme.error,
                 ),
               ),
             ] else ...[
               if (_isStopping) ...[
-                const Center(
+                Center(
                   child: Padding(
-                    padding: EdgeInsets.all(16.0),
+                    padding: const EdgeInsets.all(AppSpacing.m),
                     child: Column(
-                      children: [
-                        CircularProgressIndicator(),
-                        SizedBox(height: 12),
+                      children: const [
+                        AppLoadingIndicator.medium(),
+                        SizedBox(height: AppSpacing.s),
                         Text(
                           'Aufnahme wird gespeichert...',
                           style: TextStyle(fontSize: 14),
@@ -437,30 +451,30 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
                         onPressed: _cancelRecording,
                         icon: const Icon(Icons.close),
                         tooltip: 'Abbrechen',
-                        iconSize: 28,
-                        padding: const EdgeInsets.all(12),
+                        iconSize: AppIconSize.large,
+                        padding: const EdgeInsets.all(AppSpacing.s),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: AppSpacing.s),
                     Expanded(
                       child: IconButton.filled(
                         onPressed: _recordState == RecordState.pause ? _resumeRecording : _pauseRecording,
                         icon: Icon(_recordState == RecordState.pause ? Icons.play_arrow : Icons.pause),
                         tooltip: _recordState == RecordState.pause ? 'Fortsetzen' : 'Pause',
-                        iconSize: 28,
-                        padding: const EdgeInsets.all(12),
+                        iconSize: AppIconSize.large,
+                        padding: const EdgeInsets.all(AppSpacing.s),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: AppSpacing.s),
                     Expanded(
                       child: IconButton.filled(
                         onPressed: _stopRecording,
                         icon: const Icon(Icons.check),
                         tooltip: 'Fertig',
-                        iconSize: 28,
-                        padding: const EdgeInsets.all(12),
+                        iconSize: AppIconSize.large,
+                        padding: const EdgeInsets.all(AppSpacing.s),
                         style: IconButton.styleFrom(
-                          backgroundColor: Colors.green,
+                          backgroundColor: Theme.of(context).colorScheme.tertiary,
                         ),
                       ),
                     ),

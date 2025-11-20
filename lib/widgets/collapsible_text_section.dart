@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import '../mixins/copyable_content_mixin.dart';
 import '../utils/markdown_styles.dart';
+import '../utils/constants.dart';
 
 /// A collapsible text section widget with expand/collapse functionality
 /// Optimized for displaying long text content with better UX
@@ -12,7 +13,6 @@ class CollapsibleTextSection extends StatefulWidget {
   final int previewLines;
   final TextStyle? contentStyle;
   final bool showCopyButton;
-  final bool enableMarkdown;
   final Widget? metadata;
   final Widget? actionButton;
   final VoidCallback? onExpandChanged;
@@ -23,10 +23,9 @@ class CollapsibleTextSection extends StatefulWidget {
     required this.title,
     required this.content,
     this.isExpanded = false,
-    this.previewLines = 3,
+    this.previewLines = 7,
     this.contentStyle,
     this.showCopyButton = true,
-    this.enableMarkdown = false,
     this.metadata,
     this.actionButton,
     this.onExpandChanged,
@@ -38,48 +37,25 @@ class CollapsibleTextSection extends StatefulWidget {
 }
 
 class _CollapsibleTextSectionState extends State<CollapsibleTextSection>
-    with SingleTickerProviderStateMixin, CopyableContentMixin {
+    with CopyableContentMixin {
   late bool _isExpanded;
   final ScrollController _scrollController = ScrollController();
-  late AnimationController _animationController;
-  late Animation<double> _iconRotation;
 
   @override
   void initState() {
     super.initState();
     _isExpanded = widget.isExpanded;
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 200),
-      vsync: this,
-    );
-    _iconRotation = Tween<double>(
-      begin: 0.0,
-      end: 0.5,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
-
-    if (_isExpanded) {
-      _animationController.value = 1.0;
-    }
   }
 
   @override
   void dispose() {
     _scrollController.dispose();
-    _animationController.dispose();
     super.dispose();
   }
 
   void _toggleExpand() {
     setState(() {
       _isExpanded = !_isExpanded;
-      if (_isExpanded) {
-        _animationController.forward();
-      } else {
-        _animationController.reverse();
-      }
     });
     widget.onExpandChanged?.call();
   }
@@ -93,6 +69,7 @@ class _CollapsibleTextSectionState extends State<CollapsibleTextSection>
         );
 
     if (_isExpanded) {
+      // Show full content with scrolling
       return Container(
         constraints: BoxConstraints(maxHeight: widget.maxExpandedHeight),
         child: Scrollbar(
@@ -112,21 +89,42 @@ class _CollapsibleTextSectionState extends State<CollapsibleTextSection>
         ),
       );
     } else {
-      // Show preview
+      // Show preview (first N lines or limited by character count)
       final lines = widget.content.split('\n');
-      final previewText = lines.take(widget.previewLines).join('\n');
-      final hasMore = lines.length > widget.previewLines;
 
-      return SelectableText(
-        hasMore ? '$previewText...' : previewText,
-        style: textStyle,
-        maxLines: widget.previewLines,
+      // If text has few newlines (long continuous text), limit by character count
+      String previewText;
+      bool hasMore;
+
+      if (lines.length <= 3 && widget.content.length > 500) {
+        // Long continuous text without many line breaks
+        const maxPreviewChars = 500;
+        previewText = widget.content.substring(0, maxPreviewChars.clamp(0, widget.content.length));
+        hasMore = widget.content.length > maxPreviewChars;
+      } else {
+        // Normal text with line breaks
+        previewText = lines.take(widget.previewLines).join('\n');
+        hasMore = lines.length > widget.previewLines;
+      }
+
+      return MarkdownBody(
+        data: hasMore ? '$previewText...' : previewText,
+        selectable: true,
+        styleSheet: MarkdownStyles.custom(textStyle),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final lines = widget.content.split('\n');
+    final hasMoreLines = lines.length > widget.previewLines;
+
+    // Also check if content is long enough to warrant expansion
+    // (handles cases where text is one long line that wraps)
+    final isLongContent = widget.content.length > 500;
+    final shouldShowExpandButton = hasMoreLines || isLongContent;
+
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8.0),
       child: Padding(
@@ -147,18 +145,17 @@ class _CollapsibleTextSectionState extends State<CollapsibleTextSection>
                 ),
                 if (widget.showCopyButton)
                   IconButton(
-                    icon: const Icon(Icons.copy, size: 20),
+                    icon: const Icon(Icons.copy, size: AppIconSize.medium),
                     onPressed: () => copyToClipboard(widget.content),
                     tooltip: 'Kopieren',
                   ),
-                IconButton(
-                  icon: RotationTransition(
-                    turns: _iconRotation,
-                    child: const Icon(Icons.expand_more),
+                // Collapse button (only visible when expanded)
+                if (_isExpanded)
+                  IconButton(
+                    icon: const Icon(Icons.expand_less),
+                    onPressed: _toggleExpand,
+                    tooltip: 'Einklappen',
                   ),
-                  onPressed: _toggleExpand,
-                  tooltip: _isExpanded ? 'Einklappen' : 'Ausklappen',
-                ),
               ],
             ),
 
@@ -167,30 +164,41 @@ class _CollapsibleTextSectionState extends State<CollapsibleTextSection>
             // Content
             _buildContent(),
 
-            // Expand/Collapse button
-            if (widget.content.split('\n').length > widget.previewLines) ...[
+            // "Mehr anzeigen" button (only if collapsed and has more content)
+            if (!_isExpanded && shouldShowExpandButton) ...[
               const SizedBox(height: 12),
               Center(
                 child: TextButton.icon(
                   onPressed: _toggleExpand,
-                  icon: RotationTransition(
-                    turns: _iconRotation,
-                    child: const Icon(Icons.expand_more),
-                  ),
-                  label: Text(_isExpanded ? 'Weniger anzeigen' : 'Mehr anzeigen'),
+                  icon: const Icon(Icons.expand_more),
+                  label: const Text('Mehr anzeigen'),
+                ),
+              ),
+            ],
+
+            // "Weniger anzeigen" button (only if expanded and has more content)
+            if (_isExpanded && shouldShowExpandButton) ...[
+              const SizedBox(height: 12),
+              Center(
+                child: TextButton.icon(
+                  onPressed: _toggleExpand,
+                  icon: const Icon(Icons.expand_less),
+                  label: const Text('Weniger anzeigen'),
                 ),
               ),
             ],
 
             // Metadata and action button row at the end
             if (widget.metadata != null || widget.actionButton != null) ...[
-              const SizedBox(height: 12),
+              const Divider(height: AppSpacing.l),
               Row(
                 children: [
                   if (widget.metadata != null)
                     Expanded(child: widget.metadata!),
-                  if (widget.actionButton != null)
+                  if (widget.actionButton != null) ...[
+                    const SizedBox(width: AppSpacing.s),
                     widget.actionButton!,
+                  ],
                 ],
               ),
             ],

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../utils/constants.dart';
 import 'i_snackbar_service.dart';
 
 /// A service for displaying improved snackbars with consistent styling
@@ -11,20 +10,22 @@ class SnackBarService implements ISnackBarService {
   /// Shows an error snackbar
   @override
   void showError(BuildContext context, String message) {
+    final theme = Theme.of(context);
     _showSnackBar(
       context,
       message,
-      backgroundColor: AppConstants.errorColor,
+      backgroundColor: theme.colorScheme.error,
     );
   }
 
   /// Shows a success snackbar
   @override
   void showSuccess(BuildContext context, String message) {
+    final theme = Theme.of(context);
     _showSnackBar(
       context,
       message,
-      backgroundColor: AppConstants.successColor,
+      backgroundColor: theme.colorScheme.tertiary,
     );
   }
 

@@ -66,4 +66,16 @@ class TranscriptionResult {
         return language;
     }
   }
+
+  /// Returns character count of the transcription text
+  int get characterCount => text.length;
+
+  /// Returns word count of the transcription text
+  int get wordCount {
+    if (text.isEmpty) return 0;
+    return text
+        .split(RegExp(r'\s+'))
+        .where((word) => word.isNotEmpty)
+        .length;
+  }
 }
