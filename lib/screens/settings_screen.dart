@@ -23,7 +23,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _selectedLanguage = 'auto';
   String? _audioSavePath;
   String _selectedModel = ModelRepository.defaultModelId;
-  bool _isSaving = false;
   bool _isApiKeyVisible = false;
 
   @override
@@ -49,42 +48,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _selectedModel = settingsProvider.selectedModel;
   }
 
-  Future<void> _saveSettings() async {
+  Future<void> _saveApiKey() async {
+    final apiKey = _apiKeyController.text.trim();
+    if (apiKey.isEmpty) return;
+
+    try {
+      final settingsProvider = context.read<SettingsProvider>();
+      await settingsProvider.saveApiKey(apiKey);
+    } catch (e) {
+      debugPrint('Error saving API key: $e');
+    }
+  }
+
+  Future<void> _saveLanguage(String language) async {
+    try {
+      final settingsProvider = context.read<SettingsProvider>();
+      await settingsProvider.saveLanguage(language);
+    } catch (e) {
+      if (mounted) {
+        _showErrorSnackBar('Fehler beim Speichern der Sprache: $e');
+      }
+    }
+  }
+
+  Future<void> _saveModel(String model) async {
+    try {
+      final settingsProvider = context.read<SettingsProvider>();
+      await settingsProvider.saveModel(model);
+    } catch (e) {
+      if (mounted) {
+        _showErrorSnackBar('Fehler beim Speichern des Modells: $e');
+      }
+    }
+  }
+
+  Future<bool> _validateBeforeExit() async {
     final apiKey = _apiKeyController.text.trim();
 
     if (apiKey.isEmpty) {
       _showErrorSnackBar('Bitte geben Sie einen API-Key ein');
-      return;
+      return false;
     }
 
-    setState(() {
-      _isSaving = true;
-    });
-
-    try {
-      final settingsProvider = context.read<SettingsProvider>();
-
-      await settingsProvider.saveApiKey(apiKey);
-      await settingsProvider.saveLanguage(_selectedLanguage);
-      await settingsProvider.saveModel(_selectedModel);
-
-      if (_audioSavePath != null && _audioSavePath!.isNotEmpty) {
-        await settingsProvider.saveAudioSavePath(_audioSavePath!);
-      }
-
-      if (mounted) {
-        _showSuccessSnackBar('Einstellungen erfolgreich gespeichert');
-        Navigator.pop(context);
-      }
-    } catch (e) {
-      if (mounted) {
-        _showErrorSnackBar('Fehler beim Speichern der Einstellungen: $e');
-      }
-    } finally {
-      setState(() {
-        _isSaving = false;
-      });
-    }
+    await _saveApiKey();
+    return true;
   }
 
   Future<void> _selectAudioSavePath() async {
@@ -162,15 +169,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<SettingsProvider>(
-      builder: (context, settingsProvider, child) {
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text('Einstellungen'),
-          ),
-          body: settingsProvider.isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : SingleChildScrollView(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, dynamic result) async {
+        if (didPop) return;
+
+        final canExit = await _validateBeforeExit();
+        if (canExit && context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: Consumer<SettingsProvider>(
+        builder: (context, settingsProvider, child) {
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text('Einstellungen'),
+            ),
+            body: settingsProvider.isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : SingleChildScrollView(
               padding: const EdgeInsets.all(AppConstants.defaultPadding),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -212,6 +229,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             obscureText: !_isApiKeyVisible,
                             autocorrect: false,
                             enableSuggestions: false,
+                            onChanged: (value) {
+                              if (value.trim().isNotEmpty) {
+                                _saveApiKey();
+                              }
+                            },
                           ),
                           const SizedBox(height: 8),
                           Text(
@@ -258,6 +280,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   setState(() {
                                     _selectedModel = model.id;
                                   });
+                                  _saveModel(model.id);
                                 },
                                 borderRadius: BorderRadius.circular(12),
                                 child: Container(
@@ -285,6 +308,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                               setState(() {
                                                 _selectedModel = value;
                                               });
+                                              _saveModel(value);
                                             }
                                           },
                                         ),
@@ -458,6 +482,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 setState(() {
                                   _selectedLanguage = value;
                                 });
+                                _saveLanguage(value);
                               }
                             },
                           ),
@@ -475,22 +500,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  FilledButton.icon(
-                    onPressed: _isSaving ? null : _saveSettings,
-                    icon: _isSaving
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.save),
-                    label: Text(_isSaving ? 'Speichere...' : 'Einstellungen speichern'),
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.all(16),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppConstants.defaultPadding),
                   Card(
                     color: Theme.of(context).colorScheme.surfaceContainerHighest,
                     child: Padding(
@@ -525,8 +535,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ],
               ),
             ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }
