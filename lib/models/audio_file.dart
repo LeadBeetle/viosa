@@ -13,7 +13,7 @@ class AudioFile {
   final String name;
 
   @HiveField(2)
-  final String base64Data;
+  final String? base64Data;
 
   @HiveField(3)
   final String mimeType;
@@ -66,12 +66,12 @@ class AudioFile {
   }
 
   /// Creates an audio file from a JSON map
-  /// Note: base64Data defaults to empty string and should be loaded from path when needed
+  /// Note: base64Data is null by default and should be loaded from path when needed
   factory AudioFile.fromJson(Map<String, dynamic> json) {
     return AudioFile(
       path: json['path'] as String,
       name: json['name'] as String,
-      base64Data: json['base64Data'] as String? ?? '',  // Default to empty if not present
+      base64Data: json['base64Data'] as String?,  // Null if not present
       mimeType: json['mimeType'] as String,
       size: json['size'] as int,
     );

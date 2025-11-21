@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import '../models/audio_file.dart';
@@ -40,24 +39,23 @@ class FileService implements IFileService {
         throw Exception('Datei existiert nicht');
       }
 
-      final bytes = await file.readAsBytes();
-      final base64Audio = base64Encode(bytes);
+      final fileSize = await file.length();
       final mimeType = _getMimeType(selectedFileInfo.extension);
 
       return AudioFile(
         path: file.path,
         name: selectedFileInfo.name,
-        base64Data: base64Audio,
+        base64Data: null, // Lazy-loaded when needed for transcription
         mimeType: mimeType,
-        size: bytes.length,
+        size: fileSize,
       );
     } catch (e) {
       rethrow;
     }
   }
 
-  /// Reloads an audio file from disk to restore base64Data
-  /// Used when restoring sessions to avoid storing large base64 strings
+  /// Reloads an audio file from disk to validate it still exists
+  /// Base64Data is no longer pre-loaded to save memory
   @override
   Future<AudioFile?> reloadAudioFile(AudioFile audioFile) async {
     try {
@@ -68,16 +66,8 @@ class FileService implements IFileService {
         throw Exception('Datei existiert nicht: ${audioFile.path}');
       }
 
-      final bytes = await file.readAsBytes();
-      final base64Audio = base64Encode(bytes);
-
-      return AudioFile(
-        path: audioFile.path,
-        name: audioFile.name,
-        base64Data: base64Audio,
-        mimeType: audioFile.mimeType,
-        size: bytes.length,
-      );
+      // Just verify and return same AudioFile (no need to reload)
+      return audioFile;
     } catch (e) {
       rethrow;
     }
@@ -90,17 +80,13 @@ class FileService implements IFileService {
     final oldFile = File(audioFile.path);
     final directory = oldFile.parent.path;
     final newPath = '$directory/$newName.m4a';
-    final newFile = await oldFile.rename(newPath);
-
-    // Reload the file data with new path
-    final bytes = await newFile.readAsBytes();
-    final base64Data = base64Encode(bytes);
+    await oldFile.rename(newPath);
 
     // Create updated AudioFile with new name and path
     return AudioFile(
       path: newPath,
       name: '$newName.m4a',
-      base64Data: base64Data,
+      base64Data: null, // Lazy-loaded when needed
       mimeType: audioFile.mimeType,
       size: audioFile.size,
     );

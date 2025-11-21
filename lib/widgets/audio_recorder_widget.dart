@@ -36,6 +36,10 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
   // Visualization controller for waveforms
   late final RecorderController _visualizationController;
 
+  // Auto-disable waveform after 30 minutes to save memory
+  static const Duration _waveformDisableThreshold = Duration(minutes: 30);
+  bool _isWaveformDisabled = false;
+
   @override
   void initState() {
     super.initState();
@@ -56,6 +60,11 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
       if (mounted) {
         setState(() {
           _duration = duration;
+
+          // Auto-disable waveform after threshold to save memory on long recordings
+          if (!_isWaveformDisabled && duration >= _waveformDisableThreshold) {
+            _disableWaveform();
+          }
         });
       }
     });
@@ -88,6 +97,17 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
     _recordingService.dispose();
     _visualizationController.dispose();
     super.dispose();
+  }
+
+  /// Disables waveform visualization to save memory during long recordings
+  void _disableWaveform() {
+    try {
+      _visualizationController.stop();
+      _isWaveformDisabled = true;
+      debugPrint('Waveform visualization disabled after $_waveformDisableThreshold to conserve memory');
+    } catch (e) {
+      debugPrint('Failed to disable waveform: $e');
+    }
   }
 
   Future<void> _checkPermission() async {
@@ -229,6 +249,7 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
       // Stop visualization controller first (cleanup)
       try {
         await _visualizationController.stop();
+        _isWaveformDisabled = false; // Reset for next recording
       } catch (e) {
         debugPrint('Visualization stop failed: $e');
       }
@@ -297,6 +318,7 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
       // Stop visualization controller
       try {
         await _visualizationController.stop();
+        _isWaveformDisabled = false; // Reset for next recording
       } catch (e) {
         debugPrint('Visualization stop failed: $e');
       }
@@ -386,8 +408,8 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
                   ),
             ),
             const SizedBox(height: AppSpacing.m),
-            // Audio waveform visualization (shows when recording or paused)
-            if (_recordState == RecordState.record || _recordState == RecordState.pause) ...[
+            // Audio waveform visualization (shows when recording or paused, unless disabled for memory)
+            if ((_recordState == RecordState.record || _recordState == RecordState.pause) && !_isWaveformDisabled) ...[
               Container(
                 height: 100,
                 width: double.infinity,
@@ -411,6 +433,32 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
                     extendWaveform: true,
                     waveThickness: AppStrokeWidth.normal,
                   ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.m),
+            ] else if ((_recordState == RecordState.record || _recordState == RecordState.pause) && _isWaveformDisabled) ...[
+              // Show info message when waveform is disabled
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.m),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      size: AppIconSize.medium,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: AppSpacing.s),
+                    Expanded(
+                      child: Text(
+                        'Wellenform-Anzeige deaktiviert nach 30 Min zur Speicheroptimierung',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: AppSpacing.m),

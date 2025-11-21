@@ -22,7 +22,7 @@ class PromptAdapter extends TypeAdapter<Prompt> {
       template: fields[2] as String,
       isPredefined: fields[3] as bool,
       createdAt: fields[4] as DateTime?,
-      usageCount: (fields[5] as int?) ?? 0,
+      usageCount: fields[5] as int,
       lastUsedAt: fields[6] as DateTime?,
     );
   }

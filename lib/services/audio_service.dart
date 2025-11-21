@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:just_audio/just_audio.dart';
 
 /// Interface for audio playback operations
@@ -26,6 +27,11 @@ class AudioService implements IAudioService {
   @override
   Future<void> loadAudio(String filePath) async {
     try {
+      final file = File(filePath);
+      if (!await file.exists()) {
+        throw Exception('Audio file does not exist at path: $filePath');
+      }
+
       _currentFilePath = filePath;
       await _player.setFilePath(filePath);
     } catch (e) {

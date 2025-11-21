@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:record/record.dart';
@@ -11,6 +10,7 @@ import '../models/audio_file.dart';
 import '../utils/audio_config.dart';
 import 'settings_service.dart';
 import 'recording_notification_service.dart';
+import 'recording_checkpoint_service.dart';
 
 /// Interface for audio recording service
 /// Follows Interface Segregation Principle: Only recording-related methods
@@ -35,9 +35,14 @@ class RecordingService implements IRecordingService {
   final StreamController<Duration> _durationController = StreamController<Duration>.broadcast();
   final ISettingsService _settingsService = SettingsService();
   final RecordingNotificationService _notificationService = RecordingNotificationService();
+  final RecordingCheckpointService _checkpointService = RecordingCheckpointService();
   Timer? _timer;
+  Timer? _checkpointTimer;
   Duration _currentDuration = Duration.zero;
   String? _recordingPath;
+
+  // Auto-checkpoint interval (10 minutes)
+  static const Duration _checkpointInterval = Duration(minutes: 10);
 
   @override
   Stream<RecordState> get recordStateStream => _recorder.onStateChanged();
@@ -125,8 +130,23 @@ class RecordingService implements IRecordingService {
       _durationController.add(_currentDuration);
     });
 
+    // Start checkpoint timer for crash recovery (every 10 minutes)
+    _checkpointTimer = Timer.periodic(_checkpointInterval, (timer) {
+      _saveCheckpoint();
+    });
+
     // Show recording notification in status bar
     await _notificationService.showRecordingNotification();
+  }
+
+  /// Saves a checkpoint for crash recovery
+  Future<void> _saveCheckpoint() async {
+    if (_recordingPath != null) {
+      await _checkpointService.saveCheckpoint(
+        recordingPath: _recordingPath!,
+        currentDuration: _currentDuration,
+      );
+    }
   }
 
   /// Configure audio session for background recording
@@ -156,6 +176,8 @@ class RecordingService implements IRecordingService {
     try {
       _timer?.cancel();
       _timer = null;
+      _checkpointTimer?.cancel();
+      _checkpointTimer = null;
 
       final path = await _recorder.stop();
 
@@ -168,9 +190,7 @@ class RecordingService implements IRecordingService {
         return null;
       }
 
-      // Convert to AudioFile
-      final bytes = await file.readAsBytes();
-      final base64Data = base64Encode(bytes);
+      // Get file metadata without loading into memory
       final size = await file.length();
 
       // Use custom name if provided, otherwise generate a user-friendly name
@@ -191,13 +211,16 @@ class RecordingService implements IRecordingService {
       final audioFile = AudioFile(
         path: path,
         name: displayName,
-        base64Data: base64Data,
+        base64Data: null, // Lazy-loaded when needed for transcription
         mimeType: 'audio/mp4', // M4A MIME type (will be converted to MP3 before transcription)
         size: size,
       );
 
       _recordingPath = null;
       _currentDuration = Duration.zero;
+
+      // Clear checkpoint after successful recording
+      await _checkpointService.clearCheckpoint();
 
       return audioFile;
     } catch (e) {
@@ -235,6 +258,10 @@ class RecordingService implements IRecordingService {
   Future<void> pauseRecording() async {
     await _recorder.pause();
     _timer?.cancel();
+    _checkpointTimer?.cancel();
+
+    // Save checkpoint when pausing
+    await _saveCheckpoint();
 
     // Update notification to show paused state
     await _notificationService.showPausedNotification();
@@ -248,6 +275,11 @@ class RecordingService implements IRecordingService {
       _durationController.add(_currentDuration);
     });
 
+    // Restart checkpoint timer
+    _checkpointTimer = Timer.periodic(_checkpointInterval, (timer) {
+      _saveCheckpoint();
+    });
+
     // Update notification to show recording state
     await _notificationService.showRecordingNotification();
   }
@@ -256,6 +288,8 @@ class RecordingService implements IRecordingService {
   Future<void> cancelRecording() async {
     _timer?.cancel();
     _timer = null;
+    _checkpointTimer?.cancel();
+    _checkpointTimer = null;
 
     await _recorder.stop();
 
@@ -277,11 +311,15 @@ class RecordingService implements IRecordingService {
 
     _currentDuration = Duration.zero;
     _durationController.add(_currentDuration);
+
+    // Clear checkpoint after cancellation
+    await _checkpointService.clearCheckpoint();
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _checkpointTimer?.cancel();
     _recorder.dispose();
     _durationController.close();
   }

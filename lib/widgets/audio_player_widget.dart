@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:audio_waveforms/audio_waveforms.dart';
 import '../services/audio_service.dart';
@@ -62,22 +63,24 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
 
   Future<void> _prepareWaveform() async {
     final filePath = widget.filePath;
+
     try {
+      final file = File(filePath);
+      if (!await file.exists()) {
+        debugPrint('Audio file does not exist at path: $filePath');
+        return;
+      }
+
       await _playerController.preparePlayer(
         path: filePath,
         shouldExtractWaveform: true,
       );
 
-      // Listen to waveform controller's onCurrentDurationChanged to sync seeking
       _playerController.onCurrentDurationChanged.listen((waveformPosition) {
-        // Prevent feedback loop
         if (_isSeeking) return;
 
-        // Use waveform position directly - it's already in milliseconds
-        // The PlayerController's position should match the actual audio duration
         final currentAudioPosition = _position.inMilliseconds;
         if ((waveformPosition - currentAudioPosition).abs() > 500) {
-          // Only sync if difference is > 500ms (to avoid fighting with natural playback)
           _isSeeking = true;
           widget.audioService.seek(Duration(milliseconds: waveformPosition)).then((_) {
             if (mounted) {

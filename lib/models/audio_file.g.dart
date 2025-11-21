@@ -19,7 +19,7 @@ class AudioFileAdapter extends TypeAdapter<AudioFile> {
     return AudioFile(
       path: fields[0] as String,
       name: fields[1] as String,
-      base64Data: fields[2] as String,
+      base64Data: fields[2] as String?,
       mimeType: fields[3] as String,
       size: fields[4] as int,
     );

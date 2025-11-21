@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:dio/dio.dart';
@@ -35,6 +36,8 @@ import '../dialogs/transcription_confirmation_dialog.dart';
 import '../services/llm_provider.dart';
 import '../services/llm_provider_factory.dart';
 import '../repositories/model_repository.dart';
+import '../services/recording_checkpoint_service.dart';
+import '../services/i_recording_checkpoint_service.dart';
 import '../utils/constants.dart';
 import '../utils/audio_utils.dart';
 import '../utils/screen_helpers.dart';
@@ -57,6 +60,7 @@ class _HomeScreenState extends State<HomeScreen> with ScreenHelpers {
   final IFileService _fileService = FileService();
   final IAudioService _audioService = AudioService();
   final IPromptService _promptService = PromptService();
+  final IRecordingCheckpointService _checkpointService = RecordingCheckpointService();
 
   // Services that need the model from settings - created on demand
   ILLMProvider _getLLMProvider() {
@@ -103,8 +107,107 @@ class _HomeScreenState extends State<HomeScreen> with ScreenHelpers {
   @override
   void initState() {
     super.initState();
+    _checkForRecordingRecovery();
     _restoreSessionState();
     _scrollController.addListener(_onScroll);
+  }
+
+  /// Checks for crashed recording and offers recovery
+  Future<void> _checkForRecordingRecovery() async {
+    final checkpoint = await _checkpointService.loadCheckpoint();
+    if (checkpoint == null || !mounted) return;
+
+    // Show recovery dialog
+    final shouldRecover = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.restore, color: Colors.orange),
+            SizedBox(width: 8),
+            Text('Aufnahme wiederherstellen?'),
+          ],
+        ),
+        content: Text(
+          'Es wurde eine unterbrochene Aufnahme gefunden (${_formatDuration(checkpoint.duration)}).\n\n'
+          'Möchten Sie diese Aufnahme wiederherstellen?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Verwerfen'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Wiederherstellen'),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted) return;
+
+    if (shouldRecover == true) {
+      await _recoverRecording(checkpoint);
+    } else {
+      await _checkpointService.clearCheckpoint();
+    }
+  }
+
+  /// Recovers a crashed recording
+  Future<void> _recoverRecording(RecordingCheckpoint checkpoint) async {
+    try {
+      final file = File(checkpoint.recordingPath);
+      if (!await file.exists()) {
+        if (!mounted) return;
+        showErrorSnackBar('Aufnahme-Datei nicht gefunden');
+        await _checkpointService.clearCheckpoint();
+        return;
+      }
+
+      final fileSize = await file.length();
+      final audioFile = AudioFile(
+        path: checkpoint.recordingPath,
+        name: file.path.split('/').last,
+        base64Data: null,
+        mimeType: 'audio/mp4',
+        size: fileSize,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _selectedFile = audioFile;
+      });
+
+      // Load audio for playback
+      await _audioService.loadAudio(audioFile.path);
+      final duration = await AudioUtils.getAudioDuration(audioFile.path);
+
+      if (!mounted) return;
+
+      setState(() {
+        _audioDuration = duration;
+      });
+
+      await _checkpointService.clearCheckpoint();
+
+      if (!mounted) return;
+      showSuccessSnackBar('Aufnahme erfolgreich wiederhergestellt');
+    } catch (e) {
+      if (!mounted) return;
+      showErrorSnackBar('Fehler beim Wiederherstellen: $e');
+      await _checkpointService.clearCheckpoint();
+    }
+  }
+
+  String _formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    final hours = twoDigits(duration.inHours);
+    final minutes = twoDigits(duration.inMinutes.remainder(60));
+    final seconds = twoDigits(duration.inSeconds.remainder(60));
+    return duration.inHours > 0 ? "$hours:$minutes:$seconds" : "$minutes:$seconds";
   }
 
   void _onScroll() {
@@ -150,8 +253,16 @@ class _HomeScreenState extends State<HomeScreen> with ScreenHelpers {
         // Reload the audio file from disk to restore base64Data
         final reloadedFile = await _fileService.reloadAudioFile(_selectedFile!);
         if (reloadedFile != null && mounted) {
-          // Load audio duration
+          // Load audio duration first - if this fails, the file is not accessible
           final duration = await AudioUtils.getAudioDuration(reloadedFile.path);
+
+          // If duration is zero, the file couldn't be loaded by the audio player
+          if (duration == Duration.zero) {
+            throw Exception('Audio file could not be loaded by media player');
+          }
+
+          // Try to load audio - if this fails, the file is not accessible
+          await _audioService.loadAudio(reloadedFile.path);
 
           setState(() {
             _selectedFile = reloadedFile;
@@ -159,7 +270,6 @@ class _HomeScreenState extends State<HomeScreen> with ScreenHelpers {
           });
           // Update session with reloaded file (but don't persist base64Data)
           await sessionProvider.setSelectedFile(reloadedFile);
-          await _audioService.loadAudio(reloadedFile.path);
 
           // Show session restored feedback
           if (mounted && hadSession) {
@@ -167,7 +277,8 @@ class _HomeScreenState extends State<HomeScreen> with ScreenHelpers {
           }
         }
       } catch (e) {
-        // File might not exist anymore, clear session
+        debugPrint('Failed to restore session: $e');
+        // File might not exist or not accessible anymore, clear session
         safeSetState(() {
           _selectedFile = null;
           _audioDuration = null;
@@ -177,6 +288,7 @@ class _HomeScreenState extends State<HomeScreen> with ScreenHelpers {
         });
         if (mounted) {
           await sessionProvider.clearSession();
+          showErrorSnackBar('Session konnte nicht wiederhergestellt werden: Datei nicht verfügbar');
         }
       }
     } else if (hadSession && mounted && _transcriptionResult != null) {
