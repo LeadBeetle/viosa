@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/prompt.dart';
 
@@ -167,11 +168,31 @@ Text:
   Future<void> initialize() async {
     if (_isInitialized) return;
 
-    // Open the Hive boxes
-    _customPromptsBox = await Hive.openBox<Prompt>(_customPromptsBoxName);
-    _usageStatsBox = await Hive.openBox(_usageStatsBoxName);
+    try {
+      // Open the Hive boxes
+      _customPromptsBox = await Hive.openBox<Prompt>(_customPromptsBoxName);
+      _usageStatsBox = await Hive.openBox(_usageStatsBoxName);
 
-    _isInitialized = true;
+      _isInitialized = true;
+    } catch (e) {
+      debugPrint('Error opening Hive boxes: $e');
+      // If boxes are corrupted, try to delete and recreate them
+      try {
+        debugPrint('Attempting to delete corrupted boxes...');
+        await Hive.deleteBoxFromDisk(_customPromptsBoxName);
+        await Hive.deleteBoxFromDisk(_usageStatsBoxName);
+
+        // Retry opening
+        _customPromptsBox = await Hive.openBox<Prompt>(_customPromptsBoxName);
+        _usageStatsBox = await Hive.openBox(_usageStatsBoxName);
+
+        _isInitialized = true;
+        debugPrint('Successfully recreated boxes after corruption');
+      } catch (retryError) {
+        debugPrint('Failed to recover from corruption: $retryError');
+        rethrow;
+      }
+    }
   }
 
   void _ensureInitialized() {
@@ -288,8 +309,15 @@ Text:
 
   /// Get prompts with usage stats populated
   /// Optimized to batch-load usage stats instead of N+1 queries
+  /// Returns prompts with default usage stats if not initialized
   Future<List<Prompt>> getPromptsWithUsageStats(List<Prompt> prompts) async {
-    _ensureInitialized();
+    // If not initialized, return prompts with default usage stats
+    if (!_isInitialized || _usageStatsBox == null) {
+      return prompts.map((prompt) => prompt.copyWith(
+        usageCount: 0,
+        lastUsedAt: null,
+      )).toList();
+    }
 
     // Batch load all usage stats at once
     final usageStatsMap = <String, Map<String, dynamic>>{};

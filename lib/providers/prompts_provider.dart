@@ -49,6 +49,7 @@ class PromptsProvider with ChangeNotifier {
     try {
       // Initialize the prompt service (opens Hive box and migrates data)
       await _promptService.initialize();
+      _isInitialized = true;
 
       // Load prompts with usage stats
       final predefined = _promptService.getPredefinedPrompts();
@@ -56,11 +57,20 @@ class PromptsProvider with ChangeNotifier {
 
       _predefinedPrompts = await _promptService.getPromptsWithUsageStats(predefined);
       _customPrompts = await _promptService.getPromptsWithUsageStats(custom);
-
-      _isInitialized = true;
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('Error initializing prompts: $e');
-      _predefinedPrompts = [];
+      debugPrint('Stack trace: $stackTrace');
+
+      // Try to initialize the service if it failed
+      try {
+        await _promptService.initialize();
+        _isInitialized = true;
+      } catch (initError) {
+        debugPrint('Failed to initialize prompt service: $initError');
+      }
+
+      // Load predefined prompts without stats as fallback
+      _predefinedPrompts = _promptService.getPredefinedPrompts();
       _customPrompts = [];
     } finally {
       _isLoading = false;
@@ -70,6 +80,9 @@ class PromptsProvider with ChangeNotifier {
 
   /// Add a new custom prompt
   Future<void> addPrompt(Prompt prompt) async {
+    if (!_isInitialized) {
+      throw StateError('PromptsProvider not initialized. Call initialize() first.');
+    }
     await _promptService.saveCustomPrompt(prompt);
     await _reloadCustomPrompts();
   }
@@ -148,5 +161,14 @@ class PromptsProvider with ChangeNotifier {
     await _promptService.incrementPromptUsage(promptId);
     await _reloadAllPrompts();
     notifyListeners();
+  }
+
+  /// Apply a prompt template by replacing placeholders with input text
+  /// Accepts either a Prompt object or a template string
+  String applyPromptTemplate(dynamic promptOrTemplate, String inputText) {
+    final template = promptOrTemplate is Prompt
+        ? promptOrTemplate.template
+        : promptOrTemplate as String;
+    return _promptService.applyPromptTemplate(template, inputText);
   }
 }

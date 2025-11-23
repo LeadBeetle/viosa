@@ -1,4 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
+// MANUAL FIX: Line 25 modified to handle null usageCount for backward compatibility
+// If regenerating, ensure usageCount uses: fields[5] as int? ?? 0
 
 part of 'prompt.dart';
 
@@ -22,7 +24,7 @@ class PromptAdapter extends TypeAdapter<Prompt> {
       template: fields[2] as String,
       isPredefined: fields[3] as bool,
       createdAt: fields[4] as DateTime?,
-      usageCount: fields[5] as int,
+      usageCount: fields[5] as int? ?? 0,
       lastUsedAt: fields[6] as DateTime?,
     );
   }

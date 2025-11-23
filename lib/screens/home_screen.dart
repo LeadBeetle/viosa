@@ -9,7 +9,6 @@ import '../models/transcription_history.dart';
 import '../models/split_transcription_job.dart';
 import '../services/file_service.dart';
 import '../services/audio_service.dart';
-import '../services/prompt_service.dart';
 import '../providers/settings_provider.dart';
 import '../providers/history_provider.dart';
 import '../providers/session_state_provider.dart';
@@ -59,7 +58,6 @@ class _HomeScreenState extends State<HomeScreen> with ScreenHelpers {
   // Only keep services that are not managed by providers
   final IFileService _fileService = FileService();
   final IAudioService _audioService = AudioService();
-  final IPromptService _promptService = PromptService();
   final IRecordingCheckpointService _checkpointService = RecordingCheckpointService();
 
   // Services that need the model from settings - created on demand
@@ -797,7 +795,7 @@ class _HomeScreenState extends State<HomeScreen> with ScreenHelpers {
 
     try {
       // Apply template with auto-injection support to replace {transcription} placeholder
-      final promptText = _promptService.applyPromptTemplate(
+      final promptText = context.read<PromptsProvider>().applyPromptTemplate(
         promptTemplate,
         _transcriptionResult!.text,
       );

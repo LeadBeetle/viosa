@@ -5,7 +5,6 @@ import '../models/prompt.dart';
 import '../models/prompt_result.dart';
 import '../providers/prompts_provider.dart';
 import '../providers/settings_provider.dart';
-import '../services/prompt_service.dart';
 import '../services/llm_provider.dart';
 import '../services/llm_provider_factory.dart';
 import '../utils/constants.dart';
@@ -25,8 +24,6 @@ class ApplyPromptStreamingDialog extends StatefulWidget {
 }
 
 class _ApplyPromptStreamingDialogState extends State<ApplyPromptStreamingDialog> {
-  final IPromptService _promptService = PromptService();
-
   ILLMProvider _getLLMProvider() {
     final model = context.read<SettingsProvider>().selectedModel;
     return LLMProviderFactory.createForModel(model);
@@ -87,7 +84,7 @@ class _ApplyPromptStreamingDialogState extends State<ApplyPromptStreamingDialog>
 
     try {
       // Apply template with auto-injection support
-      final promptText = _promptService.applyPromptTemplate(
+      final promptText = context.read<PromptsProvider>().applyPromptTemplate(
         _selectedPrompt!.template,
         widget.transcriptionText,
       );

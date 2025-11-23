@@ -5,7 +5,6 @@ import '../providers/prompts_provider.dart';
 import '../providers/settings_provider.dart';
 import '../services/llm_provider.dart';
 import '../services/llm_provider_factory.dart';
-import '../services/prompt_service.dart';
 
 /// Dialog for selecting and applying a prompt to transcription text
 /// Follows Single Responsibility Principle: Handles prompt application UI
@@ -22,8 +21,6 @@ class ApplyPromptDialog extends StatefulWidget {
 }
 
 class _ApplyPromptDialogState extends State<ApplyPromptDialog> {
-  final IPromptService _promptService = PromptService();
-
   ILLMProvider _getLLMProvider() {
     final model = context.read<SettingsProvider>().selectedModel;
     return LLMProviderFactory.createForModel(model);
@@ -82,7 +79,7 @@ class _ApplyPromptDialogState extends State<ApplyPromptDialog> {
 
     try {
       // Apply template with auto-injection support
-      final promptText = _promptService.applyPromptTemplate(
+      final promptText = context.read<PromptsProvider>().applyPromptTemplate(
         _selectedPrompt!.template,
         widget.transcriptionText,
       );
