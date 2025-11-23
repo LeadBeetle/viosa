@@ -25,6 +25,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _selectedLanguage = 'auto';
   String? _audioSavePath;
   String _selectedModel = ModelRepository.defaultModelId;
+  String _selectedThemeMode = 'system';
   bool _isApiKeyVisible = false;
   bool _isModelSectionExpanded = false;
   bool _isAboutSectionExpanded = false;
@@ -52,6 +53,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _selectedLanguage = settingsProvider.language;
     _audioSavePath = settingsProvider.audioSavePath;
     _selectedModel = settingsProvider.selectedModel;
+    _selectedThemeMode = settingsProvider.themeModeString;
   }
 
   void _validateApiKey(String key) {
@@ -90,6 +92,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } catch (e) {
       if (mounted) {
         _showErrorSnackBar('Fehler beim Speichern des Modells: $e');
+      }
+    }
+  }
+
+  Future<void> _saveThemeMode(String themeMode) async {
+    try {
+      final settingsProvider = context.read<SettingsProvider>();
+      await settingsProvider.saveThemeMode(themeMode);
+    } catch (e) {
+      if (mounted) {
+        _showErrorSnackBar('Fehler beim Speichern des Themes: $e');
       }
     }
   }
@@ -222,6 +235,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(height: AppConstants.defaultPadding),
                   _buildAudioTranscriptionCard(context),
                   const SizedBox(height: AppConstants.defaultPadding),
+                  _buildAppearanceCard(context),
+                  const SizedBox(height: AppConstants.defaultPadding),
                   _buildAboutCard(context),
                 ],
               ),
@@ -269,7 +284,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     if (_isApiKeyValid)
                       Icon(
                         Icons.check_circle,
-                        color: Theme.of(context).colorScheme.tertiary,
+                        color: Colors.green,
                         size: 20,
                       ),
                     IconButton(
@@ -736,6 +751,156 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
               ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAppearanceCard(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AppConstants.defaultPadding),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.palette,
+                  size: 20,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Darstellung',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.brightness_6,
+                  size: 20,
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.7),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Theme',
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildThemeModeButton(
+                              context: context,
+                              icon: Icons.brightness_auto,
+                              label: 'System',
+                              value: 'system',
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _buildThemeModeButton(
+                              context: context,
+                              icon: Icons.light_mode,
+                              label: 'Hell',
+                              value: 'light',
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _buildThemeModeButton(
+                              context: context,
+                              icon: Icons.dark_mode,
+                              label: 'Dunkel',
+                              value: 'dark',
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Wählen Sie das Farbschema der App',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withOpacity(0.6),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildThemeModeButton({
+    required BuildContext context,
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    final isSelected = _selectedThemeMode == value;
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _selectedThemeMode = value;
+        });
+        _saveThemeMode(value);
+      },
+      borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: isSelected
+                ? Theme.of(context).colorScheme.primary
+                : Theme.of(context).colorScheme.outline.withOpacity(0.5),
+            width: isSelected ? 2 : 1,
+          ),
+          borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
+          color: isSelected
+              ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3)
+              : null,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              color: isSelected
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+              size: 24,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                color: isSelected
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.onSurface,
+              ),
             ),
           ],
         ),

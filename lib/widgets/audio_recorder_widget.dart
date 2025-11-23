@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:record/record.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
-import 'package:audio_waveforms/audio_waveforms.dart';
+import 'waveform_painter.dart';
 import '../models/audio_file.dart';
 import '../services/recording_service.dart';
 import '../providers/settings_provider.dart';
@@ -33,9 +33,11 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
   bool _hasPermission = false;
   bool _isStopping = false;
 
-  // Visualization controller for waveforms
-  late final RecorderController _visualizationController;
-
+  // Visualization state
+  final List<double> _amplitudes = [];
+  // Keep last 100 samples for visualization
+  static const int _maxSamples = 100;
+  
   // Auto-disable waveform after 30 minutes to save memory
   static const Duration _waveformDisableThreshold = Duration(minutes: 30);
   bool _isWaveformDisabled = false;
@@ -46,8 +48,7 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
     WidgetsBinding.instance.addObserver(this);
     _checkPermission();
 
-    // Initialize visualization controller
-    _visualizationController = RecorderController();
+    _checkPermission();
 
     _recordingService.recordStateStream.listen((state) {
       if (mounted) {
@@ -68,42 +69,37 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
         });
       }
     });
+
+    _recordingService.amplitudeStream.listen((amplitude) {
+      if (mounted && !_isWaveformDisabled && (_recordState == RecordState.record)) {
+        setState(() {
+          _amplitudes.add(amplitude);
+          if (_amplitudes.length > _maxSamples) {
+            _amplitudes.removeAt(0);
+          }
+        });
+      }
+    });
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // Keep recording running in background - WakeLock and AudioSession handle this
-    // We only need to handle visualization pause/resume
-    if (state == AppLifecycleState.paused && _recordState == RecordState.record) {
-      // App went to background while recording - pause visualization only
-      try {
-        _visualizationController.pause();
-      } catch (e) {
-        debugPrint('Visualization pause on background failed: $e');
-      }
-    } else if (state == AppLifecycleState.resumed && _recordState == RecordState.record) {
-      // App came back to foreground while recording - resume visualization
-      try {
-        _visualizationController.record();
-      } catch (e) {
-        debugPrint('Visualization resume on foreground failed: $e');
-      }
-    }
+    // Visualization automatically pauses as we stop updating state when paused/backgrounded
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _recordingService.dispose();
-    _visualizationController.dispose();
     super.dispose();
   }
 
   /// Disables waveform visualization to save memory during long recordings
   void _disableWaveform() {
     try {
-      _visualizationController.stop();
       _isWaveformDisabled = true;
+      _amplitudes.clear(); // Clear data to save memory
       debugPrint('Waveform visualization disabled after $_waveformDisableThreshold to conserve memory');
     } catch (e) {
       debugPrint('Failed to disable waveform: $e');
@@ -133,23 +129,20 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
 
       // Start the actual recording service FIRST
       await _recordingService.startRecording();
-
-      // Then start visualization controller (may fail on some devices)
-      try {
-        await _visualizationController.record();
-        debugPrint('Visualization controller started successfully');
-      } catch (e) {
-        // Visualization failure shouldn't stop the recording
-        debugPrint('Visualization recording failed: $e');
-      }
+      
+      // Clear previous amplitudes
+      setState(() {
+        _amplitudes.clear();
+        _isWaveformDisabled = false;
+      });
     } catch (e) {
       if (mounted) {
         _showErrorSnackBar('Fehler beim Starten der Aufnahme: $e');
       }
       // Cleanup visualization on error
-      try {
-        await _visualizationController.stop();
-      } catch (_) {}
+      setState(() {
+        _amplitudes.clear();
+      });
     }
   }
 
@@ -246,13 +239,10 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
     });
 
     try {
-      // Stop visualization controller first (cleanup)
-      try {
-        await _visualizationController.stop();
+      // Stop visualization
+      setState(() {
         _isWaveformDisabled = false; // Reset for next recording
-      } catch (e) {
-        debugPrint('Visualization stop failed: $e');
-      }
+      });
 
       // Stop the actual recording service
       final audioFile = await _recordingService.stopRecording();
@@ -282,13 +272,6 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
   Future<void> _pauseRecording() async {
     try {
       await _recordingService.pauseRecording();
-
-      // Pause visualization as well
-      try {
-        await _visualizationController.pause();
-      } catch (e) {
-        debugPrint('Visualization pause failed: $e');
-      }
     } catch (e) {
       if (mounted) {
         _showErrorSnackBar('Fehler beim Pausieren: $e');
@@ -299,13 +282,6 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
   Future<void> _resumeRecording() async {
     try {
       await _recordingService.resumeRecording();
-
-      // Resume visualization as well
-      try {
-        await _visualizationController.record();
-      } catch (e) {
-        debugPrint('Visualization resume failed: $e');
-      }
     } catch (e) {
       if (mounted) {
         _showErrorSnackBar('Fehler beim Fortsetzen: $e');
@@ -315,13 +291,11 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
 
   Future<void> _cancelRecording() async {
     try {
-      // Stop visualization controller
-      try {
-        await _visualizationController.stop();
-        _isWaveformDisabled = false; // Reset for next recording
-      } catch (e) {
-        debugPrint('Visualization stop failed: $e');
-      }
+      // Stop visualization
+      setState(() {
+        _amplitudes.clear();
+        _isWaveformDisabled = false;
+      });
 
       await _recordingService.cancelRecording();
     } catch (e) {
@@ -417,21 +391,13 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
                   borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
                   color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                 ),
-                child: AudioWaveforms(
+                child: CustomPaint(
                   size: Size(MediaQuery.of(context).size.width - (AppConstants.defaultPadding * 4), 100),
-                  recorderController: _visualizationController,
-                  waveStyle: WaveStyle(
-                    gradient: ui.Gradient.linear(
-                      const Offset(0, 50),
-                      Offset(MediaQuery.of(context).size.width, 50),
-                      [
-                        Theme.of(context).colorScheme.primary,
-                        Theme.of(context).colorScheme.secondary,
-                      ],
-                    ),
-                    showMiddleLine: false,
-                    extendWaveform: true,
-                    waveThickness: AppStrokeWidth.normal,
+                  painter: WaveformPainter(
+                    samples: _amplitudes,
+                    color: Theme.of(context).colorScheme.primary,
+                    secondaryColor: Theme.of(context).colorScheme.secondary,
+                    strokeWidth: 3.0,
                   ),
                 ),
               ),
@@ -470,7 +436,6 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
                 label: const Text('Aufnahme starten'),
                 style: FilledButton.styleFrom(
                   minimumSize: const Size(double.infinity, 48),
-                  backgroundColor: Theme.of(context).colorScheme.error,
                 ),
               ),
             ] else ...[

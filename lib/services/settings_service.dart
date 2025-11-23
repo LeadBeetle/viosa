@@ -19,6 +19,8 @@ abstract class ISettingsService {
   Future<void> saveModel(String model);
   Future<String> getModel();
   Future<void> deleteModel();
+  Future<void> saveThemeMode(String themeMode);
+  Future<String> getThemeMode();
   Future<void> clearAllSettings();
 }
 
@@ -32,8 +34,10 @@ class SettingsService implements ISettingsService {
   static const String _audioSavePathKey = 'audio_save_path';
   static const String _textSizeKey = 'text_size';
   static const String _modelKey = 'selected_model';
+  static const String _themeModeKey = 'theme_mode';
   static const String _defaultLanguage = 'auto';
   static const double _defaultTextSize = 16.0;
+  static const String _defaultThemeMode = 'system';
 
   SettingsService({FlutterSecureStorage? storage})
       : _storage = storage ?? const FlutterSecureStorage();
@@ -133,6 +137,20 @@ class SettingsService implements ISettingsService {
   }
 
   @override
+  Future<void> saveThemeMode(String themeMode) async {
+    final validThemeModes = ['system', 'light', 'dark'];
+    if (!validThemeModes.contains(themeMode)) {
+      throw ArgumentError('Invalid theme mode: $themeMode');
+    }
+    await _storage.write(key: _themeModeKey, value: themeMode);
+  }
+
+  @override
+  Future<String> getThemeMode() async {
+    return await _storage.read(key: _themeModeKey) ?? _defaultThemeMode;
+  }
+
+  @override
   Future<void> clearAllSettings() async {
     await Future.wait([
       _storage.delete(key: _apiKeyKey),
@@ -140,6 +158,7 @@ class SettingsService implements ISettingsService {
       _storage.delete(key: _audioSavePathKey),
       _storage.delete(key: _textSizeKey),
       _storage.delete(key: _modelKey),
+      _storage.delete(key: _themeModeKey),
     ]);
   }
 }

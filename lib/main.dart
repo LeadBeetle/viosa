@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'screens/home_screen.dart';
 import 'utils/constants.dart';
+import 'utils/app_theme.dart';
 import 'providers/settings_provider.dart';
 import 'providers/history_provider.dart';
 import 'providers/prompts_provider.dart';
@@ -96,13 +97,16 @@ class VIOSAApp extends StatelessWidget {
         ChangeNotifierProvider.value(value: sessionStateProvider),
         ChangeNotifierProvider.value(value: splitTranscriptionProvider),
       ],
-      child: MaterialApp(
-        title: AppConstants.appName,
-        theme: ThemeData(
-          useMaterial3: true,
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        ),
-        home: const HomeScreen(),
+      child: Consumer<SettingsProvider>(
+        builder: (context, settings, _) {
+          return MaterialApp(
+            title: AppConstants.appName,
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: settings.themeMode,
+            home: const HomeScreen(),
+          );
+        },
       ),
     );
   }

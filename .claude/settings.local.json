@@ -3,7 +3,8 @@
     "allow": [
       "Bash(cat:*)",
       "Bash(./gradlew.bat assembleRelease:*)",
-      "Bash(flutter pub get:*)"
+      "Bash(flutter pub get:*)",
+      "Bash(flutter analyze:*)"
     ],
     "deny": [],
     "ask": []

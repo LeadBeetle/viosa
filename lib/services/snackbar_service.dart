@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'i_snackbar_service.dart';
+import '../utils/app_theme.dart';
 
 /// A service for displaying improved snackbars with consistent styling
 class SnackBarService implements ISnackBarService {
@@ -10,22 +11,24 @@ class SnackBarService implements ISnackBarService {
   /// Shows an error snackbar
   @override
   void showError(BuildContext context, String message) {
-    final theme = Theme.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     _showSnackBar(
       context,
       message,
-      backgroundColor: theme.colorScheme.error,
+      backgroundColor: isDark ? AppTheme.snackbarErrorDark : AppTheme.snackbarErrorLight,
+      textColor: Colors.white,
     );
   }
 
   /// Shows a success snackbar
   @override
   void showSuccess(BuildContext context, String message) {
-    final theme = Theme.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     _showSnackBar(
       context,
       message,
-      backgroundColor: theme.colorScheme.tertiary,
+      backgroundColor: isDark ? AppTheme.snackbarSuccessDark : AppTheme.snackbarSuccessLight,
+      textColor: Colors.white,
     );
   }
 
@@ -36,9 +39,12 @@ class SnackBarService implements ISnackBarService {
     String message, {
     Duration duration = const Duration(seconds: 2),
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     _showSnackBar(
       context,
       message,
+      backgroundColor: isDark ? AppTheme.snackbarNeutralDark : AppTheme.snackbarNeutralLight,
+      textColor: Colors.white,
       duration: duration,
     );
   }
@@ -48,11 +54,15 @@ class SnackBarService implements ISnackBarService {
     BuildContext context,
     String message, {
     Color? backgroundColor,
+    Color? textColor,
     Duration duration = const Duration(seconds: 5),
   }) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
+        content: Text(
+          message,
+          style: textColor != null ? TextStyle(color: textColor) : null,
+        ),
         backgroundColor: backgroundColor,
         duration: duration,
         behavior: SnackBarBehavior.fixed,

@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import '../services/settings_service.dart';
 import '../repositories/model_repository.dart';
 
@@ -12,6 +12,7 @@ class SettingsProvider with ChangeNotifier {
   String? _audioSavePath;
   double _textSize = 16.0;
   String _selectedModel = ModelRepository.defaultModelId;
+  String _themeMode = 'system';
   bool _isInitialized = false;
   bool _isLoading = false;
 
@@ -23,9 +24,22 @@ class SettingsProvider with ChangeNotifier {
   String? get audioSavePath => _audioSavePath;
   double get textSize => _textSize;
   String get selectedModel => _selectedModel;
+  String get themeModeString => _themeMode;
   bool get isInitialized => _isInitialized;
   bool get isLoading => _isLoading;
   bool get hasApiKey => _apiKey != null && _apiKey!.isNotEmpty;
+
+  ThemeMode get themeMode {
+    switch (_themeMode) {
+      case 'light':
+        return ThemeMode.light;
+      case 'dark':
+        return ThemeMode.dark;
+      case 'system':
+      default:
+        return ThemeMode.system;
+    }
+  }
 
   /// Initialize settings from storage on app startup
   Future<void> initialize() async {
@@ -40,6 +54,7 @@ class SettingsProvider with ChangeNotifier {
       _audioSavePath = await _settingsService.getAudioSavePath();
       _textSize = await _settingsService.getTextSize();
       _selectedModel = await _settingsService.getModel();
+      _themeMode = await _settingsService.getThemeMode();
       _isInitialized = true;
     } catch (e) {
       debugPrint('Error initializing settings: $e');
@@ -84,6 +99,13 @@ class SettingsProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  /// Save theme mode and update state
+  Future<void> saveThemeMode(String themeMode) async {
+    await _settingsService.saveThemeMode(themeMode);
+    _themeMode = themeMode;
+    notifyListeners();
+  }
+
   /// Clear all settings
   Future<void> clearSettings() async {
     await _settingsService.clearAllSettings();
@@ -92,6 +114,7 @@ class SettingsProvider with ChangeNotifier {
     _audioSavePath = null;
     _textSize = 16.0;
     _selectedModel = ModelRepository.defaultModelId;
+    _themeMode = 'system';
     notifyListeners();
   }
 }

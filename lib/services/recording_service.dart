@@ -25,6 +25,7 @@ abstract class IRecordingService {
   Stream<Duration> get durationStream;
   Future<bool> isRecording();
   Future<bool> isPaused();
+  Stream<double> get amplitudeStream;
   void dispose();
 }
 
@@ -33,11 +34,13 @@ abstract class IRecordingService {
 class RecordingService implements IRecordingService {
   final AudioRecorder _recorder = AudioRecorder();
   final StreamController<Duration> _durationController = StreamController<Duration>.broadcast();
+  final StreamController<double> _amplitudeController = StreamController<double>.broadcast();
   final ISettingsService _settingsService = SettingsService();
   final RecordingNotificationService _notificationService = RecordingNotificationService();
   final RecordingCheckpointService _checkpointService = RecordingCheckpointService();
   Timer? _timer;
   Timer? _checkpointTimer;
+  Timer? _amplitudeTimer;
   Duration _currentDuration = Duration.zero;
   String? _recordingPath;
 
@@ -49,6 +52,9 @@ class RecordingService implements IRecordingService {
 
   @override
   Stream<Duration> get durationStream => _durationController.stream;
+
+  @override
+  Stream<double> get amplitudeStream => _amplitudeController.stream;
 
   @override
   Future<bool> isRecording() async {
@@ -130,6 +136,21 @@ class RecordingService implements IRecordingService {
       _durationController.add(_currentDuration);
     });
 
+    // Start amplitude timer (every 100ms for smooth visualization)
+    _amplitudeTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) async {
+      try {
+        final amplitude = await _recorder.getAmplitude();
+        // Normalize amplitude to 0.0 - 1.0 range
+        // Typical max amplitude is around -160dB to 0dB
+        // We'll map -60dB (silence) to 0.0 and 0dB (loud) to 1.0
+        final current = amplitude.current;
+        final normalized = ((current + 60) / 60).clamp(0.0, 1.0);
+        _amplitudeController.add(normalized);
+      } catch (e) {
+        // Ignore errors fetching amplitude
+      }
+    });
+
     // Start checkpoint timer for crash recovery (every 10 minutes)
     _checkpointTimer = Timer.periodic(_checkpointInterval, (timer) {
       _saveCheckpoint();
@@ -178,6 +199,8 @@ class RecordingService implements IRecordingService {
       _timer = null;
       _checkpointTimer?.cancel();
       _checkpointTimer = null;
+      _amplitudeTimer?.cancel();
+      _amplitudeTimer = null;
 
       final path = await _recorder.stop();
 
@@ -259,6 +282,7 @@ class RecordingService implements IRecordingService {
     await _recorder.pause();
     _timer?.cancel();
     _checkpointTimer?.cancel();
+    _amplitudeTimer?.cancel();
 
     // Save checkpoint when pausing
     await _saveCheckpoint();
@@ -273,6 +297,18 @@ class RecordingService implements IRecordingService {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       _currentDuration += const Duration(seconds: 1);
       _durationController.add(_currentDuration);
+    });
+
+    // Restart amplitude timer
+    _amplitudeTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) async {
+      try {
+        final amplitude = await _recorder.getAmplitude();
+        final current = amplitude.current;
+        final normalized = ((current + 60) / 60).clamp(0.0, 1.0);
+        _amplitudeController.add(normalized);
+      } catch (e) {
+        // Ignore errors
+      }
     });
 
     // Restart checkpoint timer
@@ -290,6 +326,8 @@ class RecordingService implements IRecordingService {
     _timer = null;
     _checkpointTimer?.cancel();
     _checkpointTimer = null;
+    _amplitudeTimer?.cancel();
+    _amplitudeTimer = null;
 
     await _recorder.stop();
 
@@ -320,8 +358,10 @@ class RecordingService implements IRecordingService {
   void dispose() {
     _timer?.cancel();
     _checkpointTimer?.cancel();
+    _amplitudeTimer?.cancel();
     _recorder.dispose();
     _durationController.close();
+    _amplitudeController.close();
   }
 
   /// Check if storage permission is granted for writing to custom directories
