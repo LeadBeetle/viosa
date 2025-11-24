@@ -19,8 +19,18 @@ class AudioUtils {
       final player = AudioPlayer();
       try {
         await player.setFilePath(filePath);
-        final duration = player.duration ?? Duration.zero;
-        return duration;
+
+        // Wait for duration to become available
+        // The duration might not be immediately available after setFilePath
+        Duration? duration = player.duration;
+        duration ??= await player.durationStream
+            .firstWhere((d) => d != null, orElse: () => Duration.zero)
+            .timeout(
+              const Duration(seconds: 5),
+              onTimeout: () => Duration.zero,
+            );
+
+        return duration ?? Duration.zero;
       } finally {
         await player.dispose();
       }

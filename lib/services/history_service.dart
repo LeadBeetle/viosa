@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:path/path.dart' as path;
 import '../models/transcription_history.dart';
 
 /// Interface for history service
@@ -8,6 +10,7 @@ abstract class IHistoryService {
   Future<List<TranscriptionHistory>> getAllHistory();
   Future<void> saveHistory(TranscriptionHistory history);
   Future<void> deleteHistory(String id);
+  Future<void> renameRecording(String id, String newName);
   Future<void> clearAllHistory();
   Future<List<TranscriptionHistory>> searchHistory(String query);
   Future<List<TranscriptionHistory>> filterByLanguage(String languageCode);
@@ -69,6 +72,37 @@ class HistoryService implements IHistoryService {
   }
 
   @override
+  Future<void> renameRecording(String id, String newName) async {
+    _ensureInitialized();
+
+    final history = _historyBox!.get(id);
+    if (history == null) {
+      throw Exception('History with id $id not found');
+    }
+
+    final extension = path.extension(history.audioFileName);
+    final newFileNameWithExtension = newName.contains('.') ? newName : '$newName$extension';
+
+    String? newAudioPath;
+    if (history.audioPath != null) {
+      final oldFile = File(history.audioPath!);
+      if (await oldFile.exists()) {
+        final directory = path.dirname(history.audioPath!);
+        final sanitizedName = newFileNameWithExtension.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
+        newAudioPath = path.join(directory, sanitizedName);
+
+        await oldFile.rename(newAudioPath);
+      }
+    }
+
+    final updatedHistory = history.copyWith(
+      audioFileName: newFileNameWithExtension,
+      audioPath: newAudioPath ?? history.audioPath,
+    );
+    await _historyBox!.put(id, updatedHistory);
+  }
+
+  @override
   Future<void> clearAllHistory() async {
     _ensureInitialized();
 
@@ -86,7 +120,7 @@ class HistoryService implements IHistoryService {
     final String lowerQuery = query.toLowerCase();
     return allHistory.where((history) {
       final bool matchesFileName = history.audioFileName.toLowerCase().contains(lowerQuery);
-      final bool matchesTranscription = history.transcription.text.toLowerCase().contains(lowerQuery);
+      final bool matchesTranscription = history.transcription?.text.toLowerCase().contains(lowerQuery) ?? false;
       final bool matchesPromptResults = history.promptResults.any(
         (pr) => pr.llmResponse.toLowerCase().contains(lowerQuery) ||
                pr.promptName.toLowerCase().contains(lowerQuery),
@@ -105,7 +139,7 @@ class HistoryService implements IHistoryService {
     }
 
     return allHistory.where((history) {
-      return history.transcription.language == languageCode;
+      return history.transcription?.language == languageCode;
     }).toList();
   }
 

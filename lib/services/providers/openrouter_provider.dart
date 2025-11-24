@@ -104,7 +104,8 @@ class OpenRouterProvider implements ILLMProvider {
     required String promptTemplate,
     required String transcriptionText,
   }) async {
-    final request = _buildPromptRequest(promptTemplate);
+    final processedPrompt = _applyTranscriptionToTemplate(promptTemplate, transcriptionText);
+    final request = _buildPromptRequest(processedPrompt);
 
     try {
       final response = await _dio.post(
@@ -144,7 +145,8 @@ class OpenRouterProvider implements ILLMProvider {
     required String promptTemplate,
     required String transcriptionText,
   }) async* {
-    final request = _buildPromptRequest(promptTemplate);
+    final processedPrompt = _applyTranscriptionToTemplate(promptTemplate, transcriptionText);
+    final request = _buildPromptRequest(processedPrompt);
     request['stream'] = true;
 
     yield* _streamRequest(
@@ -201,6 +203,13 @@ class OpenRouterProvider implements ILLMProvider {
       'max_tokens': 4000,
       'temperature': 0.7,
     };
+  }
+
+  String _applyTranscriptionToTemplate(String template, String transcription) {
+    if (template.contains('{transcription}')) {
+      return template.replaceAll('{transcription}', transcription);
+    }
+    return '$template\n\n$transcription';
   }
 
   String _getAudioFormat(String mimeType) {

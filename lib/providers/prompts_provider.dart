@@ -12,28 +12,41 @@ class PromptsProvider with ChangeNotifier {
   bool _isInitialized = false;
   bool _isLoading = false;
 
+  List<Prompt>? _cachedSortedPredefined;
+  List<Prompt>? _cachedSortedCustom;
+  List<Prompt>? _cachedAllPrompts;
+
   PromptsProvider(this._promptService);
 
-  /// Helper method to sort prompts by usage count (descending)
+  void _invalidateSortCache() {
+    _cachedSortedPredefined = null;
+    _cachedSortedCustom = null;
+    _cachedAllPrompts = null;
+  }
+
   List<Prompt> _sortByUsageCount(List<Prompt> prompts) {
     final sorted = List<Prompt>.from(prompts);
     sorted.sort((a, b) => b.usageCount.compareTo(a.usageCount));
     return sorted;
   }
 
-  // Getters - sorted by usage count (descending)
   List<Prompt> get predefinedPrompts {
-    return List.unmodifiable(_sortByUsageCount(_predefinedPrompts));
+    _cachedSortedPredefined ??= List.unmodifiable(_sortByUsageCount(_predefinedPrompts));
+    return _cachedSortedPredefined!;
   }
 
   List<Prompt> get customPrompts {
-    return List.unmodifiable(_sortByUsageCount(_customPrompts));
+    _cachedSortedCustom ??= List.unmodifiable(_sortByUsageCount(_customPrompts));
+    return _cachedSortedCustom!;
   }
 
   List<Prompt> get allPrompts {
-    final custom = _sortByUsageCount(_customPrompts);
-    final predefined = _sortByUsageCount(_predefinedPrompts);
-    return [...custom, ...predefined];
+    if (_cachedAllPrompts == null) {
+      final custom = customPrompts;
+      final predefined = predefinedPrompts;
+      _cachedAllPrompts = [...custom, ...predefined];
+    }
+    return _cachedAllPrompts!;
   }
 
   bool get isInitialized => _isInitialized;
@@ -57,6 +70,7 @@ class PromptsProvider with ChangeNotifier {
 
       _predefinedPrompts = await _promptService.getPromptsWithUsageStats(predefined);
       _customPrompts = await _promptService.getPromptsWithUsageStats(custom);
+      _invalidateSortCache();
     } catch (e, stackTrace) {
       debugPrint('Error initializing prompts: $e');
       debugPrint('Stack trace: $stackTrace');
@@ -72,6 +86,7 @@ class PromptsProvider with ChangeNotifier {
       // Load predefined prompts without stats as fallback
       _predefinedPrompts = _promptService.getPredefinedPrompts();
       _customPrompts = [];
+      _invalidateSortCache();
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -105,6 +120,7 @@ class PromptsProvider with ChangeNotifier {
 
     await _promptService.deleteCustomPrompt(id);
     _customPrompts.removeWhere((prompt) => prompt.id == id);
+    _invalidateSortCache();
     notifyListeners();
   }
 
@@ -134,12 +150,14 @@ class PromptsProvider with ChangeNotifier {
 
     _predefinedPrompts = await _promptService.getPromptsWithUsageStats(predefined);
     _customPrompts = await _promptService.getPromptsWithUsageStats(custom);
+    _invalidateSortCache();
   }
 
   /// Reload custom prompts from storage
   Future<void> _reloadCustomPrompts() async {
     final custom = await _promptService.getCustomPrompts();
     _customPrompts = await _promptService.getPromptsWithUsageStats(custom);
+    _invalidateSortCache();
     notifyListeners();
   }
 

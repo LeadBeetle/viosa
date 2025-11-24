@@ -9,6 +9,7 @@ import '../utils/constants.dart';
 import '../repositories/model_repository.dart';
 import '../services/snackbar_service.dart';
 import '../widgets/info_chip.dart';
+import 'prompts_screen.dart';
 
 /// Settings screen for configuring API key and language
 /// Follows Single Responsibility Principle: Manages settings UI
@@ -236,6 +237,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _buildAudioTranscriptionCard(context),
                   const SizedBox(height: AppConstants.defaultPadding),
                   _buildAppearanceCard(context),
+                  const SizedBox(height: AppConstants.defaultPadding),
+                  _buildPromptsCard(context),
                   const SizedBox(height: AppConstants.defaultPadding),
                   _buildAboutCard(context),
                 ],
@@ -903,6 +906,60 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPromptsCard(BuildContext context) {
+    return Card(
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const PromptsScreen()),
+          );
+        },
+        borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
+        child: Padding(
+          padding: const EdgeInsets.all(AppConstants.defaultPadding),
+          child: Row(
+            children: [
+              Icon(
+                Icons.auto_awesome,
+                size: 20,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Prompts verwalten',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Erstellen und bearbeiten Sie Ihre KI-Prompts',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.6),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+              ),
+            ],
+          ),
         ),
       ),
     );

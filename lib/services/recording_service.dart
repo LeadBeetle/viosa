@@ -26,6 +26,7 @@ abstract class IRecordingService {
   Future<bool> isRecording();
   Future<bool> isPaused();
   Stream<double> get amplitudeStream;
+  DateTime? get recordingStartTime;
   void dispose();
 }
 
@@ -43,6 +44,7 @@ class RecordingService implements IRecordingService {
   Timer? _amplitudeTimer;
   Duration _currentDuration = Duration.zero;
   String? _recordingPath;
+  DateTime? _recordingStartTime;
 
   // Auto-checkpoint interval (10 minutes)
   static const Duration _checkpointInterval = Duration(minutes: 10);
@@ -55,6 +57,9 @@ class RecordingService implements IRecordingService {
 
   @override
   Stream<double> get amplitudeStream => _amplitudeController.stream;
+
+  @override
+  DateTime? get recordingStartTime => _recordingStartTime;
 
   @override
   Future<bool> isRecording() async {
@@ -131,6 +136,7 @@ class RecordingService implements IRecordingService {
 
     // Start duration timer
     _currentDuration = Duration.zero;
+    _recordingStartTime = DateTime.now();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       _currentDuration += const Duration(seconds: 1);
       _durationController.add(_currentDuration);
@@ -241,6 +247,7 @@ class RecordingService implements IRecordingService {
 
       _recordingPath = null;
       _currentDuration = Duration.zero;
+      _recordingStartTime = null;
 
       // Clear checkpoint after successful recording
       await _checkpointService.clearCheckpoint();
@@ -348,6 +355,7 @@ class RecordingService implements IRecordingService {
     }
 
     _currentDuration = Duration.zero;
+    _recordingStartTime = null;
     _durationController.add(_currentDuration);
 
     // Clear checkpoint after cancellation

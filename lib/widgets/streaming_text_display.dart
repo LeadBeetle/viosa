@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
@@ -41,6 +42,7 @@ class _StreamingTextDisplayState extends State<StreamingTextDisplay> {
   bool _autoScroll = true;
   bool _hasError = false;
   String _errorMessage = '';
+  Timer? _scrollDebounceTimer;
 
   @override
   void initState() {
@@ -58,6 +60,7 @@ class _StreamingTextDisplayState extends State<StreamingTextDisplay> {
 
   @override
   void dispose() {
+    _scrollDebounceTimer?.cancel();
     _scrollController.dispose();
     super.dispose();
   }
@@ -92,15 +95,12 @@ class _StreamingTextDisplayState extends State<StreamingTextDisplay> {
         // Call onChunk callback if provided
         widget.onChunk?.call(chunk);
 
-        // Auto-scroll to bottom if enabled
+        // Auto-scroll to bottom if enabled (debounced)
         if (_autoScroll && _scrollController.hasClients) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (_scrollController.hasClients) {
-              _scrollController.animateTo(
-                _scrollController.position.maxScrollExtent,
-                duration: const Duration(milliseconds: 100),
-                curve: Curves.easeOut,
-              );
+          _scrollDebounceTimer?.cancel();
+          _scrollDebounceTimer = Timer(const Duration(milliseconds: 100), () {
+            if (_scrollController.hasClients && mounted) {
+              _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
             }
           });
         }

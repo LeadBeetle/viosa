@@ -12,11 +12,14 @@ class AppBarTitleWithLogo extends StatelessWidget {
       children: [
         Image.asset(
           'assets/viosa_icon.png',
-          height: 32,
-          width: 32,
+          height: 40,
+          width: 40,
         ),
-        const SizedBox(width: 8),
-        const Text(AppConstants.appName),
+        const SizedBox(width: 4),
+        Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: const Text(AppConstants.appName),
+        ),
       ],
     );
   }

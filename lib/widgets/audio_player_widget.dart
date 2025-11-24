@@ -1,9 +1,8 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:audio_waveforms/audio_waveforms.dart';
 import '../services/audio_service.dart';
 import '../utils/constants.dart';
 import '../services/snackbar_service.dart';
+import 'waveform_display_widget.dart';
 
 /// Widget for audio playback controls
 /// Follows Single Responsibility Principle: Only handles audio player UI
@@ -14,6 +13,7 @@ class AudioPlayerWidget extends StatefulWidget {
   final bool isCollapsible;
   final bool initiallyExpanded;
   final ValueChanged<bool>? onExpansionChanged;
+  final List<double>? recordedAmplitudes;
 
   const AudioPlayerWidget({
     super.key,
@@ -23,6 +23,7 @@ class AudioPlayerWidget extends StatefulWidget {
     this.isCollapsible = false,
     this.initiallyExpanded = true,
     this.onExpansionChanged,
+    this.recordedAmplitudes,
   });
 
   @override
@@ -34,70 +35,10 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
   Duration _duration = Duration.zero;
   bool _isPlaying = false;
 
-  // Waveform visualization controller
-  late PlayerController _playerController;
-  bool _isWaveformReady = false;
-
-  // Flag to prevent feedback loop when seeking
-  bool _isSeeking = false;
-
   @override
   void initState() {
     super.initState();
-    _playerController = PlayerController();
     _setupListeners();
-    _prepareWaveform();
-  }
-
-  @override
-  void didUpdateWidget(AudioPlayerWidget oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // Re-prepare waveform if file path changed
-    if (oldWidget.filePath != widget.filePath) {
-      _isWaveformReady = false;
-      _playerController.dispose();
-      _playerController = PlayerController();
-      _prepareWaveform();
-    }
-  }
-
-  Future<void> _prepareWaveform() async {
-    final filePath = widget.filePath;
-
-    try {
-      final file = File(filePath);
-      if (!await file.exists()) {
-        debugPrint('Audio file does not exist at path: $filePath');
-        return;
-      }
-
-      await _playerController.preparePlayer(
-        path: filePath,
-        shouldExtractWaveform: true,
-      );
-
-      _playerController.onCurrentDurationChanged.listen((waveformPosition) {
-        if (_isSeeking) return;
-
-        final currentAudioPosition = _position.inMilliseconds;
-        if ((waveformPosition - currentAudioPosition).abs() > 500) {
-          _isSeeking = true;
-          widget.audioService.seek(Duration(milliseconds: waveformPosition)).then((_) {
-            if (mounted) {
-              _isSeeking = false;
-            }
-          });
-        }
-      });
-
-      if (mounted) {
-        setState(() {
-          _isWaveformReady = true;
-        });
-      }
-    } catch (e) {
-      debugPrint('Failed to prepare waveform: $e');
-    }
   }
 
   void _setupListeners() {
@@ -142,19 +83,6 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
     }
   }
 
-  Future<void> _onSeek(double value) async {
-    final position = Duration(milliseconds: value.toInt());
-    await widget.audioService.seek(position);
-
-    // Sync waveform position
-    if (_isWaveformReady) {
-      try {
-        await _playerController.seekTo(value.toInt());
-      } catch (e) {
-        debugPrint('Failed to seek waveform: $e');
-      }
-    }
-  }
 
   String _formatDuration(Duration duration) {
     String twoDigits(int n) => n.toString().padLeft(2, '0');
@@ -170,94 +98,128 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
 
   @override
   void dispose() {
-    _playerController.dispose();
     super.dispose();
   }
 
   Widget _buildPlayerContent(BuildContext context) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        // Waveform visualization or fallback to slider
-        if (_isWaveformReady) ...[
+        // Waveform visualization
+        _buildWaveformSection(context),
+        const SizedBox(height: AppSpacing.m),
+        // Timer display
+        _buildTimerSection(context),
+        const SizedBox(height: AppSpacing.m),
+        // Playback controls
+        _buildPlaybackControls(context),
+      ],
+    );
+  }
+
+  Widget _buildWaveformSection(BuildContext context) {
+    return WaveformDisplayWidget(
+      samples: widget.recordedAmplitudes,
+      height: 120,
+      showEmptyState: true,
+      onTap: (progress) async {
+        if (_duration.inMilliseconds > 0) {
+          final seekPosition = Duration(
+            milliseconds: (_duration.inMilliseconds * progress).round(),
+          );
+          await widget.audioService.seek(seekPosition);
+        }
+      },
+      currentPosition: _position,
+      totalDuration: _duration,
+    );
+  }
+
+  Widget _buildTimerSection(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.l,
+        vertical: AppSpacing.s,
+      ),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(AppRadius.large),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            _formatDuration(_position),
+            style: textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+              fontFeatures: [const FontFeature.tabularFigures()],
+              color: colorScheme.primary,
+            ),
+          ),
           Container(
-            height: 80,
-            width: double.infinity,
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.s,
+              vertical: AppSpacing.xs,
+            ),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
-              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
+              color: colorScheme.primaryContainer.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(AppRadius.small),
             ),
-            child: AudioFileWaveforms(
-              size: Size(MediaQuery.of(context).size.width - (AppConstants.defaultPadding * 4), 80),
-              playerController: _playerController,
-              enableSeekGesture: true,
-              waveformType: WaveformType.fitWidth,
-              continuousWaveform: true,
-              playerWaveStyle: PlayerWaveStyle(
-                fixedWaveColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
-                liveWaveColor: Theme.of(context).colorScheme.primary,
-                waveCap: StrokeCap.round,
-                waveThickness: 3.0,
-                spacing: 4.0,
-                showSeekLine: true,
-                seekLineColor: Theme.of(context).colorScheme.secondary,
-                seekLineThickness: 2.0,
-              ),
+            child: Icon(
+              _isPlaying ? Icons.graphic_eq_rounded : Icons.music_note_rounded,
+              size: AppIconSize.medium,
+              color: colorScheme.primary,
             ),
           ),
-          const SizedBox(height: AppSpacing.s),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                _formatDuration(_position),
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              Text(
-                _formatDuration(_duration),
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ],
-          ),
-        ] else ...[
-          // Fallback to slider while waveform is loading
-          Row(
-            children: [
-              Expanded(
-                child: Slider(
-                  value: _position.inMilliseconds.toDouble().clamp(
-                    0.0,
-                    _duration.inMilliseconds.toDouble().clamp(1.0, double.infinity),
-                  ),
-                  max: _duration.inMilliseconds.toDouble().clamp(1.0, double.infinity),
-                  onChanged: _onSeek,
-                ),
-              ),
-            ],
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                _formatDuration(_position),
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              Text(
-                _formatDuration(_duration),
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ],
+          Text(
+            _formatDuration(_duration),
+            style: textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+              fontFeatures: [const FontFeature.tabularFigures()],
+              color: colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
-        const SizedBox(height: AppSpacing.s),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            IconButton.filled(
-              onPressed: _togglePlayPause,
-              icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
-              iconSize: AppIconSize.xlarge,
+      ),
+    );
+  }
+
+  Widget _buildPlaybackControls(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: colorScheme.primary.withValues(alpha: 0.3),
+                blurRadius: 12,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+          child: Material(
+            color: colorScheme.primary,
+            shape: const CircleBorder(),
+            child: InkWell(
+              onTap: _togglePlayPause,
+              customBorder: const CircleBorder(),
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.l),
+                child: Icon(
+                  _isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                  size: AppIconSize.xlarge + 8,
+                  color: colorScheme.onPrimary,
+                ),
+              ),
             ),
-          ],
+          ),
         ),
       ],
     );
@@ -265,6 +227,9 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     if (widget.isCollapsible) {
       return Card(
         elevation: AppElevation.medium,
@@ -273,17 +238,24 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
           child: ExpansionTile(
             title: Row(
               children: [
-                Icon(
-                  Icons.headphones,
-                  size: AppIconSize.medium,
-                  color: Theme.of(context).colorScheme.primary,
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.s),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primaryContainer.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(AppRadius.small),
+                  ),
+                  child: Icon(
+                    Icons.headphones_rounded,
+                    size: AppIconSize.medium,
+                    color: colorScheme.primary,
+                  ),
                 ),
-                const SizedBox(width: AppSpacing.s),
+                const SizedBox(width: AppSpacing.m),
                 Text(
                   'Audio Player',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                  style: textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ),
@@ -292,10 +264,10 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
             children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(
-                  AppConstants.defaultPadding,
+                  AppSpacing.l,
                   0,
-                  AppConstants.defaultPadding,
-                  AppConstants.defaultPadding,
+                  AppSpacing.l,
+                  AppSpacing.l,
                 ),
                 child: _buildPlayerContent(context),
               ),
@@ -305,32 +277,54 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
       );
     }
 
-    // Non-collapsible version (original design)
+    // Non-collapsible version with modern design
     return Card(
       elevation: AppElevation.medium,
+      clipBehavior: Clip.hardEdge,
       child: Padding(
-        padding: const EdgeInsets.all(AppConstants.defaultPadding),
+        padding: const EdgeInsets.all(AppSpacing.l),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.headphones,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const SizedBox(width: AppSpacing.s),
-                Expanded(
-                  child: Text(
-                    'Audio Player',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.m),
+            _buildHeader(context),
+            const SizedBox(height: AppSpacing.l),
             _buildPlayerContent(context),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.m,
+        vertical: AppSpacing.s,
+      ),
+      decoration: BoxDecoration(
+        color: colorScheme.primaryContainer.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(AppRadius.circular),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.headphones_rounded,
+            color: colorScheme.primary,
+            size: AppIconSize.medium,
+          ),
+          const SizedBox(width: AppSpacing.s),
+          Text(
+            'Audio Player',
+            style: textTheme.titleSmall?.copyWith(
+              color: colorScheme.primary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }

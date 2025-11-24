@@ -257,6 +257,7 @@ class _PromptsScreenState extends State<PromptsScreen>
         trailing: prompt.isPredefined
             ? null
             : PopupMenuButton<String>(
+                color: Theme.of(context).colorScheme.surface,
                 onSelected: (value) {
                   if (value == 'edit') {
                     _editPrompt(prompt);
@@ -265,23 +266,23 @@ class _PromptsScreenState extends State<PromptsScreen>
                   }
                 },
                 itemBuilder: (context) => [
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'edit',
                     child: Row(
                       children: [
-                        Icon(Icons.edit),
-                        SizedBox(width: 8),
-                        Text('Bearbeiten'),
+                        Icon(Icons.edit, color: Theme.of(context).colorScheme.onSurface),
+                        const SizedBox(width: 8),
+                        const Text('Bearbeiten'),
                       ],
                     ),
                   ),
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'delete',
                     child: Row(
                       children: [
-                        Icon(Icons.delete),
-                        SizedBox(width: 8),
-                        Text('Löschen'),
+                        Icon(Icons.delete, color: Theme.of(context).colorScheme.error),
+                        const SizedBox(width: 8),
+                        Text('Löschen', style: TextStyle(color: Theme.of(context).colorScheme.error)),
                       ],
                     ),
                   ),

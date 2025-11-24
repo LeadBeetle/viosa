@@ -20,9 +20,9 @@ class AppTheme {
   static const Color snackbarErrorLight = Color(0xFF7D2E2E);
   static const Color snackbarNeutralLight = Color(0xFF3D3D3D);
 
-  static const Color snackbarSuccessDark = Color(0xFF15803D); // Green 700
-  static const Color snackbarErrorDark = Color(0xFFB91C1C); // Red 700
-  static const Color snackbarNeutralDark = Color(0xFF262626); // Neutral 800
+  static const Color snackbarSuccessDark = Color(0xFF166534); // Green 800
+  static const Color snackbarErrorDark = Color(0xFF991B1B); // Red 800
+  static const Color snackbarNeutralDark = Color(0xFF3F3F46); // Zinc 700
 
   static ThemeData get lightTheme {
     final colorScheme = ColorScheme.fromSeed(
@@ -69,6 +69,7 @@ class AppTheme {
         ),
       ),
       snackBarTheme: SnackBarThemeData(
+        contentTextStyle: const TextStyle(color: Colors.white),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
@@ -133,6 +134,7 @@ class AppTheme {
       ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: _darkSurfaceVariant,
+        contentTextStyle: const TextStyle(color: Colors.white),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),

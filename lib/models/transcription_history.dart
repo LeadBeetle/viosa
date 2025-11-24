@@ -15,7 +15,7 @@ class TranscriptionHistory {
   final String audioFileName;
 
   @HiveField(2)
-  final TranscriptionResult transcription;
+  final TranscriptionResult? transcription;
 
   @HiveField(3)
   final List<PromptResult> promptResults;
@@ -29,26 +29,43 @@ class TranscriptionHistory {
   @HiveField(6)
   final bool isSplitTranscription;
 
+  @HiveField(7)
+  final int? _durationMs; // Store as milliseconds for Hive
+
+  @HiveField(8)
+  final List<double>? waveform;
+
+  @HiveField(9)
+  final String? audioPath;
+  
+  // Getter to convert milliseconds to Duration
+  Duration? get duration => _durationMs != null ? Duration(milliseconds: _durationMs!) : null;
+
   TranscriptionHistory({
     String? id,
     required this.audioFileName,
-    required this.transcription,
+    this.transcription,
     List<PromptResult>? promptResults,
     DateTime? createdAt,
     this.splitJobId,
     this.isSplitTranscription = false,
+    Duration? duration,
+    this.waveform,
+    this.audioPath,
   })  : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
         promptResults = promptResults ?? [],
-        createdAt = createdAt ?? DateTime.now();
+        createdAt = createdAt ?? DateTime.now(),
+        _durationMs = duration?.inMilliseconds;
 
   /// Creates history entry from JSON
   factory TranscriptionHistory.fromJson(Map<String, dynamic> json) {
     return TranscriptionHistory(
       id: json['id'] as String,
       audioFileName: json['audioFileName'] as String,
-      transcription: TranscriptionResult.fromJson(
-        json['transcription'] as Map<String, dynamic>,
-      ),
+      transcription: json['transcription'] != null
+          ? TranscriptionResult.fromJson(
+              json['transcription'] as Map<String, dynamic>)
+          : null,
       promptResults: (json['promptResults'] as List<dynamic>?)
               ?.map((e) => PromptResult.fromJson(e as Map<String, dynamic>))
               .toList() ??
@@ -56,6 +73,11 @@ class TranscriptionHistory {
       createdAt: DateTime.parse(json['createdAt'] as String),
       splitJobId: json['splitJobId'] as String?,
       isSplitTranscription: json['isSplitTranscription'] as bool? ?? false,
+      duration: Duration(milliseconds: json['duration'] as int? ?? 0),
+      waveform: (json['waveform'] as List<dynamic>?)
+          ?.map((e) => (e as num).toDouble())
+          .toList(),
+      audioPath: json['audioPath'] as String?,
     );
   }
 
@@ -64,11 +86,14 @@ class TranscriptionHistory {
     return {
       'id': id,
       'audioFileName': audioFileName,
-      'transcription': transcription.toJson(),
+      'transcription': transcription?.toJson(),
       'promptResults': promptResults.map((e) => e.toJson()).toList(),
       'createdAt': createdAt.toIso8601String(),
       'splitJobId': splitJobId,
       'isSplitTranscription': isSplitTranscription,
+      'duration': duration?.inMilliseconds,
+      'waveform': waveform,
+      'audioPath': audioPath,
     };
   }
 
@@ -89,6 +114,9 @@ class TranscriptionHistory {
     DateTime? createdAt,
     String? splitJobId,
     bool? isSplitTranscription,
+    Duration? duration,
+    List<double>? waveform,
+    String? audioPath,
   }) {
     return TranscriptionHistory(
       id: id ?? this.id,
@@ -98,6 +126,9 @@ class TranscriptionHistory {
       createdAt: createdAt ?? this.createdAt,
       splitJobId: splitJobId ?? this.splitJobId,
       isSplitTranscription: isSplitTranscription ?? this.isSplitTranscription,
+      duration: duration ?? this.duration,
+      waveform: waveform ?? this.waveform,
+      audioPath: audioPath ?? this.audioPath,
     );
   }
 }

@@ -39,26 +39,23 @@ class _PromptResultsListState extends State<PromptResultsList> {
           overflow: TextOverflow.ellipsis,
         ),
         const SizedBox(height: 8),
-        Consumer<SettingsProvider>(
-          builder: (context, settings, _) => Column(
-            children: widget.results.asMap().entries.map(
-              (entry) {
-                final index = entry.key;
-                final result = entry.value;
-                final isNewest = index == 0;
+        Column(
+          children: widget.results.asMap().entries.map(
+            (entry) {
+              final index = entry.key;
+              final result = entry.value;
+              final isNewest = index == 0;
 
-                return _DismissiblePromptResult(
-                  key: ValueKey(result.id),
-                  result: result,
-                  fontSize: settings.textSize,
-                  onDelete: widget.onDelete,
-                  onRestore: widget.onRestore,
-                  isExpanded: true,
-                  showHighlight: isNewest,
-                );
-              },
-            ).toList(),
-          ),
+              return _DismissiblePromptResult(
+                key: ValueKey(result.id),
+                result: result,
+                onDelete: widget.onDelete,
+                onRestore: widget.onRestore,
+                isExpanded: true,
+                showHighlight: isNewest,
+              );
+            },
+          ).toList(),
         ),
         const SizedBox(height: AppConstants.defaultPadding),
       ],
@@ -69,7 +66,6 @@ class _PromptResultsListState extends State<PromptResultsList> {
 /// Individual prompt result card with swipe-to-delete
 class _DismissiblePromptResult extends StatefulWidget {
   final PromptResult result;
-  final double fontSize;
   final Function(String) onDelete;
   final Function(PromptResult)? onRestore;
   final bool isExpanded;
@@ -78,7 +74,6 @@ class _DismissiblePromptResult extends StatefulWidget {
   const _DismissiblePromptResult({
     super.key,
     required this.result,
-    required this.fontSize,
     required this.onDelete,
     this.onRestore,
     this.isExpanded = false,
@@ -182,31 +177,34 @@ class _DismissiblePromptResultState extends State<_DismissiblePromptResult> {
         ),
         confirmDismiss: (direction) => _confirmDelete(context),
         onDismissed: (direction) => _handleDismissed(context),
-        child: CollapsibleTextSection(
-          title: 'Prompt: ${widget.result.promptName}',
-          content: widget.result.llmResponse,
-          isExpanded: widget.isExpanded,
-          contentStyle: TextStyle(
-            fontSize: widget.fontSize,
-            height: 1.5,
-          ),
-          metadata: Wrap(
-            spacing: AppSpacing.s,
-            runSpacing: AppSpacing.s,
-            children: [
-              InfoChip(
-                label: 'Modell: ${widget.result.modelUsed}',
-                icon: Icons.memory,
-              ),
-              InfoChip(
-                label: '${widget.result.wordCount} Wörter',
-                icon: Icons.text_fields,
-              ),
-              InfoChip(
-                label: '${widget.result.characterCount} Zeichen',
-                icon: Icons.abc,
-              ),
-            ],
+        child: Selector<SettingsProvider, double>(
+          selector: (_, settings) => settings.textSize,
+          builder: (context, fontSize, child) => CollapsibleTextSection(
+            title: 'Prompt: ${widget.result.promptName}',
+            content: widget.result.llmResponse,
+            isExpanded: widget.isExpanded,
+            contentStyle: TextStyle(
+              fontSize: fontSize,
+              height: 1.5,
+            ),
+            metadata: Wrap(
+              spacing: AppSpacing.s,
+              runSpacing: AppSpacing.s,
+              children: [
+                InfoChip(
+                  label: 'Modell: ${widget.result.modelUsed}',
+                  icon: Icons.memory,
+                ),
+                InfoChip(
+                  label: '${widget.result.wordCount} Wörter',
+                  icon: Icons.text_fields,
+                ),
+                InfoChip(
+                  label: '${widget.result.characterCount} Zeichen',
+                  icon: Icons.abc,
+                ),
+              ],
+            ),
           ),
         ),
       ),

@@ -41,6 +41,17 @@ class _CollapsibleTextSectionState extends State<CollapsibleTextSection>
   late bool _isExpanded;
   final ScrollController _scrollController = ScrollController();
 
+  String? _cachedContent;
+  List<String>? _cachedLines;
+
+  List<String> get _lines {
+    if (_cachedContent != widget.content) {
+      _cachedContent = widget.content;
+      _cachedLines = widget.content.split('\n');
+    }
+    return _cachedLines!;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -90,21 +101,19 @@ class _CollapsibleTextSectionState extends State<CollapsibleTextSection>
       );
     } else {
       // Show preview (first N lines or limited by character count)
-      final lines = widget.content.split('\n');
-
       // If text has few newlines (long continuous text), limit by character count
       String previewText;
       bool hasMore;
 
-      if (lines.length <= 3 && widget.content.length > 500) {
+      if (_lines.length <= 3 && widget.content.length > 500) {
         // Long continuous text without many line breaks
         const maxPreviewChars = 500;
         previewText = widget.content.substring(0, maxPreviewChars.clamp(0, widget.content.length));
         hasMore = widget.content.length > maxPreviewChars;
       } else {
         // Normal text with line breaks
-        previewText = lines.take(widget.previewLines).join('\n');
-        hasMore = lines.length > widget.previewLines;
+        previewText = _lines.take(widget.previewLines).join('\n');
+        hasMore = _lines.length > widget.previewLines;
       }
 
       return MarkdownBody(
@@ -117,8 +126,7 @@ class _CollapsibleTextSectionState extends State<CollapsibleTextSection>
 
   @override
   Widget build(BuildContext context) {
-    final lines = widget.content.split('\n');
-    final hasMoreLines = lines.length > widget.previewLines;
+    final hasMoreLines = _lines.length > widget.previewLines;
 
     // Also check if content is long enough to warrant expansion
     // (handles cases where text is one long line that wraps)

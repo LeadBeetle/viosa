@@ -3,6 +3,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:provider/provider.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'screens/home_screen.dart';
+import 'screens/prompts_screen.dart';
 import 'utils/constants.dart';
 import 'utils/app_theme.dart';
 import 'providers/settings_provider.dart';
@@ -105,6 +106,9 @@ class VIOSAApp extends StatelessWidget {
             darkTheme: AppTheme.darkTheme,
             themeMode: settings.themeMode,
             home: const HomeScreen(),
+            routes: {
+              '/prompts': (context) => const PromptsScreen(),
+            },
           );
         },
       ),

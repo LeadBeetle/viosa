@@ -56,6 +56,14 @@ class HistoryProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  /// Rename a recording
+  Future<void> renameRecording(String id, String newName) async {
+    await _historyService.renameRecording(id, newName);
+
+    // Reload to get the updated data with correct extension
+    await _reload();
+  }
+
   /// Clear all history
   Future<void> clearAllHistory() async {
     await _historyService.clearAllHistory();
@@ -78,8 +86,9 @@ class HistoryProvider with ChangeNotifier {
 
     final lowerQuery = query.toLowerCase();
     return _history.where((item) {
+      final transcriptionText = item.transcription?.text.toLowerCase() ?? '';
       return item.audioFileName.toLowerCase().contains(lowerQuery) ||
-             item.transcription.text.toLowerCase().contains(lowerQuery);
+             transcriptionText.contains(lowerQuery);
     }).toList();
   }
 
@@ -90,7 +99,7 @@ class HistoryProvider with ChangeNotifier {
     }
 
     return _history.where((item) {
-      return item.transcription.language.toLowerCase() == language.toLowerCase();
+      return item.transcription?.language.toLowerCase() == language.toLowerCase();
     }).toList();
   }
 

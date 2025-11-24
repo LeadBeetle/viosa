@@ -1,25 +1,27 @@
 import 'dart:io';
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:record/record.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
-import 'waveform_painter.dart';
+import 'waveform_display_widget.dart';
 import '../models/audio_file.dart';
 import '../services/recording_service.dart';
 import '../providers/settings_provider.dart';
 import '../utils/constants.dart';
 import '../services/snackbar_service.dart';
 import 'app_loading_indicator.dart';
+import 'fancy_recording_button.dart';
 
 /// Widget for audio recording with controls
 /// Follows Single Responsibility Principle: Only handles recording UI
 class AudioRecorderWidget extends StatefulWidget {
   final Function(AudioFile) onRecordingComplete;
+  final Function(List<double>)? onWaveformUpdate;
 
   const AudioRecorderWidget({
     super.key,
     required this.onRecordingComplete,
+    this.onWaveformUpdate,
   });
 
   @override
@@ -29,7 +31,6 @@ class AudioRecorderWidget extends StatefulWidget {
 class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsBindingObserver {
   final IRecordingService _recordingService = RecordingService();
   RecordState _recordState = RecordState.stop;
-  Duration _duration = Duration.zero;
   bool _hasPermission = false;
   bool _isStopping = false;
 
@@ -37,17 +38,14 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
   final List<double> _amplitudes = [];
   // Keep last 100 samples for visualization
   static const int _maxSamples = 100;
-  
-  // Auto-disable waveform after 30 minutes to save memory
-  static const Duration _waveformDisableThreshold = Duration(minutes: 30);
-  bool _isWaveformDisabled = false;
+
+  // Recording duration
+  Duration _currentDuration = Duration.zero;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _checkPermission();
-
     _checkPermission();
 
     _recordingService.recordStateStream.listen((state) {
@@ -60,24 +58,20 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
     _recordingService.durationStream.listen((duration) {
       if (mounted) {
         setState(() {
-          _duration = duration;
-
-          // Auto-disable waveform after threshold to save memory on long recordings
-          if (!_isWaveformDisabled && duration >= _waveformDisableThreshold) {
-            _disableWaveform();
-          }
+          _currentDuration = duration;
         });
       }
     });
 
     _recordingService.amplitudeStream.listen((amplitude) {
-      if (mounted && !_isWaveformDisabled && (_recordState == RecordState.record)) {
+      if (mounted && (_recordState == RecordState.record)) {
         setState(() {
           _amplitudes.add(amplitude);
           if (_amplitudes.length > _maxSamples) {
             _amplitudes.removeAt(0);
           }
         });
+        widget.onWaveformUpdate?.call(_amplitudes);
       }
     });
   }
@@ -93,17 +87,6 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
     WidgetsBinding.instance.removeObserver(this);
     _recordingService.dispose();
     super.dispose();
-  }
-
-  /// Disables waveform visualization to save memory during long recordings
-  void _disableWaveform() {
-    try {
-      _isWaveformDisabled = true;
-      _amplitudes.clear(); // Clear data to save memory
-      debugPrint('Waveform visualization disabled after $_waveformDisableThreshold to conserve memory');
-    } catch (e) {
-      debugPrint('Failed to disable waveform: $e');
-    }
   }
 
   Future<void> _checkPermission() async {
@@ -133,7 +116,6 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
       // Clear previous amplitudes
       setState(() {
         _amplitudes.clear();
-        _isWaveformDisabled = false;
       });
     } catch (e) {
       if (mounted) {
@@ -239,11 +221,6 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
     });
 
     try {
-      // Stop visualization
-      setState(() {
-        _isWaveformDisabled = false; // Reset for next recording
-      });
-
       // Stop the actual recording service
       final audioFile = await _recordingService.stopRecording();
 
@@ -294,7 +271,6 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
       // Stop visualization
       setState(() {
         _amplitudes.clear();
-        _isWaveformDisabled = false;
       });
 
       await _recordingService.cancelRecording();
@@ -310,40 +286,63 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
   }
 
   String _formatDuration(Duration duration) {
-    String twoDigits(int n) => n.toString().padLeft(2, '0');
-    final hours = twoDigits(duration.inHours);
-    final minutes = twoDigits(duration.inMinutes.remainder(60));
-    final seconds = twoDigits(duration.inSeconds.remainder(60));
-    return duration.inHours > 0 ? "$hours:$minutes:$seconds" : "$minutes:$seconds";
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes.remainder(60);
+    final seconds = duration.inSeconds.remainder(60);
+
+    if (hours > 0) {
+      return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+    } else {
+      return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     if (!_hasPermission) {
       return Card(
+        elevation: AppElevation.medium,
         child: Padding(
-          padding: const EdgeInsets.all(AppConstants.defaultPadding),
+          padding: const EdgeInsets.all(AppSpacing.xl),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.mic_off,
-                size: AppIconSize.xxlarge,
-                color: Theme.of(context).colorScheme.error,
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.l),
+                decoration: BoxDecoration(
+                  color: colorScheme.errorContainer.withValues(alpha: 0.3),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.mic_off_rounded,
+                  size: AppIconSize.emptyState,
+                  color: colorScheme.error,
+                ),
               ),
-              const SizedBox(height: AppSpacing.m),
-              const Text(
+              const SizedBox(height: AppSpacing.l),
+              Text(
                 'Mikrofon-Berechtigung erforderlich',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: AppSpacing.s),
-              const Text(
-                'Bitte erteilen Sie die Berechtigung in den Einstellungen',
+                style: textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: AppSpacing.m),
-              ElevatedButton(
+              const SizedBox(height: AppSpacing.s),
+              Text(
+                'Bitte erteilen Sie die Berechtigung in den Einstellungen',
+                style: textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: AppSpacing.l),
+              FilledButton.icon(
                 onPressed: _checkPermission,
-                child: const Text('Erneut prüfen'),
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Erneut prüfen'),
               ),
             ],
           ),
@@ -352,150 +351,246 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
     }
 
     return Card(
+      elevation: AppElevation.medium,
       child: Padding(
-        padding: const EdgeInsets.all(AppConstants.defaultPadding),
+        padding: const EdgeInsets.all(AppSpacing.l),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Row(
-              children: [
-                Icon(
-                  _recordState == RecordState.record ? Icons.fiber_manual_record : Icons.mic,
-                  color: _recordState == RecordState.record ? Theme.of(context).colorScheme.error : null,
-                ),
-                const SizedBox(width: AppSpacing.s),
-                Text(
-                  _recordState == RecordState.record
-                      ? 'Aufnahme läuft'
-                      : _recordState == RecordState.pause
-                          ? 'Pausiert'
-                          : 'Bereit zur Aufnahme',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.m),
-            Text(
-              _formatDuration(_duration),
-              style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    fontFeatures: [const FontFeature.tabularFigures()],
-                  ),
-            ),
-            const SizedBox(height: AppSpacing.m),
-            // Audio waveform visualization (shows when recording or paused, unless disabled for memory)
-            if ((_recordState == RecordState.record || _recordState == RecordState.pause) && !_isWaveformDisabled) ...[
-              Container(
-                height: 100,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                ),
-                child: CustomPaint(
-                  size: Size(MediaQuery.of(context).size.width - (AppConstants.defaultPadding * 4), 100),
-                  painter: WaveformPainter(
-                    samples: _amplitudes,
-                    color: Theme.of(context).colorScheme.primary,
-                    secondaryColor: Theme.of(context).colorScheme.secondary,
-                    strokeWidth: 3.0,
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.m),
-            ] else if ((_recordState == RecordState.record || _recordState == RecordState.pause) && _isWaveformDisabled) ...[
-              // Show info message when waveform is disabled
-              Container(
-                padding: const EdgeInsets.all(AppSpacing.m),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.info_outline,
-                      size: AppIconSize.medium,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    const SizedBox(width: AppSpacing.s),
-                    Expanded(
-                      child: Text(
-                        'Wellenform-Anzeige deaktiviert nach 30 Min zur Speicheroptimierung',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppSpacing.m),
-            ],
-            if (_recordState == RecordState.stop) ...[
-              FilledButton.icon(
-                onPressed: _startRecording,
-                icon: const Icon(Icons.fiber_manual_record),
-                label: const Text('Aufnahme starten'),
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 48),
-                ),
-              ),
-            ] else ...[
-              if (_isStopping) ...[
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppSpacing.m),
-                    child: Column(
-                      children: const [
-                        AppLoadingIndicator.medium(),
-                        SizedBox(height: AppSpacing.s),
-                        Text(
-                          'Aufnahme wird gespeichert...',
-                          style: TextStyle(fontSize: 14),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ] else ...[
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    Expanded(
-                      child: IconButton.outlined(
-                        onPressed: _cancelRecording,
-                        icon: const Icon(Icons.close),
-                        tooltip: 'Abbrechen',
-                        iconSize: AppIconSize.large,
-                        padding: const EdgeInsets.all(AppSpacing.s),
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.s),
-                    Expanded(
-                      child: IconButton.filled(
-                        onPressed: _recordState == RecordState.pause ? _resumeRecording : _pauseRecording,
-                        icon: Icon(_recordState == RecordState.pause ? Icons.play_arrow : Icons.pause),
-                        tooltip: _recordState == RecordState.pause ? 'Fortsetzen' : 'Pause',
-                        iconSize: AppIconSize.large,
-                        padding: const EdgeInsets.all(AppSpacing.s),
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.s),
-                    Expanded(
-                      child: IconButton.filled(
-                        onPressed: _stopRecording,
-                        icon: const Icon(Icons.check),
-                        tooltip: 'Fertig',
-                        iconSize: AppIconSize.large,
-                        padding: const EdgeInsets.all(AppSpacing.s),
-                        style: IconButton.styleFrom(
-                          backgroundColor: Theme.of(context).colorScheme.tertiary,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ],
+            _buildStatusHeader(context),
+            const SizedBox(height: AppSpacing.l),
+            _buildTimerDisplay(context),
+            const SizedBox(height: AppSpacing.l),
+            _buildWaveformOrInfo(context),
+            const SizedBox(height: AppSpacing.l),
+            _buildControls(context),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusHeader(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    IconData icon;
+    Color iconColor;
+    String statusText;
+
+    switch (_recordState) {
+      case RecordState.record:
+        icon = Icons.fiber_manual_record_rounded;
+        iconColor = colorScheme.error;
+        statusText = 'Aufnahme läuft';
+        break;
+      case RecordState.pause:
+        icon = Icons.pause_circle_rounded;
+        iconColor = colorScheme.primary;
+        statusText = 'Pausiert';
+        break;
+      default:
+        icon = Icons.mic_rounded;
+        iconColor = colorScheme.primary;
+        statusText = 'Bereit zur Aufnahme';
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.m,
+        vertical: AppSpacing.s,
+      ),
+      decoration: BoxDecoration(
+        color: iconColor.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(AppRadius.circular),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            color: iconColor,
+            size: AppIconSize.medium,
+          ),
+          const SizedBox(width: AppSpacing.s),
+          Text(
+            statusText,
+            style: textTheme.titleSmall?.copyWith(
+              color: iconColor,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimerDisplay(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.xl,
+        vertical: AppSpacing.m,
+      ),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(AppRadius.large),
+      ),
+      child: Text(
+        _formatDuration(_currentDuration),
+        style: textTheme.displaySmall?.copyWith(
+          fontWeight: FontWeight.bold,
+          fontFeatures: [const FontFeature.tabularFigures()],
+          color: colorScheme.onSurface,
+        ),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+
+  Widget _buildWaveformOrInfo(BuildContext context) {
+    if (_recordState == RecordState.record || _recordState == RecordState.pause) {
+      return WaveformDisplayWidget(
+        samples: _amplitudes,
+        height: 120,
+      );
+    }
+
+    return const SizedBox.shrink();
+  }
+
+  Widget _buildControls(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    if (_recordState == RecordState.stop) {
+      return Center(
+        child: FancyRecordingButton(
+          onPressed: _startRecording,
+          isEnabled: true,
+        ),
+      );
+    }
+
+    if (_isStopping) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.m),
+          child: Column(
+            children: [
+              const AppLoadingIndicator.medium(),
+              const SizedBox(height: AppSpacing.m),
+              Text(
+                'Aufnahme wird gespeichert...',
+                style: textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Row(
+      children: [
+        Expanded(
+          flex: 2,
+          child: _buildControlButton(
+            context: context,
+            icon: Icons.close_rounded,
+            label: 'Abbrechen',
+            onPressed: _cancelRecording,
+            isPrimary: false,
+            color: colorScheme.error,
+          ),
+        ),
+        const SizedBox(width: AppSpacing.m),
+        Expanded(
+          flex: 3,
+          child: _buildControlButton(
+            context: context,
+            icon: _recordState == RecordState.pause
+                ? Icons.play_arrow_rounded
+                : Icons.pause_rounded,
+            label: _recordState == RecordState.pause ? 'Fortsetzen' : 'Pause',
+            onPressed: _recordState == RecordState.pause
+                ? _resumeRecording
+                : _pauseRecording,
+            isPrimary: true,
+            color: colorScheme.primary,
+          ),
+        ),
+        const SizedBox(width: AppSpacing.m),
+        Expanded(
+          flex: 2,
+          child: _buildControlButton(
+            context: context,
+            icon: Icons.check_rounded,
+            label: 'Fertig',
+            onPressed: _stopRecording,
+            isPrimary: true,
+            color: colorScheme.tertiary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildControlButton({
+    required BuildContext context,
+    required IconData icon,
+    required String label,
+    required VoidCallback onPressed,
+    required bool isPrimary,
+    required Color color,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Material(
+      color: isPrimary ? color : Colors.transparent,
+      borderRadius: BorderRadius.circular(AppRadius.medium),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(AppRadius.medium),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            vertical: AppSpacing.m,
+            horizontal: AppSpacing.s,
+          ),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.medium),
+            border: isPrimary
+                ? null
+                : Border.all(
+                    color: color,
+                    width: 2,
+                  ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: AppIconSize.large,
+                color: isPrimary ? colorScheme.onPrimary : color,
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                label,
+                style: textTheme.labelSmall?.copyWith(
+                  color: isPrimary ? colorScheme.onPrimary : color,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
         ),
       ),
     );
