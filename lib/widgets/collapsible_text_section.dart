@@ -3,6 +3,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import '../mixins/copyable_content_mixin.dart';
 import '../utils/markdown_styles.dart';
 import '../utils/constants.dart';
+import '../l10n/l10n.dart';
 
 /// A collapsible text section widget with expand/collapse functionality
 /// Optimized for displaying long text content with better UX
@@ -158,14 +159,14 @@ class _CollapsibleTextSectionState extends State<CollapsibleTextSection>
                   IconButton(
                     icon: const Icon(Icons.copy, size: AppIconSize.medium),
                     onPressed: () => copyToClipboard(widget.content),
-                    tooltip: 'Kopieren',
+                    tooltip: context.l10n.copy,
                   ),
                 // Collapse button (only visible when expanded)
                 if (_isExpanded)
                   IconButton(
                     icon: const Icon(Icons.expand_less),
                     onPressed: _toggleExpand,
-                    tooltip: 'Einklappen',
+                    tooltip: context.l10n.collapse,
                   ),
               ],
             ),
@@ -175,26 +176,26 @@ class _CollapsibleTextSectionState extends State<CollapsibleTextSection>
             // Content
             _buildContent(),
 
-            // "Mehr anzeigen" button (only if collapsed and has more content)
+            // "Show more" button (only if collapsed and has more content)
             if (!_isExpanded && shouldShowExpandButton) ...[
               const SizedBox(height: 12),
               Center(
                 child: TextButton.icon(
                   onPressed: _toggleExpand,
                   icon: const Icon(Icons.expand_more),
-                  label: const Text('Mehr anzeigen'),
+                  label: Text(context.l10n.showMore),
                 ),
               ),
             ],
 
-            // "Weniger anzeigen" button (only if expanded and has more content)
+            // "Show less" button (only if expanded and has more content)
             if (_isExpanded && shouldShowExpandButton) ...[
               const SizedBox(height: 12),
               Center(
                 child: TextButton.icon(
                   onPressed: _toggleExpand,
                   icon: const Icon(Icons.expand_less),
-                  label: const Text('Weniger anzeigen'),
+                  label: Text(context.l10n.showLess),
                 ),
               ),
             ],

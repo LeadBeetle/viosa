@@ -8,6 +8,7 @@ import '../providers/settings_provider.dart';
 import '../services/llm_provider.dart';
 import '../services/llm_provider_factory.dart';
 import '../utils/constants.dart';
+import '../l10n/l10n.dart';
 
 /// Dialog for selecting and applying a prompt with streaming response
 /// Follows Single Responsibility Principle: Handles streaming prompt application UI
@@ -49,14 +50,15 @@ class _ApplyPromptStreamingDialogState extends State<ApplyPromptStreamingDialog>
 
     try {
       final promptsProvider = context.read<PromptsProvider>();
-      final prompts = promptsProvider.allPrompts;
+      final l10n = context.l10n;
+      final prompts = promptsProvider.getAllPrompts(l10n);
       setState(() {
         _prompts = prompts;
         _isLoading = false;
       });
     } catch (e) {
       setState(() {
-        _errorMessage = 'Fehler beim Laden der Prompts: $e';
+        _errorMessage = context.l10n.errorLoadingPrompts(e.toString());
         _isLoading = false;
       });
     }
@@ -71,7 +73,7 @@ class _ApplyPromptStreamingDialogState extends State<ApplyPromptStreamingDialog>
     final apiKey = settingsProvider.apiKey;
     if (apiKey == null || apiKey.isEmpty) {
       setState(() {
-        _errorMessage = 'Bitte konfigurieren Sie Ihren API-Key in den Einstellungen';
+        _errorMessage = context.l10n.configureApiKey;
       });
       return;
     }
@@ -131,7 +133,7 @@ class _ApplyPromptStreamingDialogState extends State<ApplyPromptStreamingDialog>
       final model = context.read<SettingsProvider>().selectedModel;
       final result = PromptResult(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
-        promptName: '${_selectedPrompt!.name} (Abgebrochen)',
+        promptName: '${_selectedPrompt!.name} (${context.l10n.cancelled})',
         promptTemplate: _selectedPrompt!.template,
         transcriptionText: widget.transcriptionText,
         llmResponse: _streamedResponse,
@@ -147,7 +149,7 @@ class _ApplyPromptStreamingDialogState extends State<ApplyPromptStreamingDialog>
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(_isStreaming ? 'Antwort wird generiert...' : 'Prompt anwenden'),
+      title: Text(_isStreaming ? context.l10n.generatingResponse : context.l10n.applyPrompt),
       content: SizedBox(
         width: double.maxFinite,
         height: MediaQuery.of(context).size.height * 0.6,
@@ -192,13 +194,13 @@ class _ApplyPromptStreamingDialogState extends State<ApplyPromptStreamingDialog>
                     const SizedBox(height: 16),
                   },
                   if (!_isStreaming) ...{
-                    const Text('Wählen Sie einen Prompt für Ihre Transkription:'),
+                    Text(context.l10n.selectPromptForTranscription),
                     const SizedBox(height: 16),
                     if (_prompts.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.all(16.0),
+                      Padding(
+                        padding: const EdgeInsets.all(16.0),
                         child: Text(
-                          'Keine Prompts verfügbar. Erstellen Sie einen im Prompts-Bereich.',
+                          context.l10n.noPromptsAvailable,
                           textAlign: TextAlign.center,
                         ),
                       )
@@ -288,18 +290,18 @@ class _ApplyPromptStreamingDialogState extends State<ApplyPromptStreamingDialog>
         if (!_isStreaming) ...{
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Abbrechen'),
+            child: Text(context.l10n.cancel),
           ),
           FilledButton.icon(
             onPressed: _selectedPrompt == null ? null : _applyPrompt,
             icon: const Icon(Icons.auto_awesome),
-            label: const Text('Anwenden'),
+            label: Text(context.l10n.apply),
           ),
         } else ...{
           FilledButton.icon(
             onPressed: _cancelStreaming,
             icon: const Icon(Icons.stop),
-            label: const Text('Abbrechen'),
+            label: Text(context.l10n.cancel),
             style: FilledButton.styleFrom(
               backgroundColor: Colors.orange,
             ),

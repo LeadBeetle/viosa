@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'screens/home_screen.dart';
 import 'screens/prompts_screen.dart';
 import 'utils/constants.dart';
 import 'utils/app_theme.dart';
+import 'generated/app_localizations.dart';
 import 'providers/settings_provider.dart';
 import 'providers/history_provider.dart';
 import 'providers/prompts_provider.dart';
@@ -15,6 +17,7 @@ import 'services/settings_service.dart';
 import 'services/history_service.dart';
 import 'services/prompt_service.dart';
 import 'services/recording_notification_service.dart';
+import 'services/audio_splitter_service.dart';
 import 'models/transcription_history.dart';
 import 'models/transcription_result.dart';
 import 'models/prompt_result.dart';
@@ -67,6 +70,9 @@ void main() async {
     sessionStateProvider.initialize(),
   ]);
 
+  // Cleanup orphaned split files from previous sessions
+  AudioSplitterService().cleanupAllSplits();
+
   runApp(VIOSAApp(
     settingsProvider: settingsProvider,
     historyProvider: historyProvider,
@@ -109,6 +115,14 @@ class VIOSAApp extends StatelessWidget {
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: settings.themeMode,
+            locale: settings.locale,
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
             home: const HomeScreen(),
             routes: {
               '/prompts': (context) => const PromptsScreen(),

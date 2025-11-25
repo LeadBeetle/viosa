@@ -1,4 +1,4 @@
-package com.example.viosa
+package ai.viosa.app
 
 import io.flutter.embedding.android.FlutterActivity
 import android.os.Bundle

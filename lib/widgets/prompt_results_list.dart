@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/prompt_result.dart';
 import '../providers/settings_provider.dart';
 import '../utils/constants.dart';
+import '../l10n/l10n.dart';
 import 'collapsible_text_section.dart';
 import 'info_chip.dart';
 
@@ -34,7 +35,7 @@ class _PromptResultsListState extends State<PromptResultsList> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Prompt-Ergebnisse (${widget.results.length})',
+          context.l10n.promptResultsCount(widget.results.length),
           style: Theme.of(context).textTheme.titleLarge,
           overflow: TextOverflow.ellipsis,
         ),
@@ -105,23 +106,23 @@ class _DismissiblePromptResultState extends State<_DismissiblePromptResult> {
   Future<bool> _confirmDelete(BuildContext context) async {
     return await showDialog<bool>(
           context: context,
-          builder: (BuildContext context) {
+          builder: (BuildContext ctx) {
             return AlertDialog(
-              title: const Text('Prompt-Ergebnis löschen?'),
+              title: Text(ctx.l10n.deletePromptResult),
               content: Text(
-                'Möchten Sie das Ergebnis "${widget.result.promptName}" wirklich löschen?',
+                ctx.l10n.deletePromptResultConfirmation(widget.result.promptName),
               ),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: const Text('Abbrechen'),
+                  onPressed: () => Navigator.of(ctx).pop(false),
+                  child: Text(ctx.l10n.cancel),
                 ),
                 FilledButton(
-                  onPressed: () => Navigator.of(context).pop(true),
+                  onPressed: () => Navigator.of(ctx).pop(true),
                   style: FilledButton.styleFrom(
                     backgroundColor: Colors.red,
                   ),
-                  child: const Text('Löschen'),
+                  child: Text(ctx.l10n.delete),
                 ),
               ],
             );
@@ -134,11 +135,11 @@ class _DismissiblePromptResultState extends State<_DismissiblePromptResult> {
     widget.onDelete(widget.result.id);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('${widget.result.promptName} gelöscht'),
+        content: Text(context.l10n.promptResultDeleted(widget.result.promptName)),
         duration: const Duration(seconds: 5),
         action: widget.onRestore != null
             ? SnackBarAction(
-                label: 'Rückgängig',
+                label: context.l10n.undo,
                 onPressed: () {
                   widget.onRestore!(widget.result);
                 },
@@ -180,7 +181,7 @@ class _DismissiblePromptResultState extends State<_DismissiblePromptResult> {
         child: Selector<SettingsProvider, double>(
           selector: (_, settings) => settings.textSize,
           builder: (context, fontSize, child) => CollapsibleTextSection(
-            title: 'Prompt: ${widget.result.promptName}',
+            title: context.l10n.promptLabel(widget.result.promptName),
             content: widget.result.llmResponse,
             isExpanded: widget.isExpanded,
             contentStyle: TextStyle(
@@ -192,15 +193,15 @@ class _DismissiblePromptResultState extends State<_DismissiblePromptResult> {
               runSpacing: AppSpacing.s,
               children: [
                 InfoChip(
-                  label: 'Modell: ${widget.result.modelUsed}',
+                  label: context.l10n.modelUsedLabel(widget.result.modelUsed),
                   icon: Icons.memory,
                 ),
                 InfoChip(
-                  label: '${widget.result.wordCount} Wörter',
+                  label: context.l10n.wordsLabel(widget.result.wordCount),
                   icon: Icons.text_fields,
                 ),
                 InfoChip(
-                  label: '${widget.result.characterCount} Zeichen',
+                  label: context.l10n.charactersLabel(widget.result.characterCount),
                   icon: Icons.abc,
                 ),
               ],

@@ -9,6 +9,7 @@ import '../utils/constants.dart';
 import '../repositories/model_repository.dart';
 import '../services/snackbar_service.dart';
 import '../widgets/info_chip.dart';
+import '../l10n/l10n.dart';
 import 'prompts_screen.dart';
 
 /// Settings screen for configuring API key and language
@@ -81,7 +82,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await settingsProvider.saveLanguage(language);
     } catch (e) {
       if (mounted) {
-        _showErrorSnackBar('Fehler beim Speichern der Sprache: $e');
+        _showErrorSnackBar(context.l10n.errorSavingLanguage(e.toString()));
       }
     }
   }
@@ -92,7 +93,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await settingsProvider.saveModel(model);
     } catch (e) {
       if (mounted) {
-        _showErrorSnackBar('Fehler beim Speichern des Modells: $e');
+        _showErrorSnackBar(context.l10n.errorSavingModel(e.toString()));
       }
     }
   }
@@ -103,7 +104,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await settingsProvider.saveThemeMode(themeMode);
     } catch (e) {
       if (mounted) {
-        _showErrorSnackBar('Fehler beim Speichern des Themes: $e');
+        _showErrorSnackBar(context.l10n.errorSavingTheme(e.toString()));
       }
     }
   }
@@ -111,12 +112,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<bool> _validateBeforeExit() async {
     final apiKey = _apiKeyController.text.trim();
 
-    if (apiKey.isEmpty) {
-      _showErrorSnackBar('Bitte geben Sie einen API-Key ein');
-      return false;
+    if (apiKey.isNotEmpty) {
+      await _saveApiKey();
     }
-
-    await _saveApiKey();
     return true;
   }
 
@@ -128,7 +126,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         final permissionGranted = await _requestStoragePermission();
         if (!permissionGranted) {
           if (mounted) {
-            _showErrorSnackBar('Speicherberechtigung erforderlich. Bitte erlauben Sie den Zugriff in den App-Einstellungen.');
+            _showErrorSnackBar(context.l10n.storagePermissionRequired);
           }
           return;
         }
@@ -144,12 +142,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           await settingsProvider.saveAudioSavePath(selectedDirectory);
 
-          _showSuccessSnackBar('Speicherort erfolgreich gespeichert');
+          if (mounted) {
+            _showSuccessSnackBar(context.l10n.storageSavedSuccess);
+          }
         }
       }
     } catch (e) {
       if (mounted) {
-        _showErrorSnackBar('Fehler beim Auswählen des Ordners: $e');
+        _showErrorSnackBar(context.l10n.errorSelectingFolder(e.toString()));
       }
     }
   }
@@ -192,17 +192,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
       if (mounted) {
-        _showErrorSnackBar('URL konnte nicht geöffnet werden: $url');
+        _showErrorSnackBar(context.l10n.errorOpeningUrl(url));
       }
     }
   }
 
-  String _getLanguageName(String code) {
-    final language = AppConstants.supportedLanguages.firstWhere(
-      (lang) => lang.code == code,
-      orElse: () => AppConstants.supportedLanguages.first,
-    );
-    return language.name;
+  String _getLanguageName(BuildContext context, String code) {
+    switch (code) {
+      case 'auto':
+        return context.l10n.transcriptionLanguageAuto;
+      case 'de':
+        return context.l10n.transcriptionLanguageGerman;
+      case 'en':
+        return context.l10n.transcriptionLanguageEnglish;
+      default:
+        return code;
+    }
   }
 
   @override
@@ -221,7 +226,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         builder: (context, settingsProvider, child) {
           return Scaffold(
             appBar: AppBar(
-              title: const Text('Einstellungen'),
+              title: Text(context.l10n.settings),
             ),
             body: settingsProvider.isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -235,6 +240,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _buildModelSelectionCard(context),
                   const SizedBox(height: AppConstants.defaultPadding),
                   _buildAudioTranscriptionCard(context),
+                  const SizedBox(height: AppConstants.defaultPadding),
+                  _buildLanguageCard(context),
                   const SizedBox(height: AppConstants.defaultPadding),
                   _buildAppearanceCard(context),
                   const SizedBox(height: AppConstants.defaultPadding),
@@ -266,7 +273,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'API-Konfiguration',
+                  context.l10n.apiConfiguration,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -277,8 +284,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             TextField(
               controller: _apiKeyController,
               decoration: InputDecoration(
-                labelText: 'OpenRouter API-Key',
-                hintText: 'sk-or-v1-...',
+                labelText: context.l10n.apiKeyLabel,
+                hintText: context.l10n.apiKeyHint,
                 border: const OutlineInputBorder(),
                 prefixIcon: const Icon(Icons.vpn_key),
                 suffixIcon: Row(
@@ -302,8 +309,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         });
                       },
                       tooltip: _isApiKeyVisible
-                          ? 'API-Key verbergen'
-                          : 'API-Key anzeigen',
+                          ? context.l10n.hideApiKey
+                          : context.l10n.showApiKey,
                     ),
                   ],
                 ),
@@ -328,12 +335,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   TextSpan(
                     children: [
                       TextSpan(
-                        text: 'Holen Sie sich Ihren API-Key von ',
+                        text: '${context.l10n.apiKeyHelp} ',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Theme.of(context)
                               .colorScheme
                               .onSurface
-                              .withOpacity(0.6),
+                              .withValues(alpha: 0.6),
                         ),
                       ),
                       TextSpan(
@@ -396,7 +403,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'KI-Modell',
+                          context.l10n.aiModel,
                           style: Theme.of(context).textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -405,12 +412,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         Row(
                           children: [
                             Text(
-                              'Aktuell: ',
+                              '${context.l10n.currentModel} ',
                               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 color: Theme.of(context)
                                     .colorScheme
                                     .onSurface
-                                    .withOpacity(0.6),
+                                    .withValues(alpha: 0.6),
                               ),
                             ),
                             InfoChip(
@@ -440,12 +447,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Wählen Sie das Modell für Transkription und Prompts',
+                    context.l10n.selectModelDescription,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Theme.of(context)
                           .colorScheme
                           .onSurface
-                          .withOpacity(0.6),
+                          .withValues(alpha: 0.6),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -470,7 +477,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   : Theme.of(context)
                                       .colorScheme
                                       .outline
-                                      .withOpacity(0.5),
+                                      .withValues(alpha: 0.5),
                               width: isSelected ? 2 : 1,
                             ),
                             borderRadius: BorderRadius.circular(
@@ -479,24 +486,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 ? Theme.of(context)
                                     .colorScheme
                                     .primaryContainer
-                                    .withOpacity(0.3)
+                                    .withValues(alpha: 0.3)
                                 : null,
                           ),
                           child: Padding(
                             padding: const EdgeInsets.all(12),
                             child: Row(
                               children: [
-                                Radio<String>(
-                                  value: model.id,
-                                  groupValue: _selectedModel,
-                                  onChanged: (value) {
-                                    if (value != null) {
-                                      setState(() {
-                                        _selectedModel = value;
-                                      });
-                                      _saveModel(value);
-                                    }
-                                  },
+                                Icon(
+                                  isSelected
+                                      ? Icons.radio_button_checked
+                                      : Icons.radio_button_unchecked,
+                                  color: isSelected
+                                      ? Theme.of(context).colorScheme.primary
+                                      : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                                 ),
                                 const SizedBox(width: 8),
                                 Expanded(
@@ -524,9 +527,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                                 horizontal: 8, vertical: 4),
                                             decoration: BoxDecoration(
                                               color: model.provider == 'Google'
-                                                  ? Colors.blue.withOpacity(0.1)
+                                                  ? Colors.blue.withValues(alpha: 0.1)
                                                   : Colors.orange
-                                                      .withOpacity(0.1),
+                                                      .withValues(alpha: 0.1),
                                               borderRadius:
                                                   BorderRadius.circular(8),
                                             ),
@@ -551,33 +554,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       Row(
                                         children: [
                                           Icon(
-                                            model.tier == 'Schnell & günstig'
+                                            model.tier == ModelRepository.tierFast
                                                 ? Icons.flash_on
-                                                : model.tier == 'Ausgewogen'
-                                                    ? Icons.balance
-                                                    : Icons.star,
+                                                : Icons.star,
                                             size: 14,
-                                            color: model.tier ==
-                                                    'Schnell & günstig'
+                                            color: model.tier == ModelRepository.tierFast
                                                 ? Colors.green
-                                                : model.tier == 'Ausgewogen'
-                                                    ? Colors.blue
-                                                    : Colors.amber,
+                                                : Colors.amber,
                                           ),
                                           const SizedBox(width: 4),
                                           Text(
-                                            model.tier,
+                                            model.tier == ModelRepository.tierFast
+                                                ? context.l10n.modelTierFast
+                                                : context.l10n.modelTierPremium,
                                             style: Theme.of(context)
                                                 .textTheme
                                                 .labelMedium
                                                 ?.copyWith(
-                                                  color: model.tier ==
-                                                          'Schnell & günstig'
+                                                  color: model.tier == ModelRepository.tierFast
                                                       ? Colors.green
-                                                      : model.tier ==
-                                                              'Ausgewogen'
-                                                          ? Colors.blue
-                                                          : Colors.amber,
+                                                      : Colors.amber,
                                                   fontWeight: FontWeight.w500,
                                                 ),
                                           ),
@@ -585,7 +581,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
-                                        model.description,
+                                        model.description == 'fast'
+                                            ? context.l10n.modelDescriptionFast
+                                            : context.l10n.modelDescriptionPremium,
                                         style: Theme.of(context)
                                             .textTheme
                                             .bodySmall
@@ -593,7 +591,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                               color: Theme.of(context)
                                                   .colorScheme
                                                   .onSurface
-                                                  .withOpacity(0.6),
+                                                  .withValues(alpha: 0.6),
                                             ),
                                       ),
                                     ],
@@ -631,7 +629,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Audio & Transkription',
+                  context.l10n.audioTranscription,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -645,7 +643,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Icon(
                   Icons.folder,
                   size: 20,
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.7),
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -653,19 +651,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Speicherort für Aufnahmen',
+                        context.l10n.storageLocation,
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           fontWeight: FontWeight.w500,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        _audioSavePath ?? 'Standard-Speicherort',
+                        _audioSavePath ?? context.l10n.defaultStorageLocation,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Theme.of(context)
                               .colorScheme
                               .onSurface
-                              .withOpacity(0.6),
+                              .withValues(alpha: 0.6),
                         ),
                         overflow: TextOverflow.ellipsis,
                         maxLines: 2,
@@ -677,7 +675,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 FilledButton.icon(
                   onPressed: _selectAudioSavePath,
                   icon: const Icon(Icons.folder_open, size: 18),
-                  label: const Text('Wählen'),
+                  label: Text(context.l10n.choose),
                   style: FilledButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
@@ -696,7 +694,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Icon(
                   Icons.language,
                   size: 20,
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.7),
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -706,7 +704,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       Row(
                         children: [
                           Text(
-                            'Sprache',
+                            context.l10n.transcriptionLanguage,
                             style:
                                 Theme.of(context).textTheme.bodyLarge?.copyWith(
                               fontWeight: FontWeight.w500,
@@ -714,13 +712,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                           const SizedBox(width: 8),
                           InfoChip(
-                            label: _getLanguageName(_selectedLanguage),
+                            label: _getLanguageName(context, _selectedLanguage),
                             icon: Icons.translate,
                           ),
                         ],
                       ),
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
+                        isExpanded: true,
                         decoration: const InputDecoration(
                           border: OutlineInputBorder(),
                           contentPadding: EdgeInsets.symmetric(
@@ -728,12 +727,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             vertical: 8,
                           ),
                         ),
-                        value: _selectedLanguage,
+                        initialValue: _selectedLanguage,
                         items: AppConstants.supportedLanguages
                             .map(
                               (lang) => DropdownMenuItem(
                                 value: lang.code,
-                                child: Text(lang.name),
+                                child: Text(_getLanguageName(context, lang.code)),
                               ),
                             )
                             .toList(),
@@ -748,12 +747,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Wählen Sie die Sprache für die Transkription',
+                        context.l10n.transcriptionLanguageDescription,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Theme.of(context)
                               .colorScheme
                               .onSurface
-                              .withOpacity(0.6),
+                              .withValues(alpha: 0.6),
                         ),
                       ),
                     ],
@@ -762,6 +761,110 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLanguageCard(BuildContext context) {
+    final settingsProvider = context.watch<SettingsProvider>();
+    final selectedUiLanguage = settingsProvider.uiLanguage;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AppConstants.defaultPadding),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.translate,
+                  size: 20,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  context.l10n.uiLanguage,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildLanguageButton(
+                    context: context,
+                    label: context.l10n.languageGerman,
+                    value: 'de',
+                    isSelected: selectedUiLanguage == 'de',
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _buildLanguageButton(
+                    context: context,
+                    label: context.l10n.languageEnglish,
+                    value: 'en',
+                    isSelected: selectedUiLanguage == 'en',
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              context.l10n.uiLanguageDescription,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.6),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLanguageButton({
+    required BuildContext context,
+    required String label,
+    required String value,
+    required bool isSelected,
+  }) {
+    return InkWell(
+      onTap: () {
+        context.read<SettingsProvider>().saveUiLanguage(value);
+      },
+      borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: isSelected
+                ? Theme.of(context).colorScheme.primary
+                : Theme.of(context).colorScheme.outline.withValues(alpha: 0.5),
+            width: isSelected ? 2 : 1,
+          ),
+          borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
+          color: isSelected
+              ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3)
+              : null,
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              color: isSelected
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
         ),
       ),
     );
@@ -783,7 +886,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Darstellung',
+                  context.l10n.appearance,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -797,7 +900,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Icon(
                   Icons.brightness_6,
                   size: 20,
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.7),
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -805,7 +908,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Theme',
+                        context.l10n.theme,
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           fontWeight: FontWeight.w500,
                         ),
@@ -817,7 +920,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             child: _buildThemeModeButton(
                               context: context,
                               icon: Icons.brightness_auto,
-                              label: 'System',
+                              label: context.l10n.themeSystem,
                               value: 'system',
                             ),
                           ),
@@ -826,7 +929,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             child: _buildThemeModeButton(
                               context: context,
                               icon: Icons.light_mode,
-                              label: 'Hell',
+                              label: context.l10n.themeLight,
                               value: 'light',
                             ),
                           ),
@@ -835,7 +938,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             child: _buildThemeModeButton(
                               context: context,
                               icon: Icons.dark_mode,
-                              label: 'Dunkel',
+                              label: context.l10n.themeDark,
                               value: 'dark',
                             ),
                           ),
@@ -843,12 +946,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Wählen Sie das Farbschema der App',
+                        context.l10n.themeDescription,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Theme.of(context)
                               .colorScheme
                               .onSurface
-                              .withOpacity(0.6),
+                              .withValues(alpha: 0.6),
                         ),
                       ),
                     ],
@@ -883,12 +986,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           border: Border.all(
             color: isSelected
                 ? Theme.of(context).colorScheme.primary
-                : Theme.of(context).colorScheme.outline.withOpacity(0.5),
+                : Theme.of(context).colorScheme.outline.withValues(alpha: 0.5),
             width: isSelected ? 2 : 1,
           ),
           borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
           color: isSelected
-              ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3)
+              ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3)
               : null,
         ),
         child: Column(
@@ -898,7 +1001,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               icon,
               color: isSelected
                   ? Theme.of(context).colorScheme.primary
-                  : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                  : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
               size: 24,
             ),
             const SizedBox(height: 4),
@@ -942,19 +1045,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Prompts verwalten',
+                      context.l10n.promptsManage,
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Erstellen und bearbeiten Sie Ihre KI-Prompts',
+                      context.l10n.promptsDescription,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context)
                             .colorScheme
                             .onSurface
-                            .withOpacity(0.6),
+                            .withValues(alpha: 0.6),
                       ),
                     ),
                   ],
@@ -962,7 +1065,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               Icon(
                 Icons.chevron_right,
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
               ),
             ],
           ),
@@ -997,7 +1100,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Über VIOSA',
+                      context.l10n.aboutViosa,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w500,
                       ),
@@ -1014,27 +1117,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
               if (_isAboutSectionExpanded) ...[
                 const SizedBox(height: 12),
                 Text(
-                  'VIOSA (Voice Intelligent Output and Speech Analyzer) nutzt die OpenRouter API für Audio-Transkription mit modernsten KI-Modellen.',
+                  context.l10n.aboutDescription,
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Ihr API-Key wird sicher auf Ihrem Gerät gespeichert und niemals an Dritte weitergegeben.',
+                  context.l10n.apiKeySecurityNote,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context)
                         .colorScheme
                         .onSurface
-                        .withOpacity(0.8),
+                        .withValues(alpha: 0.8),
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Version 1.0.0',
+                  context.l10n.version('1.0.0'),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context)
                         .colorScheme
                         .onSurface
-                        .withOpacity(0.6),
+                        .withValues(alpha: 0.6),
                     fontWeight: FontWeight.w500,
                   ),
                 ),

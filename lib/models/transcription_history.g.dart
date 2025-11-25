@@ -24,6 +24,7 @@ class TranscriptionHistoryAdapter extends TypeAdapter<TranscriptionHistory> {
       createdAt: fields[4] as DateTime?,
       splitJobId: fields[5] as String?,
       isSplitTranscription: fields[6] as bool,
+      durationMs: fields[7] as int?,
       waveform: (fields[8] as List?)?.cast<double>(),
       audioPath: fields[9] as String?,
       chatMessages: (fields[10] as List?)?.cast<ChatMessage>(),
@@ -49,7 +50,7 @@ class TranscriptionHistoryAdapter extends TypeAdapter<TranscriptionHistory> {
       ..writeByte(6)
       ..write(obj.isSplitTranscription)
       ..writeByte(7)
-      ..write(obj._durationMs)
+      ..write(obj.durationMs)
       ..writeByte(8)
       ..write(obj.waveform)
       ..writeByte(9)

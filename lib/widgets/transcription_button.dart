@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../utils/constants.dart';
+import '../l10n/l10n.dart';
 
 /// Button for starting or canceling transcription
 /// Displays loading indicator when transcribing
@@ -73,13 +74,13 @@ class _TranscriptionButtonState extends State<TranscriptionButton>
     IconData iconData;
 
     if (_showSuccessAnimation) {
-      buttonText = 'Erfolgreich!';
+      buttonText = context.l10n.transcriptionSuccess;
       iconData = Icons.check_circle;
     } else if (widget.isTranscribing) {
-      buttonText = 'Wird transkribiert...';
+      buttonText = context.l10n.transcribing;
       iconData = Icons.hourglass_empty;
     } else {
-      buttonText = 'Transkribieren';
+      buttonText = context.l10n.transcribe;
       iconData = Icons.transcribe;
     }
 

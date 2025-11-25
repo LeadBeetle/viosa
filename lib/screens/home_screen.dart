@@ -10,6 +10,7 @@ import '../services/export/export_service.dart';
 import '../utils/constants.dart';
 import '../services/audio_service.dart';
 import '../services/file_service.dart';
+import '../l10n/l10n.dart';
 import 'package:just_audio/just_audio.dart';
 import 'session_screen.dart';
 import 'settings_screen.dart';
@@ -139,7 +140,7 @@ class _HomeScreenState extends State<HomeScreen> {
       debugPrint('ERROR: Audio path is null');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Kein Audiopfad verfügbar')),
+          SnackBar(content: Text(context.l10n.noAudioPath)),
         );
       }
       return;
@@ -154,7 +155,7 @@ class _HomeScreenState extends State<HomeScreen> {
       debugPrint('ERROR: Audio file does not exist at path: ${history.audioPath}');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Audiodatei nicht gefunden')),
+          SnackBar(content: Text(context.l10n.audioFileNotFound)),
         );
       }
       return;
@@ -191,7 +192,7 @@ class _HomeScreenState extends State<HomeScreen> {
       debugPrint('Stack trace: $stackTrace');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fehler beim Abspielen: $e')),
+          SnackBar(content: Text(context.l10n.errorPlaying(e.toString()))),
         );
         setState(() {
           _currentlyPlayingId = null;
@@ -211,13 +212,13 @@ class _HomeScreenState extends State<HomeScreen> {
         await context.read<HistoryProvider>().renameRecording(history.id, newName);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Aufnahme umbenannt')),
+            SnackBar(content: Text(context.l10n.recordingRenamed)),
           );
         }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Fehler beim Umbenennen: $e')),
+            SnackBar(content: Text(context.l10n.errorRenaming(e.toString()))),
           );
         }
       }
@@ -227,20 +228,20 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _deleteRecording(TranscriptionHistory history) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Aufnahme löschen'),
-        content: Text('Möchten Sie "${history.audioFileName}" wirklich löschen?'),
+      builder: (ctx) => AlertDialog(
+        title: Text(ctx.l10n.deleteRecording),
+        content: Text(ctx.l10n.deleteConfirmation(history.audioFileName)),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Abbrechen'),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(ctx.l10n.cancel),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(ctx, true),
             style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
+              backgroundColor: Theme.of(ctx).colorScheme.error,
             ),
-            child: const Text('Löschen'),
+            child: Text(ctx.l10n.delete),
           ),
         ],
       ),
@@ -251,13 +252,13 @@ class _HomeScreenState extends State<HomeScreen> {
         await context.read<HistoryProvider>().deleteHistory(history.id);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Aufnahme gelöscht')),
+            SnackBar(content: Text(context.l10n.recordingDeleted)),
           );
         }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Fehler beim Löschen: $e')),
+            SnackBar(content: Text(context.l10n.errorDeleting(e.toString()))),
           );
         }
       }
@@ -294,7 +295,7 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () {
               Navigator.pushNamed(context, '/prompts');
             },
-            tooltip: 'Prompts verwalten',
+            tooltip: context.l10n.managePrompts,
           ),
           IconButton(
             icon: const Icon(Icons.settings),
@@ -316,8 +317,8 @@ class _HomeScreenState extends State<HomeScreen> {
           if (historyProvider.history.isEmpty) {
             return EmptyStateWidget(
               icon: Icons.mic,
-              title: 'Keine Aufnahmen',
-              subtitle: 'Starten Sie eine neue Aufnahme mit dem + Button',
+              title: context.l10n.noRecordings,
+              subtitle: context.l10n.noRecordingsSubtitle,
             );
           }
 
@@ -360,7 +361,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               foregroundColor: Colors.white,
               icon: const Icon(Icons.folder_open),
-              label: const Text('Datei wählen'),
+              label: Text(context.l10n.selectFile),
             ),
             const SizedBox(height: 12),
             FloatingActionButton.extended(
@@ -371,7 +372,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               foregroundColor: Colors.white,
               icon: const Icon(Icons.mic),
-              label: const Text('Aufnahme'),
+              label: Text(context.l10n.recording),
             ),
             const SizedBox(height: 12),
           ],
@@ -429,24 +430,24 @@ class _RenameDialogState extends State<_RenameDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Umbenennen'),
+      title: Text(context.l10n.renameRecording),
       content: TextField(
         controller: _controller,
         autofocus: true,
-        decoration: const InputDecoration(
-          labelText: 'Name',
-          hintText: 'Neuer Name',
+        decoration: InputDecoration(
+          labelText: context.l10n.name,
+          hintText: context.l10n.newName,
         ),
         onSubmitted: (value) => Navigator.pop(context, value.trim()),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Abbrechen'),
+          child: Text(context.l10n.cancel),
         ),
         FilledButton(
           onPressed: () => Navigator.pop(context, _controller.text.trim()),
-          child: const Text('Umbenennen'),
+          child: Text(context.l10n.rename),
         ),
       ],
     );

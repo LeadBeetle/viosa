@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/l10n.dart';
 
 /// Dialog to confirm discarding the current session
 class SessionDiscardDialog extends StatelessWidget {
@@ -16,22 +17,19 @@ class SessionDiscardDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Aktuelle Session verwerfen?'),
-      content: const Text(
-        'Sie haben bereits eine Audiodatei ausgewählt oder transkribiert. '
-        'Möchten Sie diese Session verwerfen und eine neue starten?',
-      ),
+      title: Text(context.l10n.sessionDiscardTitle),
+      content: Text(context.l10n.sessionDiscardMessage),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('Abbrechen'),
+          child: Text(context.l10n.cancel),
         ),
         FilledButton(
           onPressed: () => Navigator.of(context).pop(true),
           style: FilledButton.styleFrom(
             backgroundColor: Theme.of(context).colorScheme.primary,
           ),
-          child: const Text('Neue Session starten'),
+          child: Text(context.l10n.startNewSession),
         ),
       ],
     );

@@ -123,6 +123,7 @@ class RecordingService implements IRecordingService {
     // Generate unique filename with .m4a extension (actual recording format)
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     _recordingPath = '${directory.path}/recording_$timestamp.m4a';
+    debugPrint('Final recording path: $_recordingPath');
 
     // Start recording
     await _recorder.start(

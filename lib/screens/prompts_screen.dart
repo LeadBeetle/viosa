@@ -6,6 +6,7 @@ import '../utils/constants.dart';
 import '../widgets/prompt_edit_dialog.dart';
 import '../services/snackbar_service.dart';
 import '../widgets/empty_state_widget.dart';
+import '../l10n/l10n.dart';
 
 /// Screen for managing prompt templates
 /// Follows Single Responsibility Principle: Manages prompt list UI
@@ -63,11 +64,11 @@ class _PromptsScreenState extends State<PromptsScreen>
       final promptsProvider = context.read<PromptsProvider>();
       await promptsProvider.addPrompt(prompt);
       if (mounted) {
-        _showSuccessSnackBar('Prompt erfolgreich gespeichert');
+        _showSuccessSnackBar(context.l10n.promptSaved);
       }
     } catch (e) {
       if (mounted) {
-        _showErrorSnackBar('Fehler beim Speichern des Prompts: $e');
+        _showErrorSnackBar(context.l10n.errorSavingPrompt(e.toString()));
       }
     }
   }
@@ -75,17 +76,17 @@ class _PromptsScreenState extends State<PromptsScreen>
   Future<void> _deletePrompt(Prompt prompt) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Prompt löschen'),
-        content: Text('Möchten Sie "${prompt.name}" wirklich löschen?'),
+      builder: (ctx) => AlertDialog(
+        title: Text(ctx.l10n.deletePrompt),
+        content: Text(ctx.l10n.deleteConfirmation(prompt.name)),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Abbrechen'),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(ctx.l10n.cancel),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Löschen'),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(ctx.l10n.delete),
           ),
         ],
       ),
@@ -96,11 +97,11 @@ class _PromptsScreenState extends State<PromptsScreen>
         final promptsProvider = context.read<PromptsProvider>();
         await promptsProvider.deletePrompt(prompt.id);
         if (mounted) {
-          _showSuccessSnackBar('Prompt gelöscht');
+          _showSuccessSnackBar(context.l10n.promptDeleted);
         }
       } catch (e) {
         if (mounted) {
-          _showErrorSnackBar('Fehler beim Löschen des Prompts: $e');
+          _showErrorSnackBar(context.l10n.errorDeletingPrompt(e.toString()));
         }
       }
     }
@@ -120,7 +121,7 @@ class _PromptsScreenState extends State<PromptsScreen>
       builder: (context, promptsProvider, child) {
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Prompts'),
+            title: Text(context.l10n.prompts),
             bottom: TabBar(
               controller: _tabController,
               tabAlignment: TabAlignment.fill,
@@ -133,8 +134,8 @@ class _PromptsScreenState extends State<PromptsScreen>
                       const SizedBox(width: 4),
                       Text(
                         promptsProvider.customPrompts.isNotEmpty
-                            ? 'Eigene (${promptsProvider.customPrompts.length})'
-                            : 'Eigene',
+                            ? context.l10n.customPromptsCount(promptsProvider.customPrompts.length)
+                            : context.l10n.customPrompts,
                       ),
                     ],
                   ),
@@ -145,7 +146,7 @@ class _PromptsScreenState extends State<PromptsScreen>
                     children: [
                       const Icon(Icons.star, size: 16),
                       const SizedBox(width: 4),
-                      Text('Standard (${promptsProvider.predefinedPrompts.length})'),
+                      Text(context.l10n.standardPromptsCount(promptsProvider.getPredefinedPrompts(context.l10n).length)),
                     ],
                   ),
                 ),
@@ -160,12 +161,12 @@ class _PromptsScreenState extends State<PromptsScreen>
                     // Custom Prompts Tab
                     _buildCustomPromptsTab(promptsProvider),
                     // Predefined Prompts Tab
-                    _buildPredefinedPromptsTab(promptsProvider),
+                    _buildPredefinedPromptsTab(promptsProvider, context.l10n),
                   ],
                 ),
           floatingActionButton: FloatingActionButton(
             onPressed: _createNewPrompt,
-            tooltip: 'Neuer Prompt',
+            tooltip: context.l10n.newPrompt,
             backgroundColor: Theme.of(context).colorScheme.primaryContainer.withValues(
               alpha: Theme.of(context).brightness == Brightness.dark ? 0.95 : 0.85,
             ),
@@ -181,12 +182,12 @@ class _PromptsScreenState extends State<PromptsScreen>
     if (promptsProvider.customPrompts.isEmpty) {
       return EmptyStateWidget(
         icon: Icons.text_snippet_outlined,
-        title: 'Noch keine eigenen Prompts',
-        subtitle: 'Erstellen Sie eigene Prompts für Ihre Transkriptionen',
+        title: context.l10n.noCustomPrompts,
+        subtitle: context.l10n.noCustomPromptsSubtitle,
         action: ElevatedButton.icon(
           onPressed: _createNewPrompt,
           icon: const Icon(Icons.add),
-          label: const Text('Prompt erstellen'),
+          label: Text(context.l10n.createPrompt),
         ),
       );
     }
@@ -201,18 +202,19 @@ class _PromptsScreenState extends State<PromptsScreen>
     );
   }
 
-  Widget _buildPredefinedPromptsTab(PromptsProvider promptsProvider) {
-    if (promptsProvider.predefinedPrompts.isEmpty) {
-      return const Center(
-        child: Text('Keine vordefinierten Prompts verfügbar'),
+  Widget _buildPredefinedPromptsTab(PromptsProvider promptsProvider, AppLocalizations l10n) {
+    final predefinedPrompts = promptsProvider.getPredefinedPrompts(l10n);
+    if (predefinedPrompts.isEmpty) {
+      return Center(
+        child: Text(context.l10n.noPredefinedPrompts),
       );
     }
 
     return ListView.builder(
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
-      itemCount: promptsProvider.predefinedPrompts.length,
+      itemCount: predefinedPrompts.length,
       itemBuilder: (context, index) {
-        final prompt = promptsProvider.predefinedPrompts[index];
+        final prompt = predefinedPrompts[index];
         return _buildPromptCard(prompt);
       },
     );
@@ -276,7 +278,7 @@ class _PromptsScreenState extends State<PromptsScreen>
                       children: [
                         Icon(Icons.edit, color: Theme.of(context).colorScheme.onSurface),
                         const SizedBox(width: 8),
-                        const Text('Bearbeiten'),
+                        Text(context.l10n.edit),
                       ],
                     ),
                   ),
@@ -286,7 +288,7 @@ class _PromptsScreenState extends State<PromptsScreen>
                       children: [
                         Icon(Icons.delete, color: Theme.of(context).colorScheme.error),
                         const SizedBox(width: 8),
-                        Text('Löschen', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                        Text(context.l10n.delete, style: TextStyle(color: Theme.of(context).colorScheme.error)),
                       ],
                     ),
                   ),

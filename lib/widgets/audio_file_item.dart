@@ -66,14 +66,17 @@ class AudioFileItem extends StatelessWidget {
                               .withValues(alpha: 0.6),
                         ),
                         const SizedBox(width: 4),
-                        Text(
-                          fileInfo.shortFormattedDate,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurface
-                                    .withValues(alpha: 0.6),
-                              ),
+                        Flexible(
+                          child: Text(
+                            fileInfo.shortFormattedDate,
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withValues(alpha: 0.6),
+                                ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                         const SizedBox(width: 12),
                         Icon(
@@ -85,14 +88,17 @@ class AudioFileItem extends StatelessWidget {
                               .withValues(alpha: 0.6),
                         ),
                         const SizedBox(width: 4),
-                        Text(
-                          fileInfo.formattedSize,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurface
-                                    .withValues(alpha: 0.6),
-                              ),
+                        Flexible(
+                          child: Text(
+                            fileInfo.formattedSize,
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withValues(alpha: 0.6),
+                                ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ],
                     ),

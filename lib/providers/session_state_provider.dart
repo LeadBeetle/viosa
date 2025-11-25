@@ -155,8 +155,8 @@ class SessionStateProvider with ChangeNotifier {
     }
   }
 
-  /// Converts a dynamic map to a properly typed Map<String, dynamic>
-  /// Recursively handles nested maps and lists
+  /// Converts a dynamic map to a properly typed Map with String keys.
+  /// Recursively handles nested maps and lists.
   Map<String, dynamic> _convertToStringMap(dynamic input) {
     if (input is Map) {
       return Map<String, dynamic>.fromEntries(

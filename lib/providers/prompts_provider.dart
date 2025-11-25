@@ -1,27 +1,36 @@
 import 'package:flutter/foundation.dart';
 import '../models/prompt.dart';
 import '../services/prompt_service.dart';
+import '../generated/app_localizations.dart';
 
 /// Provider for prompts state management
 /// Wraps PromptService and provides reactive state updates
 class PromptsProvider with ChangeNotifier {
   final PromptService _promptService;
 
-  List<Prompt> _predefinedPrompts = [];
   List<Prompt> _customPrompts = [];
   bool _isInitialized = false;
   bool _isLoading = false;
 
-  List<Prompt>? _cachedSortedPredefined;
+  /// Cache for sorted custom prompts
   List<Prompt>? _cachedSortedCustom;
-  List<Prompt>? _cachedAllPrompts;
+
+  /// Predefined prompt IDs for checking if a prompt is predefined
+  static const List<String> _predefinedPromptIds = [
+    'predefined_questions',
+    'predefined_action_items',
+    'predefined_summary',
+    'predefined_key_points',
+    'predefined_decisions',
+    'predefined_pro_contra',
+    'predefined_report',
+    'predefined_controversy_analysis',
+  ];
 
   PromptsProvider(this._promptService);
 
   void _invalidateSortCache() {
-    _cachedSortedPredefined = null;
     _cachedSortedCustom = null;
-    _cachedAllPrompts = null;
   }
 
   List<Prompt> _sortByUsageCount(List<Prompt> prompts) {
@@ -30,23 +39,22 @@ class PromptsProvider with ChangeNotifier {
     return sorted;
   }
 
-  List<Prompt> get predefinedPrompts {
-    _cachedSortedPredefined ??= List.unmodifiable(_sortByUsageCount(_predefinedPrompts));
-    return _cachedSortedPredefined!;
+  /// Get predefined prompts (localized)
+  List<Prompt> getPredefinedPrompts(AppLocalizations l10n) {
+    return _promptService.getPredefinedPrompts(l10n);
   }
 
+  /// Get custom prompts (sorted by usage)
   List<Prompt> get customPrompts {
     _cachedSortedCustom ??= List.unmodifiable(_sortByUsageCount(_customPrompts));
     return _cachedSortedCustom!;
   }
 
-  List<Prompt> get allPrompts {
-    if (_cachedAllPrompts == null) {
-      final custom = customPrompts;
-      final predefined = predefinedPrompts;
-      _cachedAllPrompts = [...custom, ...predefined];
-    }
-    return _cachedAllPrompts!;
+  /// Get all prompts (custom + predefined, localized)
+  List<Prompt> getAllPrompts(AppLocalizations l10n) {
+    final custom = customPrompts;
+    final predefined = getPredefinedPrompts(l10n);
+    return [...custom, ...predefined];
   }
 
   bool get isInitialized => _isInitialized;
@@ -64,11 +72,8 @@ class PromptsProvider with ChangeNotifier {
       await _promptService.initialize();
       _isInitialized = true;
 
-      // Load prompts with usage stats
-      final predefined = _promptService.getPredefinedPrompts();
+      // Load custom prompts with usage stats
       final custom = await _promptService.getCustomPrompts();
-
-      _predefinedPrompts = await _promptService.getPromptsWithUsageStats(predefined);
       _customPrompts = await _promptService.getPromptsWithUsageStats(custom);
       _invalidateSortCache();
     } catch (e, stackTrace) {
@@ -83,8 +88,6 @@ class PromptsProvider with ChangeNotifier {
         debugPrint('Failed to initialize prompt service: $initError');
       }
 
-      // Load predefined prompts without stats as fallback
-      _predefinedPrompts = _promptService.getPredefinedPrompts();
       _customPrompts = [];
       _invalidateSortCache();
     } finally {
@@ -124,10 +127,10 @@ class PromptsProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  /// Get a prompt by ID
-  Prompt? getPromptById(String id) {
+  /// Get a prompt by ID (localized)
+  Prompt? getPromptById(String id, AppLocalizations l10n) {
     try {
-      return allPrompts.firstWhere((prompt) => prompt.id == id);
+      return getAllPrompts(l10n).firstWhere((prompt) => prompt.id == id);
     } catch (e) {
       return null;
     }
@@ -135,22 +138,12 @@ class PromptsProvider with ChangeNotifier {
 
   /// Check if a prompt is predefined (cannot be modified/deleted)
   bool _isPredefined(String id) {
-    return _predefinedPrompts.any((prompt) => prompt.id == id);
+    return _predefinedPromptIds.contains(id);
   }
 
   /// Check if a prompt is predefined (public method)
   bool isPredefinedPrompt(String id) {
     return _isPredefined(id);
-  }
-
-  /// Reload all prompts from storage
-  Future<void> _reloadAllPrompts() async {
-    final predefined = _promptService.getPredefinedPrompts();
-    final custom = await _promptService.getCustomPrompts();
-
-    _predefinedPrompts = await _promptService.getPromptsWithUsageStats(predefined);
-    _customPrompts = await _promptService.getPromptsWithUsageStats(custom);
-    _invalidateSortCache();
   }
 
   /// Reload custom prompts from storage
@@ -167,7 +160,7 @@ class PromptsProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      await _reloadAllPrompts();
+      await _reloadCustomPrompts();
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -177,7 +170,7 @@ class PromptsProvider with ChangeNotifier {
   /// Increment usage count for a prompt
   Future<void> incrementUsage(String promptId) async {
     await _promptService.incrementPromptUsage(promptId);
-    await _reloadAllPrompts();
+    await _reloadCustomPrompts();
     notifyListeners();
   }
 

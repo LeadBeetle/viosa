@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/model_config.dart';
 import '../utils/audio_utils.dart';
+import '../l10n/l10n.dart';
 
 /// Dialog to confirm starting a transcription
 /// Shows file duration, split info, and selected model
@@ -45,7 +46,7 @@ class TranscriptionConfirmationDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(shouldSplit ? 'Lange Audiodatei erkannt' : 'Transkription starten'),
+      title: Text(shouldSplit ? context.l10n.longAudioDetected : context.l10n.startTranscription),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -70,7 +71,7 @@ class TranscriptionConfirmationDialog extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Achtung: Bestehende Transkription und Prompt-Ergebnisse werden gelöscht.',
+                      context.l10n.warningExistingData,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: Colors.orange.shade900,
                             fontWeight: FontWeight.w500,
@@ -84,10 +85,8 @@ class TranscriptionConfirmationDialog extends StatelessWidget {
           ],
           Text(
             shouldSplit
-                ? 'Diese Audiodatei ist ${AudioUtils.formatDurationShort(duration)} lang und '
-                  'wird in $splitCount Segmente aufgeteilt (je ~10 Minuten).\n\n'
-                  'Die Transkription läuft im Hintergrund und kann einige Minuten dauern.'
-                : 'Diese Audiodatei ist ${AudioUtils.formatDurationShort(duration)} lang.',
+                ? context.l10n.longAudioDescription(AudioUtils.formatDurationShort(duration), splitCount)
+                : context.l10n.shortAudioDescription(AudioUtils.formatDurationShort(duration)),
           ),
           const SizedBox(height: 16),
           Container(
@@ -109,7 +108,7 @@ class TranscriptionConfirmationDialog extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Modell: ${selectedModel.name}',
+                        context.l10n.modelLabel(selectedModel.name),
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               fontWeight: FontWeight.w500,
                             ),
@@ -131,11 +130,11 @@ class TranscriptionConfirmationDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, false),
-          child: const Text('Abbrechen'),
+          child: Text(context.l10n.cancel),
         ),
         FilledButton(
           onPressed: () => Navigator.pop(context, true),
-          child: const Text('Starten'),
+          child: Text(context.l10n.start),
         ),
       ],
     );

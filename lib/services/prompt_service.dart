@@ -1,17 +1,18 @@
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/prompt.dart';
+import '../generated/app_localizations.dart';
 
 /// Interface for prompt management operations
 /// Following Interface Segregation Principle (ISP)
 abstract class IPromptService {
   Future<void> initialize();
-  Future<List<Prompt>> getAllPrompts();
+  Future<List<Prompt>> getAllPrompts(AppLocalizations l10n);
   Future<List<Prompt>> getCustomPrompts();
-  List<Prompt> getPredefinedPrompts();
+  List<Prompt> getPredefinedPrompts(AppLocalizations l10n);
   Future<void> saveCustomPrompt(Prompt prompt);
   Future<void> deleteCustomPrompt(String promptId);
-  Future<Prompt?> getPromptById(String id);
+  Future<Prompt?> getPromptById(String id, AppLocalizations l10n);
   String applyPromptTemplate(String template, String transcription);
   Future<void> incrementPromptUsage(String promptId);
   Future<int> getPromptUsageCount(String promptId);
@@ -28,140 +29,59 @@ class PromptService implements IPromptService {
   Box? _usageStatsBox;
   bool _isInitialized = false;
 
-  /// Predefined prompts that cannot be deleted
-  static final List<Prompt> _predefinedPrompts = [
-    Prompt(
-      id: 'predefined_questions',
-      name: 'Fragen generieren',
-      template: '''Generiere 5-7 Verständnisfragen zum folgenden Text. Die Fragen sollen:
-- Verschiedene Schwierigkeitsgrade abdecken (einfach bis anspruchsvoll)
-- Sowohl Fakten als auch Zusammenhänge abfragen
-- Klar und präzise formuliert sein
-
-Text:
-{transcription}''',
-      isPredefined: true,
-    ),
-    Prompt(
-      id: 'predefined_action_items',
-      name: 'Action Items',
-      template: '''Extrahiere alle Aufgaben und To-Dos aus dem folgenden Text.
-
-Formatiere die Ausgabe als strukturierte Liste:
-- Gruppiere nach Thema oder Verantwortlichkeit (falls erkennbar)
-- Markiere Deadlines oder Fristen (falls erwähnt)
-- Priorisiere nach Dringlichkeit (falls ableitbar)
-
-Falls keine konkreten Aufgaben erkennbar sind, gib dies an.
-
-Text:
-{transcription}''',
-      isPredefined: true,
-    ),
-    Prompt(
-      id: 'predefined_summary',
-      name: 'Zusammenfassen',
-      template: '''Erstelle eine ausführliche und detaillierte Zusammenfassung des folgenden Textes.
-
-Die Zusammenfassung soll:
-- Strukturiert in thematische Abschnitte gegliedert sein
-- Alle wesentlichen Inhalte, Argumente und Erkenntnisse erfassen
-- Den Kontext, Zweck und die Schlussfolgerungen des Gesprächs/Textes verdeutlichen
-- Wichtige Details und Nuancen beibehalten
-
-Verwende Überschriften und Absätze für bessere Lesbarkeit.
-
-Text:
-{transcription}''',
-      isPredefined: true,
-    ),
-    Prompt(
-      id: 'predefined_key_points',
-      name: 'Wichtige Punkte',
-      template: '''Liste die wichtigsten Punkte aus dem folgenden Text auf.
-
-Für jeden Punkt:
-- Formuliere eine klare Hauptaussage
-- Ergänze relevante Details, Begründungen oder Kontext
-- Erkläre die Bedeutung oder Implikation des Punktes
-
-Achte auf:
-- Maximal 5-10 Punkte
-- Priorisierung nach Relevanz
-
-Text:
-{transcription}''',
-      isPredefined: true,
-    ),
-    Prompt(
-      id: 'predefined_decisions',
-      name: 'Entscheidungen',
-      template: '''Extrahiere alle Entscheidungen aus dem folgenden Text.
-
-Für jede Entscheidung:
-- Was wurde entschieden?
-- Warum wurde so entschieden? (Begründung/Argumente)
-- Wer ist verantwortlich? (falls erkennbar)
-- Bis wann? (falls erwähnt)
-
-Falls keine klaren Entscheidungen getroffen wurden, liste die offenen Diskussionspunkte und ausstehenden Klärungen auf.
-
-Text:
-{transcription}''',
-      isPredefined: true,
-    ),
-    Prompt(
-      id: 'predefined_pro_contra',
-      name: 'Pro & Contra',
-      template: '''Analysiere den folgenden Text und erstelle eine Pro & Contra Analyse.
-
-Struktur:
-- Thema oder Fragestellung identifizieren
-- Pro-Argumente mit Begründungen auflisten
-- Contra-Argumente mit Begründungen auflisten
-- Fazit oder Tendenz zusammenfassen (falls aus dem Gespräch erkennbar)
-
-Text:
-{transcription}''',
-      isPredefined: true,
-    ),
-    Prompt(
-      id: 'predefined_report',
-      name: 'Bericht erstellen',
-      template: '''Erstelle einen formellen Bericht basierend auf dem folgenden Text.
-
-Struktur:
-- Titel und Datum/Anlass (falls erkennbar)
-- Einleitung: Kontext und Zweck
-- Hauptteil: Besprochene Themen mit Kernaussagen und Details
-- Ergebnisse: Getroffene Entscheidungen und Vereinbarungen
-- Ausblick: Nächste Schritte und offene Punkte
-
-Verwende einen sachlichen, professionellen Stil.
-
-Text:
-{transcription}''',
-      isPredefined: true,
-    ),
-    Prompt(
-      id: 'predefined_controversy_analysis',
-      name: 'Kontroversen vertiefen',
-      template: '''Identifiziere kontroverse oder strittige Punkte aus dem folgenden Text und analysiere diese tiefgehend.
-
-Für jeden kontroversen Punkt:
-- Beschreibe den Streitpunkt und die verschiedenen Standpunkte
-- Analysiere die vorgebrachten Argumente jeder Seite
-- Ergänze wichtige Aspekte, die in der Diskussion zu kurz kamen oder fehlten
-- Liefere zusätzliche Fakten, Perspektiven oder Gegenargumente zur Vertiefung
-- Gib eine ausgewogene Einschätzung
-
-Ziel ist es, eine fundierte Grundlage für die weitere Meinungsbildung zu schaffen.
-
-Text:
-{transcription}''',
-      isPredefined: true,
-    ),
-  ];
+  /// Get localized predefined prompts
+  List<Prompt> _getLocalizedPredefinedPrompts(AppLocalizations l10n) {
+    return [
+      Prompt(
+        id: 'predefined_questions',
+        name: l10n.predefinedPromptQuestionsName,
+        template: l10n.predefinedPromptQuestionsTemplate,
+        isPredefined: true,
+      ),
+      Prompt(
+        id: 'predefined_action_items',
+        name: l10n.predefinedPromptActionItemsName,
+        template: l10n.predefinedPromptActionItemsTemplate,
+        isPredefined: true,
+      ),
+      Prompt(
+        id: 'predefined_summary',
+        name: l10n.predefinedPromptSummaryName,
+        template: l10n.predefinedPromptSummaryTemplate,
+        isPredefined: true,
+      ),
+      Prompt(
+        id: 'predefined_key_points',
+        name: l10n.predefinedPromptKeyPointsName,
+        template: l10n.predefinedPromptKeyPointsTemplate,
+        isPredefined: true,
+      ),
+      Prompt(
+        id: 'predefined_decisions',
+        name: l10n.predefinedPromptDecisionsName,
+        template: l10n.predefinedPromptDecisionsTemplate,
+        isPredefined: true,
+      ),
+      Prompt(
+        id: 'predefined_pro_contra',
+        name: l10n.predefinedPromptProContraName,
+        template: l10n.predefinedPromptProContraTemplate,
+        isPredefined: true,
+      ),
+      Prompt(
+        id: 'predefined_report',
+        name: l10n.predefinedPromptReportName,
+        template: l10n.predefinedPromptReportTemplate,
+        isPredefined: true,
+      ),
+      Prompt(
+        id: 'predefined_controversy_analysis',
+        name: l10n.predefinedPromptControversyName,
+        template: l10n.predefinedPromptControversyTemplate,
+        isPredefined: true,
+      ),
+    ];
+  }
 
   /// Initialize the Hive box
   @override
@@ -202,8 +122,8 @@ Text:
   }
 
   @override
-  List<Prompt> getPredefinedPrompts() {
-    return List.unmodifiable(_predefinedPrompts);
+  List<Prompt> getPredefinedPrompts(AppLocalizations l10n) {
+    return List.unmodifiable(_getLocalizedPredefinedPrompts(l10n));
   }
 
   @override
@@ -218,9 +138,9 @@ Text:
   }
 
   @override
-  Future<List<Prompt>> getAllPrompts() async {
+  Future<List<Prompt>> getAllPrompts(AppLocalizations l10n) async {
     final customPrompts = await getCustomPrompts();
-    return [...customPrompts, ..._predefinedPrompts];
+    return [...customPrompts, ..._getLocalizedPredefinedPrompts(l10n)];
   }
 
   @override
@@ -252,8 +172,8 @@ Text:
   }
 
   @override
-  Future<Prompt?> getPromptById(String id) async {
-    final allPrompts = await getAllPrompts();
+  Future<Prompt?> getPromptById(String id, AppLocalizations l10n) async {
+    final allPrompts = await getAllPrompts(l10n);
     try {
       return allPrompts.firstWhere((p) => p.id == id);
     } catch (e) {
@@ -262,12 +182,15 @@ Text:
   }
 
   /// Applies the prompt template to the transcription text
-  /// If the template doesn't contain {transcription}, it will be automatically appended
+  /// If the template doesn't contain {transcription} or [[transcription]], it will be automatically appended
   @override
   String applyPromptTemplate(String template, String transcription) {
-    // If template contains placeholder, replace it
+    // If template contains placeholder (either format), replace it
     if (template.contains('{transcription}')) {
       return template.replaceAll('{transcription}', transcription);
+    }
+    if (template.contains('[[transcription]]')) {
+      return template.replaceAll('[[transcription]]', transcription);
     }
 
     // Otherwise, auto-inject transcription at the end
