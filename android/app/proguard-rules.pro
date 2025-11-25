@@ -12,7 +12,7 @@
 
 # CRITICAL: Keep GeneratedPluginRegistrant
 -keep class io.flutter.plugins.GeneratedPluginRegistrant { *; }
--keep class com.example.viosa.** { *; }
+-keep class ai.viosa.app.** { *; }
 
 # Keep all plugin registrations
 -keepclassmembers class * {
@@ -52,9 +52,8 @@
 -dontwarn javax.xml.stream.**
 -dontwarn org.apache.tika.**
 
-# Don't optimize or obfuscate Flutter classes
+# Don't optimize Flutter classes (obfuscation is enabled for release builds)
 -dontoptimize
--dontobfuscate
 
 # Keep everything related to path_provider
 -keep class io.flutter.plugins.pathprovider.** { *; }
@@ -121,4 +120,17 @@
 # Remove verbose logging specifically for media/audio components
 -assumenosideeffects class * {
     public void trace(...);
+}
+
+# CRITICAL: Keep path_provider_android Kotlin Pigeon classes
+-keep class io.flutter.plugins.pathprovider.Messages$* { *; }
+-keep class io.flutter.plugins.pathprovider.Messages { *; }
+-keepclassmembers class io.flutter.plugins.pathprovider.Messages$* { *; }
+
+# Keep all Result callback classes used by Pigeon
+-keep class * extends io.flutter.plugin.common.BasicMessageChannel$Reply { *; }
+
+# Prevent R8 from removing method channel setup
+-keepclassmembers class io.flutter.plugins.pathprovider.PathProviderPlugin {
+    *;
 }

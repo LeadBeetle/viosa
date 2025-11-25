@@ -134,6 +134,14 @@ class SplitTranscriptionProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> cleanupJob(SplitTranscriptionJob job) async {
+    await _service.cleanupSplits(job);
+    if (_currentJob?.id == job.id) {
+      _currentJob = null;
+      notifyListeners();
+    }
+  }
+
   @override
   void dispose() {
     _jobUpdateController.close();

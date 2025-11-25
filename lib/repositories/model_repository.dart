@@ -5,14 +5,18 @@ import '../models/model_config.dart';
 class ModelRepository {
   static const String defaultModelId = 'google/gemini-2.5-flash';
 
+  /// Tier identifiers (used for comparison, not displayed)
+  static const String tierFast = 'fast';
+  static const String tierPremium = 'premium';
+
   /// All supported models with their configurations
   static const List<ModelConfig> supportedModels = [
     ModelConfig(
       id: 'google/gemini-2.5-flash',
       name: 'Gemini 2.5 Flash',
       provider: 'Google',
-      tier: 'Schnell & günstig',
-      description: 'Ideal für einfache Transkriptionen und schnelle Ergebnisse',
+      tier: tierFast,
+      description: 'fast',
       maxTokens: 10000,
       temperature: 0.3,
       capabilities: {
@@ -25,8 +29,8 @@ class ModelRepository {
       id: 'google/gemini-2.5-pro',
       name: 'Gemini 2.5 Pro',
       provider: 'Google',
-      tier: 'Premium',
-      description: 'Bessere Qualität für komplexe Audio-Inhalte',
+      tier: tierPremium,
+      description: 'premium',
       maxTokens: 10000,
       temperature: 0.3,
       capabilities: {

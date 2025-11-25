@@ -30,6 +30,7 @@ import '../utils/constants.dart';
 import '../utils/audio_utils.dart';
 import '../utils/screen_helpers.dart';
 import '../services/snackbar_service.dart';
+import '../l10n/l10n.dart';
 import 'chat_screen.dart';
 
 class SessionScreen extends StatefulWidget {
@@ -85,8 +86,9 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
   SplitTranscriptionJob? _activeSplitJob;
   bool _isSplitTranscription = false;
 
-  bool _showTranscriptionSuccess = false;
-  String? _currentPromptTemplate;
+
+  // Audio file missing state
+  bool _audioFileNotFound = false;
 
   @override
   void initState() {
@@ -197,13 +199,32 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
           if (widget.autoStartTranscription && history.transcription == null && mounted) {
             _transcribe();
           }
+        } else {
+          // Audio file path exists but file not found
+          setState(() {
+            _audioFileNotFound = true;
+            _audioDuration = history.duration;
+            _transcriptionResult = history.transcription;
+            _promptResults.clear();
+            _promptResults.addAll(history.promptResults);
+            if (history.waveform != null && history.waveform!.isNotEmpty) {
+              _recordedAmplitudes = List.from(history.waveform!);
+            }
+          });
         }
       } catch (e) {
         debugPrint('Error loading file from history: $e');
+        setState(() {
+          _audioFileNotFound = true;
+          _transcriptionResult = history.transcription;
+          _promptResults.clear();
+          _promptResults.addAll(history.promptResults);
+        });
       }
     } else {
-      // No audio path, just load transcription and prompts
+      // No audio path, load transcription and prompts, mark as not found
       setState(() {
+        _audioFileNotFound = true;
         _transcriptionResult = history.transcription;
         _promptResults.clear();
         _promptResults.addAll(history.promptResults);
@@ -226,7 +247,7 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
       }
 
       // If we have a history ID, try to load existing results
-      if (_currentHistoryId != null) {
+      if (_currentHistoryId != null && mounted) {
         final historyProvider = context.read<HistoryProvider>();
         final history = historyProvider.getHistoryById(_currentHistoryId!);
         if (history != null) {
@@ -312,7 +333,7 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
     final apiKey = settingsProvider.apiKey;
 
     if (apiKey == null || apiKey.isEmpty) {
-      SnackBarService().showError(context, 'Bitte API-Key konfigurieren');
+      SnackBarService().showError(context, context.l10n.configureApiKey);
       return;
     }
 
@@ -345,6 +366,8 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
     final splitCount = shouldSplit
         ? await AudioUtils.calculateSplitCount(_selectedFile!.path)
         : 1;
+
+    if (!mounted) return;
 
     final selectedModelId = settingsProvider.selectedModel;
     final selectedModel = ModelRepository.getModelByIdOrDefault(selectedModelId);
@@ -401,7 +424,7 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
         _activeSplitJob = null;
       });
       if (mounted) {
-        SnackBarService().showError(context, 'Fehler: $e');
+        SnackBarService().showError(context, context.l10n.errorGeneric(e.toString()));
       }
     }
   }
@@ -428,8 +451,9 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
   Future<void> _onSplitTranscriptionComplete(SplitTranscriptionJob job) async {
     setState(() {
       _isTranscribing = false;
-      _showTranscriptionSuccess = true;
     });
+
+    final splitProvider = context.read<SplitTranscriptionProvider>();
 
     if (job.isFullySuccessful || (job.completedCount > 0 && job.failedCount < job.totalSplits)) {
       final mergedText = job.mergedTranscription;
@@ -453,22 +477,18 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
         });
 
         await _saveToHistory();
-        
-        Future.delayed(const Duration(milliseconds: 1500), () {
-          if (mounted) {
-            setState(() {
-              _showTranscriptionSuccess = false;
-            });
-          }
-        });
+        await splitProvider.cleanupJob(job);
+
       }
     } else {
-      setState(() {
-        _activeSplitJob = null;
-        _isSplitTranscription = false;
-        _showTranscriptionSuccess = false;
-      });
-      SnackBarService().showError(context, 'Transkription fehlgeschlagen');
+      await splitProvider.cleanupJob(job);
+      if (mounted) {
+        setState(() {
+          _activeSplitJob = null;
+          _isSplitTranscription = false;
+        });
+        SnackBarService().showError(context, context.l10n.transcriptionFailed);
+      }
     }
   }
 
@@ -530,7 +550,6 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
 
     setState(() {
       _currentPromptName = promptName;
-      _currentPromptTemplate = promptTemplate;
       _promptBuffer.clear();
     });
 
@@ -559,14 +578,16 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
           _onPromptComplete(promptName, promptTemplate);
         },
         onError: (e) {
-          SnackBarService().showError(context, 'Fehler: $e');
-          setState(() {
-            _promptStream = null;
-          });
+          if (mounted) {
+            SnackBarService().showError(context, context.l10n.errorGeneric(e.toString()));
+            setState(() {
+              _promptStream = null;
+            });
+          }
         },
       );
     } catch (e) {
-      SnackBarService().showError(context, 'Fehler: $e');
+      SnackBarService().showError(context, context.l10n.errorGeneric(e.toString()));
     }
   }
 
@@ -592,7 +613,7 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
 
   @override
   Widget build(BuildContext context) {
-    String title = 'Neue Aufnahme';
+    String title = context.l10n.newRecording;
     if (_selectedFile != null) {
       title = _removeFileExtension(_selectedFile!.name);
     } else if (_currentHistoryId != null) {
@@ -681,8 +702,12 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
             onNotification: (notification) {
               final pixels = notification.metrics.pixels;
               if (pixels > 20 && !_isPlayerCollapsed) {
-                setState(() {
-                  _isPlayerCollapsed = true;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) {
+                    setState(() {
+                      _isPlayerCollapsed = true;
+                    });
+                  }
                 });
               }
               return false;
@@ -695,11 +720,40 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
   }
 
   Widget _buildScrollableContent(BuildContext context) {
+    final hasResults = _transcriptionResult != null || _promptResults.isNotEmpty;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Show warning if audio file not found
+          if (_audioFileNotFound) ...[
+            Card(
+              color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.3),
+              child: Padding(
+                padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.warning_amber_rounded,
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                    const SizedBox(width: AppSpacing.m),
+                    Expanded(
+                      child: Text(
+                        context.l10n.audioFileNotFoundWarning,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onErrorContainer,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.m),
+          ],
           if (_isTranscribing) ...[
             if (_isSplitTranscription)
               _activeSplitJob != null
@@ -717,7 +771,7 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
                                     value: progress.progress,
                                   ),
                                   const SizedBox(height: AppSpacing.m),
-                                  Text(progress.currentStatus ?? 'Audio wird aufgeteilt...'),
+                                  Text(progress.currentStatus ?? context.l10n.splittingAudio),
                                   const SizedBox(height: AppSpacing.xs),
                                   Text(
                                     '${progress.progressPercentage}%',
@@ -726,7 +780,7 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
                                 ] else ...[
                                   const CircularProgressIndicator(),
                                   const SizedBox(height: AppSpacing.m),
-                                  const Text('Audio wird vorbereitet...'),
+                                  Text(context.l10n.preparingAudio),
                                 ],
                               ],
                             ),
@@ -739,7 +793,7 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
                 textStream: _transcriptionStream,
                 onStreamComplete: () {},
                 onStreamError: (error) {
-                  SnackBarService().showError(context, 'Fehler: $error');
+                  SnackBarService().showError(context, context.l10n.errorGeneric(error.toString()));
                 },
                 onChunk: (chunk) {},
               ),
@@ -749,7 +803,7 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
               isPromptActive: _promptStream != null,
               onApplyPrompt: _applyPromptStreaming,
               promptResultCount: _promptResults.length,
-              onRetranscribe: _retranscribe,
+              onRetranscribe: _audioFileNotFound ? null : _retranscribe,
             ),
             const SizedBox(height: AppSpacing.m),
             PromptResultsList(
@@ -768,11 +822,37 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
                 textStream: _promptStream,
                 onStreamComplete: () {},
                 onStreamError: (error) {
-                  SnackBarService().showError(context, 'Fehler: $error');
+                  SnackBarService().showError(context, context.l10n.errorGeneric(error.toString()));
                 },
                 onChunk: (chunk) {},
               ),
-          ] else ...[
+          ] else if (_audioFileNotFound && !hasResults) ...[
+            // Audio file not found and no results - show info message
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(AppConstants.defaultPadding * 2),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.folder_off_outlined,
+                      size: 64,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                    ),
+                    const SizedBox(height: AppSpacing.m),
+                    Text(
+                      context.l10n.noResultsAvailable,
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ] else if (!_audioFileNotFound) ...[
+            // Audio file exists, show transcribe button
             Center(
               child: TranscriptionButton(
                 onPressed: _transcribe,

@@ -7,6 +7,7 @@ import '../providers/settings_provider.dart';
 import 'collapsible_text_section.dart';
 import 'info_chip.dart';
 import '../utils/constants.dart';
+import '../l10n/l10n.dart';
 
 /// Card widget for displaying completed transcription with apply prompt button
 class CompletedTranscriptionCard extends StatefulWidget {
@@ -80,7 +81,7 @@ class _CompletedTranscriptionCardState extends State<CompletedTranscriptionCard>
       children: [
         Consumer<SettingsProvider>(
           builder: (context, settings, _) => CollapsibleTextSection(
-            title: 'Transkription',
+            title: context.l10n.transcription,
             content: widget.transcriptionResult.text,
             isExpanded: false,
             contentStyle: TextStyle(
@@ -95,7 +96,7 @@ class _CompletedTranscriptionCardState extends State<CompletedTranscriptionCard>
                         HapticFeedback.mediumImpact();
                         widget.onRetranscribe!();
                       },
-                      tooltip: 'Erneut transkribieren',
+                      tooltip: context.l10n.retranscribe,
                     ),
                   ]
                 : null,
@@ -111,19 +112,19 @@ class _CompletedTranscriptionCardState extends State<CompletedTranscriptionCard>
                   runSpacing: AppSpacing.s,
                   children: [
                     InfoChip(
-                      label: 'Sprache: ${widget.transcriptionResult.language}',
+                      label: context.l10n.languageLabel(widget.transcriptionResult.language),
                       icon: Icons.language,
                     ),
                     InfoChip(
-                      label: 'Modell: ${widget.transcriptionResult.modelUsed}',
+                      label: context.l10n.modelLabel(widget.transcriptionResult.modelUsed),
                       icon: Icons.memory,
                     ),
                     InfoChip(
-                      label: '${widget.transcriptionResult.wordCount} Wörter',
+                      label: context.l10n.wordCount(widget.transcriptionResult.wordCount),
                       icon: Icons.text_fields,
                     ),
                     InfoChip(
-                      label: '${widget.transcriptionResult.characterCount} Zeichen',
+                      label: context.l10n.characterCount(widget.transcriptionResult.characterCount),
                       icon: Icons.abc,
                     ),
                   ],
@@ -146,7 +147,7 @@ class _CompletedTranscriptionCardState extends State<CompletedTranscriptionCard>
               const SizedBox(width: AppSpacing.xs),
               Expanded(
                 child: Text(
-                  'Verarbeite die Transkription mit einem KI-Prompt',
+                  context.l10n.processWithPrompt,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -176,7 +177,7 @@ class _CompletedTranscriptionCardState extends State<CompletedTranscriptionCard>
         Padding(
           padding: const EdgeInsets.only(top: 4),
           child: Text(
-            'Sprecher: ',
+            context.l10n.speakers,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -225,16 +226,16 @@ class _CompletedTranscriptionCardState extends State<CompletedTranscriptionCard>
     IconData iconData;
 
     if (_showSuccessAnimation) {
-      buttonText = 'Erfolgreich!';
+      buttonText = context.l10n.transcriptionSuccess;
       iconData = Icons.check_circle;
     } else if (widget.isPromptActive) {
-      buttonText = 'Wird generiert...';
+      buttonText = context.l10n.generating;
       iconData = Icons.hourglass_empty;
     } else if (hasResults) {
-      buttonText = 'Weiteres Prompt anwenden';
+      buttonText = context.l10n.applyAnotherPrompt;
       iconData = Icons.add_circle;
     } else {
-      buttonText = 'Prompt anwenden';
+      buttonText = context.l10n.applyPrompt;
       iconData = Icons.auto_awesome;
     }
 

@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import '../services/settings_service.dart';
+import '../services/i_locale_service.dart';
+import '../services/locale_service.dart';
 import '../repositories/model_repository.dart';
 
 /// Provider for app-wide settings state management
 /// Wraps SettingsService and provides reactive state updates
 class SettingsProvider with ChangeNotifier {
   final ISettingsService _settingsService;
+  final ILocaleService _localeService;
 
   String? _apiKey;
   String _language = 'auto';
+  String _uiLanguage = 'de';
   String? _audioSavePath;
   double _textSize = 16.0;
   String _selectedModel = ModelRepository.defaultModelId;
@@ -16,11 +20,14 @@ class SettingsProvider with ChangeNotifier {
   bool _isInitialized = false;
   bool _isLoading = false;
 
-  SettingsProvider(this._settingsService);
+  SettingsProvider(this._settingsService, {ILocaleService? localeService})
+      : _localeService = localeService ?? LocaleService();
 
   // Getters
   String? get apiKey => _apiKey;
   String get language => _language;
+  String get uiLanguage => _uiLanguage;
+  Locale get locale => Locale(_uiLanguage);
   String? get audioSavePath => _audioSavePath;
   double get textSize => _textSize;
   String get selectedModel => _selectedModel;
@@ -51,6 +58,7 @@ class SettingsProvider with ChangeNotifier {
     try {
       _apiKey = await _settingsService.getApiKey();
       _language = await _settingsService.getLanguage();
+      _uiLanguage = await _localeService.getUiLanguage();
       _audioSavePath = await _settingsService.getAudioSavePath();
       _textSize = await _settingsService.getTextSize();
       _selectedModel = await _settingsService.getModel();
@@ -103,6 +111,13 @@ class SettingsProvider with ChangeNotifier {
   Future<void> saveThemeMode(String themeMode) async {
     await _settingsService.saveThemeMode(themeMode);
     _themeMode = themeMode;
+    notifyListeners();
+  }
+
+  /// Save UI language and update state
+  Future<void> saveUiLanguage(String language) async {
+    await _localeService.saveUiLanguage(language);
+    _uiLanguage = language;
     notifyListeners();
   }
 

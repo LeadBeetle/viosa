@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/prompt.dart';
 import '../utils/constants.dart';
+import '../l10n/l10n.dart';
 import 'placeholder_text_editing_controller.dart';
 import 'info_chip.dart';
 
@@ -139,7 +140,7 @@ class _PromptEditDialogState extends State<PromptEditDialog> {
                     children: [
                       Expanded(
                         child: Text(
-                          isEditing ? 'Prompt bearbeiten' : 'Neuer Prompt',
+                          isEditing ? context.l10n.editPrompt : context.l10n.newPrompt,
                           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                                 fontWeight: FontWeight.bold,
                               ),
@@ -148,7 +149,7 @@ class _PromptEditDialogState extends State<PromptEditDialog> {
                       IconButton(
                         icon: const Icon(Icons.close),
                         onPressed: () => Navigator.pop(context),
-                        tooltip: 'Abbrechen',
+                        tooltip: context.l10n.cancel,
                       ),
                     ],
                   ),
@@ -164,15 +165,15 @@ class _PromptEditDialogState extends State<PromptEditDialog> {
                       children: [
                         TextFormField(
                           controller: _nameController,
-                          decoration: const InputDecoration(
-                            labelText: 'Prompt-Name',
-                            hintText: 'z.B. Zusammenfassen',
-                            border: OutlineInputBorder(),
+                          decoration: InputDecoration(
+                            labelText: context.l10n.promptName,
+                            hintText: context.l10n.promptNameHint,
+                            border: const OutlineInputBorder(),
                           ),
                           textInputAction: TextInputAction.next,
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
-                              return 'Bitte geben Sie einen Namen ein';
+                              return context.l10n.enterNameRequired;
                             }
                             return null;
                           },
@@ -186,11 +187,11 @@ class _PromptEditDialogState extends State<PromptEditDialog> {
                               _advancedMode = value ?? false;
                             });
                           },
-                          title: const Text('Erweiterte Optionen'),
+                          title: Text(context.l10n.advancedOptions),
                           subtitle: Text(
                             _advancedMode
-                                ? 'Manuelle Platzierung der Transkription'
-                                : 'Transkription wird automatisch am Ende eingefügt',
+                                ? context.l10n.manualTranscriptionPlacement
+                                : context.l10n.autoTranscriptionPlacement,
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                           contentPadding: EdgeInsets.zero,
@@ -206,7 +207,7 @@ class _PromptEditDialogState extends State<PromptEditDialog> {
                               child: OutlinedButton.icon(
                                 onPressed: _insertPlaceholder,
                                 icon: const Icon(Icons.add_circle_outline, size: 18),
-                                label: const Text('Transkription einfügen'),
+                                label: Text(context.l10n.insertTranscription),
                                 style: OutlinedButton.styleFrom(
                                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                 ),
@@ -216,10 +217,10 @@ class _PromptEditDialogState extends State<PromptEditDialog> {
                         TextFormField(
                           controller: _templateController,
                           decoration: InputDecoration(
-                            labelText: 'Prompt-Vorlage',
+                            labelText: context.l10n.promptTemplate,
                             hintText: _advancedMode
-                                ? 'Verwenden Sie den Button oben, um {transcription} einzufügen'
-                                : 'Beschreiben Sie, was mit der Transkription geschehen soll',
+                                ? context.l10n.promptTemplateHintAdvanced('{transcription}')
+                                : context.l10n.promptTemplateHintSimple,
                             border: const OutlineInputBorder(),
                             contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                             alignLabelWithHint: true,
@@ -229,7 +230,7 @@ class _PromptEditDialogState extends State<PromptEditDialog> {
                           textInputAction: TextInputAction.newline,
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
-                              return 'Bitte geben Sie eine Vorlage ein';
+                              return context.l10n.enterTemplateRequired;
                             }
                             // No validation for placeholder in simple mode
                             return null;
@@ -244,7 +245,7 @@ class _PromptEditDialogState extends State<PromptEditDialog> {
                                 Padding(
                                   padding: const EdgeInsets.only(right: 8),
                                   child: InfoChip(
-                                    label: '{transcription} gefunden',
+                                    label: context.l10n.transcriptionPlaceholderFound('{transcription}'),
                                     icon: Icons.check_circle,
                                     iconColor: Theme.of(context).colorScheme.primary,
                                   ),
@@ -252,8 +253,8 @@ class _PromptEditDialogState extends State<PromptEditDialog> {
                               Expanded(
                                 child: Text(
                                   _advancedMode
-                                      ? 'Verwenden Sie {transcription}, wo der Text eingefügt werden soll'
-                                      : 'Die Transkription wird automatisch an Ihren Prompt angehängt',
+                                      ? context.l10n.transcriptionPlacementHintAdvanced('{transcription}')
+                                      : context.l10n.transcriptionPlacementHintSimple,
                                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                                   ),
@@ -281,7 +282,7 @@ class _PromptEditDialogState extends State<PromptEditDialog> {
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
-                                    'Beispiel',
+                                    context.l10n.example,
                                     style: Theme.of(context).textTheme.labelMedium?.copyWith(
                                           fontWeight: FontWeight.bold,
                                         ),
@@ -291,8 +292,8 @@ class _PromptEditDialogState extends State<PromptEditDialog> {
                               const SizedBox(height: 8),
                               Text(
                                 _advancedMode
-                                    ? 'Fasse den folgenden Text zusammen:\n\n{transcription}\n\nAchte dabei auf die Hauptpunkte.'
-                                    : 'Fasse den Text zusammen und liste die wichtigsten Punkte auf.',
+                                    ? context.l10n.examplePromptAdvanced('{transcription}')
+                                    : context.l10n.examplePromptSimple,
                                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                       fontFamily: 'monospace',
                                     ),
@@ -325,7 +326,7 @@ class _PromptEditDialogState extends State<PromptEditDialog> {
                         Expanded(
                           child: TextButton(
                             onPressed: () => Navigator.pop(context),
-                            child: const Text('Abbrechen'),
+                            child: Text(context.l10n.cancel),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -333,7 +334,7 @@ class _PromptEditDialogState extends State<PromptEditDialog> {
                           flex: 2,
                           child: FilledButton(
                             onPressed: _save,
-                            child: Text(isEditing ? 'Speichern' : 'Erstellen'),
+                            child: Text(isEditing ? context.l10n.save : context.l10n.create),
                           ),
                         ),
                       ],

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/prompt.dart';
 import '../providers/prompts_provider.dart';
 import '../services/snackbar_service.dart';
+import '../l10n/l10n.dart';
 
 /// Dialog for selecting a prompt with tabs for custom and built-in prompts
 class PromptSelectorDialog extends StatefulWidget {
@@ -40,9 +41,10 @@ class _PromptSelectorDialogState extends State<PromptSelectorDialog>
 
     try {
       final promptsProvider = context.read<PromptsProvider>();
+      final l10n = context.l10n;
       setState(() {
         _customPrompts = promptsProvider.customPrompts;
-        _predefinedPrompts = promptsProvider.predefinedPrompts;
+        _predefinedPrompts = promptsProvider.getPredefinedPrompts(l10n);
         _isLoading = false;
       });
     } catch (e) {
@@ -50,7 +52,7 @@ class _PromptSelectorDialogState extends State<PromptSelectorDialog>
         _isLoading = false;
       });
       if (mounted) {
-        SnackBarService().showError(context, 'Fehler beim Laden der Prompts: $e');
+        SnackBarService().showError(context, context.l10n.errorLoadingPrompts(e.toString()));
       }
     }
   }
@@ -126,14 +128,13 @@ class _PromptSelectorDialogState extends State<PromptSelectorDialog>
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
       ),
-      leading: Radio<String>(
-        value: prompt.id,
-        groupValue: _selectedPrompt?.id,
-        onChanged: (String? value) {
-          setState(() {
-            _selectedPrompt = prompt;
-          });
-        },
+      leading: Icon(
+        isSelected
+            ? Icons.radio_button_checked
+            : Icons.radio_button_unchecked,
+        color: isSelected
+            ? Theme.of(context).colorScheme.primary
+            : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
       ),
       selected: isSelected,
       onTap: () {
@@ -147,7 +148,7 @@ class _PromptSelectorDialogState extends State<PromptSelectorDialog>
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Prompt auswählen'),
+      title: Text(context.l10n.selectPrompt),
       content: SizedBox(
         width: double.maxFinite,
         height: 400,
@@ -162,12 +163,12 @@ class _PromptSelectorDialogState extends State<PromptSelectorDialog>
                       Tab(
                         child: Text(
                           _customPrompts.isNotEmpty
-                              ? 'Eigene (${_customPrompts.length})'
-                              : 'Eigene',
+                              ? context.l10n.customPromptsCount(_customPrompts.length)
+                              : context.l10n.customPrompts,
                         ),
                       ),
                       Tab(
-                        child: Text('Standard (${_predefinedPrompts.length})'),
+                        child: Text(context.l10n.standardPromptsCount(_predefinedPrompts.length)),
                       ),
                     ],
                   ),
@@ -178,11 +179,11 @@ class _PromptSelectorDialogState extends State<PromptSelectorDialog>
                       children: [
                         _buildPromptList(
                           _customPrompts,
-                          'Keine eigenen Prompts vorhanden.\n\nErstellen Sie Ihre eigenen Prompts unter "Prompts" in der Navigation.',
+                          context.l10n.noCustomPromptsAvailable,
                         ),
                         _buildPromptList(
                           _predefinedPrompts,
-                          'Keine vordefinierten Prompts verfügbar.',
+                          context.l10n.noPredefinedPromptsAvailable,
                         ),
                       ],
                     ),
@@ -193,11 +194,11 @@ class _PromptSelectorDialogState extends State<PromptSelectorDialog>
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Abbrechen'),
+          child: Text(context.l10n.cancel),
         ),
         ElevatedButton(
           onPressed: _selectedPrompt == null ? null : _selectPrompt,
-          child: const Text('Anwenden'),
+          child: Text(context.l10n.apply),
         ),
       ],
     );

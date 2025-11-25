@@ -1,0 +1,34 @@
+# Release Keystore Configuration for VIOSA
+# Copy this file to key.properties and fill in your values
+# IMPORTANT: Never commit key.properties to version control!
+
+# Keystore password
+storePassword=YOUR_KEYSTORE_PASSWORD
+
+# Key password (often same as storePassword)
+keyPassword=YOUR_KEY_PASSWORD
+
+# Key alias name
+keyAlias=viosa
+
+# Path to your keystore file (relative to android/ directory or absolute path)
+storeFile=keystore/viosa-release.jks
+
+# ============================================
+# HOW TO CREATE YOUR KEYSTORE:
+# ============================================
+# Run this command in your terminal:
+#
+# keytool -genkey -v -keystore viosa-release.jks -keyalg RSA -keysize 2048 -validity 10000 -alias viosa
+#
+# You will be prompted for:
+# - Keystore password
+# - Key password
+# - Your name, organization, etc.
+#
+# Then move the keystore to android/keystore/ directory:
+# mkdir -p android/keystore
+# mv viosa-release.jks android/keystore/
+#
+# IMPORTANT: Back up your keystore file securely!
+# If you lose it, you cannot update your app on the Play Store.

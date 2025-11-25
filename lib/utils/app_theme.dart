@@ -31,7 +31,7 @@ class AppTheme {
     ).copyWith(
       primary: _brandOrange,
       onPrimary: Colors.white,
-      primaryContainer: _brandOrange.withOpacity(0.2),
+      primaryContainer: _brandOrange.withValues(alpha: 0.2),
       onPrimaryContainer: _brandOrange,
       secondary: _brandPurple,
       onSecondary: Colors.white,
@@ -90,7 +90,7 @@ class AppTheme {
     ).copyWith(
       primary: _brandOrangeDark,
       onPrimary: Colors.white,
-      primaryContainer: _brandOrangeDark.withOpacity(0.3),
+      primaryContainer: _brandOrangeDark.withValues(alpha: 0.3),
       onPrimaryContainer: _brandOrangeDark,
       secondary: _brandPurpleDark,
       onSecondary: Colors.white,

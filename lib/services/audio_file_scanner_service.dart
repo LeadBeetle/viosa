@@ -120,6 +120,33 @@ class AudioFileScannerService implements IAudioFileScannerService {
             }
           }
         }
+      } else if (Platform.isIOS) {
+        // On iOS, access is sandboxed - add available app directories
+        // iOS apps can only access their own sandbox directories
+
+        // Add temporary directory (for cached/temporary audio files)
+        final tempDir = await getTemporaryDirectory();
+        final normalizedTempPath = _normalizePath(tempDir.path);
+        if (!addedPaths.contains(normalizedTempPath)) {
+          directories.add(tempDir);
+          addedPaths.add(normalizedTempPath);
+        }
+
+        // Add application support directory
+        final appSupportDir = await getApplicationSupportDirectory();
+        final normalizedAppSupportPath = _normalizePath(appSupportDir.path);
+        if (!addedPaths.contains(normalizedAppSupportPath)) {
+          directories.add(appSupportDir);
+          addedPaths.add(normalizedAppSupportPath);
+        }
+
+        // Add library directory for any cached audio
+        final libDir = await getLibraryDirectory();
+        final normalizedLibPath = _normalizePath(libDir.path);
+        if (!addedPaths.contains(normalizedLibPath)) {
+          directories.add(libDir);
+          addedPaths.add(normalizedLibPath);
+        }
       }
     } catch (e) {
       // If we can't access standard directories, return what we have

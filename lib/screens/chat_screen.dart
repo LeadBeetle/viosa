@@ -9,6 +9,7 @@ import '../widgets/chat/context_chip_bar.dart';
 import '../widgets/chat/chat_input_bar.dart';
 import '../utils/constants.dart';
 import '../services/snackbar_service.dart';
+import '../l10n/l10n.dart';
 
 /// Screen for chatting about transcription results
 class ChatScreen extends StatefulWidget {
@@ -26,6 +27,7 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final ScrollController _scrollController = ScrollController();
   late ChatProvider _chatProvider;
+  HistoryProvider? _historyProvider;
   bool _isInitialized = false;
 
   @override
@@ -33,6 +35,12 @@ class _ChatScreenState extends State<ChatScreen> {
     super.initState();
     _chatProvider = ChatProvider();
     _loadHistory();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _historyProvider ??= context.read<HistoryProvider>();
   }
 
   @override
@@ -53,16 +61,15 @@ class _ChatScreenState extends State<ChatScreen> {
       });
     } else {
       if (mounted) {
-        SnackBarService().showError(context, 'Aufnahme nicht gefunden');
+        SnackBarService().showError(context, context.l10n.recordingNotFound);
         Navigator.pop(context);
       }
     }
   }
 
   Future<void> _saveChat() async {
-    if (!_isInitialized) return;
-    final historyProvider = context.read<HistoryProvider>();
-    await _chatProvider.saveToHistory(historyProvider);
+    if (!_isInitialized || _historyProvider == null) return;
+    await _chatProvider.saveToHistory(_historyProvider!);
   }
 
   void _scrollToBottom() {
@@ -83,7 +90,7 @@ class _ChatScreenState extends State<ChatScreen> {
     if (settings.apiKey == null || settings.apiKey!.isEmpty) {
       SnackBarService().showError(
         context,
-        'API-Schlüssel nicht konfiguriert',
+        context.l10n.apiKeyNotConfigured,
       );
       return;
     }
@@ -104,7 +111,7 @@ class _ChatScreenState extends State<ChatScreen> {
     if (_chatProvider.error != null && mounted) {
       SnackBarService().showError(
         context,
-        'Fehler: ${_chatProvider.error}',
+        context.l10n.errorGeneric(_chatProvider.error ?? ''),
       );
     }
   }
@@ -115,7 +122,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     if (!_isInitialized) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Chat')),
+        appBar: AppBar(title: Text(context.l10n.chat)),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
@@ -138,7 +145,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 IconButton(
                   icon: const Icon(Icons.delete_outline),
                   onPressed: () => _showClearConfirmation(),
-                  tooltip: 'Chat löschen',
+                  tooltip: context.l10n.clearChat,
                 ),
             ],
           ),
@@ -197,14 +204,14 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
               const SizedBox(height: AppSpacing.m),
               Text(
-                'Starten Sie einen Chat',
+                context.l10n.startChatTitle,
                 style: theme.textTheme.titleMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
               const SizedBox(height: AppSpacing.s),
               Text(
-                'Stellen Sie Fragen zum Transkript oder nutzen Sie @Transkript um darauf zu verweisen.',
+                context.l10n.startChatDescription,
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
@@ -243,23 +250,21 @@ class _ChatScreenState extends State<ChatScreen> {
   void _showClearConfirmation() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Chat löschen?'),
-        content: const Text(
-          'Möchten Sie den gesamten Chat-Verlauf löschen? Diese Aktion kann nicht rückgängig gemacht werden.',
-        ),
+      builder: (ctx) => AlertDialog(
+        title: Text(ctx.l10n.clearChatConfirmTitle),
+        content: Text(ctx.l10n.clearChatConfirmMessage),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Abbrechen'),
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(ctx.l10n.cancel),
           ),
           FilledButton(
             onPressed: () {
-              Navigator.pop(context);
+              Navigator.pop(ctx);
               _chatProvider.clearMessages();
               _saveChat();
             },
-            child: const Text('Löschen'),
+            child: Text(ctx.l10n.delete),
           ),
         ],
       ),

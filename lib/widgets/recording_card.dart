@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/transcription_history.dart';
 import '../services/snackbar_service.dart';
 import '../utils/constants.dart';
+import '../l10n/l10n.dart';
 import 'waveform_display_widget.dart';
 
 class RecordingCard extends StatefulWidget {
@@ -35,15 +36,16 @@ class RecordingCard extends StatefulWidget {
 
 class _RecordingCardState extends State<RecordingCard> {
   Timer? _timer;
-  late final ValueNotifier<String> _relativeTimeNotifier;
+  late final ValueNotifier<DateTime> _createdAtNotifier;
 
   @override
   void initState() {
     super.initState();
-    _relativeTimeNotifier = ValueNotifier(_formatRelativeTime(widget.history.createdAt));
+    _createdAtNotifier = ValueNotifier(widget.history.createdAt);
     _timer = Timer.periodic(const Duration(seconds: 30), (timer) {
       if (mounted) {
-        _relativeTimeNotifier.value = _formatRelativeTime(widget.history.createdAt);
+        // Trigger rebuild by updating the notifier
+        _createdAtNotifier.value = widget.history.createdAt;
       }
     });
   }
@@ -51,7 +53,7 @@ class _RecordingCardState extends State<RecordingCard> {
   @override
   void dispose() {
     _timer?.cancel();
-    _relativeTimeNotifier.dispose();
+    _createdAtNotifier.dispose();
     super.dispose();
   }
 
@@ -64,24 +66,21 @@ class _RecordingCardState extends State<RecordingCard> {
         : "$minutes:$seconds";
   }
 
-  String _formatRelativeTime(DateTime dateTime) {
+  String _formatRelativeTime(BuildContext context, DateTime dateTime) {
     final now = DateTime.now();
     final difference = now.difference(dateTime);
 
     if (difference.inSeconds < 60) {
-      return 'vor ${difference.inSeconds} Sek.';
+      return context.l10n.timeAgoSeconds(difference.inSeconds);
     } else if (difference.inMinutes < 60) {
-      final minutes = difference.inMinutes;
-      return 'vor $minutes Min.';
+      return context.l10n.timeAgoMinutes(difference.inMinutes);
     } else if (difference.inHours < 24) {
-      final hours = difference.inHours;
-      return 'vor $hours Std.';
+      return context.l10n.timeAgoHours(difference.inHours);
     } else if (difference.inDays < 365) {
-      final days = difference.inDays;
-      return 'vor $days ${days == 1 ? "Tag" : "Tagen"}';
+      return context.l10n.timeAgoDays(difference.inDays);
     } else {
       final years = (difference.inDays / 365).floor();
-      return 'vor $years ${years == 1 ? "Jahr" : "Jahren"}';
+      return context.l10n.timeAgoYears(years);
     }
   }
 
@@ -99,6 +98,52 @@ class _RecordingCardState extends State<RecordingCard> {
       return fileName.substring(lastDot + 1).toUpperCase();
     }
     return '';
+  }
+
+  Widget? _buildStatusChip(BuildContext context, ThemeData theme, bool hasTranscription) {
+    final hasAudioFile = widget.history.audioPath != null;
+    final hasResults = hasTranscription || widget.history.promptResults.isNotEmpty;
+
+    if (!hasAudioFile) {
+      if (hasResults) {
+        return Chip(
+          avatar: const Icon(Icons.check_circle, size: 16),
+          label: Text(
+            context.l10n.transcribed,
+            overflow: TextOverflow.ellipsis,
+          ),
+          visualDensity: VisualDensity.compact,
+          backgroundColor: theme.colorScheme.secondaryContainer.withValues(alpha: 0.5),
+          side: BorderSide.none,
+        );
+      }
+      return null;
+    }
+
+    if (!hasTranscription) {
+      return ActionChip(
+        avatar: const Icon(Icons.transcribe, size: 16),
+        label: Text(
+          context.l10n.transcribe,
+          overflow: TextOverflow.ellipsis,
+        ),
+        onPressed: widget.onTranscribe,
+        visualDensity: VisualDensity.compact,
+        backgroundColor: theme.colorScheme.primaryContainer,
+        side: BorderSide.none,
+      );
+    }
+
+    return Chip(
+      avatar: const Icon(Icons.check_circle, size: 16),
+      label: Text(
+        context.l10n.transcribed,
+        overflow: TextOverflow.ellipsis,
+      ),
+      visualDensity: VisualDensity.compact,
+      backgroundColor: theme.colorScheme.secondaryContainer.withValues(alpha: 0.5),
+      side: BorderSide.none,
+    );
   }
 
   @override
@@ -169,7 +214,7 @@ class _RecordingCardState extends State<RecordingCard> {
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  '$promptCount Prompt${promptCount != 1 ? 's' : ''}',
+                                  context.l10n.promptCount(promptCount),
                                   style: theme.textTheme.bodySmall?.copyWith(
                                     color: theme.colorScheme.primary,
                                     fontWeight: FontWeight.w500,
@@ -186,7 +231,7 @@ class _RecordingCardState extends State<RecordingCard> {
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  '${widget.history.chatMessageCount} ${widget.history.chatMessageCount == 1 ? 'Nachricht' : 'Nachrichten'}',
+                                  context.l10n.messageCount(widget.history.chatMessageCount),
                                   style: theme.textTheme.bodySmall?.copyWith(
                                     color: theme.colorScheme.primary,
                                     fontWeight: FontWeight.w500,
@@ -230,7 +275,7 @@ class _RecordingCardState extends State<RecordingCard> {
                                   size: 20,
                                 ),
                                 const SizedBox(width: 8),
-                                const Text('Chat'),
+                                Text(context.l10n.chat),
                               ],
                             ),
                           ),
@@ -245,7 +290,7 @@ class _RecordingCardState extends State<RecordingCard> {
                                   size: 20,
                                 ),
                                 const SizedBox(width: 8),
-                                const Text('Umbenennen'),
+                                Text(context.l10n.menuRename),
                               ],
                             ),
                           ),
@@ -260,7 +305,7 @@ class _RecordingCardState extends State<RecordingCard> {
                                   size: 20,
                                 ),
                                 const SizedBox(width: 8),
-                                const Text('Exportieren'),
+                                Text(context.l10n.menuExport),
                               ],
                             ),
                           ),
@@ -276,7 +321,7 @@ class _RecordingCardState extends State<RecordingCard> {
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  'Löschen',
+                                  context.l10n.delete,
                                   style: TextStyle(
                                     color: theme.colorScheme.error,
                                   ),
@@ -321,10 +366,10 @@ class _RecordingCardState extends State<RecordingCard> {
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-                        ValueListenableBuilder<String>(
-                          valueListenable: _relativeTimeNotifier,
-                          builder: (context, relativeTime, _) => Text(
-                            relativeTime,
+                        ValueListenableBuilder<DateTime>(
+                          valueListenable: _createdAtNotifier,
+                          builder: (context, createdAt, _) => Text(
+                            _formatRelativeTime(context, createdAt),
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
@@ -334,12 +379,12 @@ class _RecordingCardState extends State<RecordingCard> {
                     ),
                   ] else ...[
                     Tooltip(
-                      message: 'Alte Aufnahme ohne Audiodatei',
+                      message: context.l10n.oldRecordingNoAudio,
                       child: GestureDetector(
                         onTap: () {
                           SnackBarService().showInfo(
                             context,
-                            'Alte Aufnahme: Audiodatei nicht mehr verfügbar',
+                            context.l10n.oldRecordingAudioUnavailable,
                           );
                         },
                         child: Icon(
@@ -350,24 +395,13 @@ class _RecordingCardState extends State<RecordingCard> {
                       ),
                     ),
                   ],
-                  const Spacer(),
-                  if (!hasTranscription)
-                    ActionChip(
-                      avatar: const Icon(Icons.transcribe, size: 16),
-                      label: const Text('Transkribieren'),
-                      onPressed: widget.onTranscribe,
-                      visualDensity: VisualDensity.compact,
-                      backgroundColor: theme.colorScheme.primaryContainer,
-                      side: BorderSide.none,
-                    )
-                  else
-                    Chip(
-                      avatar: const Icon(Icons.check_circle, size: 16),
-                      label: const Text('Transkribiert'),
-                      visualDensity: VisualDensity.compact,
-                      backgroundColor: theme.colorScheme.secondaryContainer.withValues(alpha: 0.5),
-                      side: BorderSide.none,
+                  const SizedBox(width: AppSpacing.s),
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: _buildStatusChip(context, theme, hasTranscription),
                     ),
+                  ),
                 ],
               ),
             ],

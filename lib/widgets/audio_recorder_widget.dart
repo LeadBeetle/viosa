@@ -9,6 +9,7 @@ import '../services/recording_service.dart';
 import '../providers/settings_provider.dart';
 import '../utils/constants.dart';
 import '../services/snackbar_service.dart';
+import '../l10n/l10n.dart';
 import 'app_loading_indicator.dart';
 import 'fancy_recording_button.dart';
 
@@ -141,19 +142,16 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
       final shouldRequest = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Speicherberechtigung erforderlich'),
-          content: const Text(
-            'Um Aufnahmen in Ihrem ausgewählten Ordner zu speichern, benötigt VIOSA Zugriff auf den Speicher.\n\n'
-            'Bitte erlauben Sie den Zugriff.',
-          ),
+          title: Text(context.l10n.storagePermissionRequiredTitle),
+          content: Text(context.l10n.storagePermissionRequiredContent),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Abbrechen'),
+              child: Text(context.l10n.cancel),
             ),
             FilledButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Berechtigung erteilen'),
+              child: Text(context.l10n.grantPermission),
             ),
           ],
         ),
@@ -182,19 +180,16 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
       final shouldOpenSettings = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Berechtigung verweigert'),
-          content: const Text(
-            'Um in Ihrem gewählten Ordner zu speichern, muss die Speicherberechtigung aktiviert werden.\n\n'
-            'Möchten Sie die Einstellungen öffnen?',
-          ),
+          title: Text(context.l10n.permissionDeniedTitle),
+          content: Text(context.l10n.permissionDeniedContent),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Nein'),
+              child: Text(context.l10n.no),
             ),
             FilledButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Einstellungen öffnen'),
+              child: Text(context.l10n.openSettings),
             ),
           ],
         ),
@@ -382,17 +377,17 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
       case RecordState.record:
         icon = Icons.fiber_manual_record_rounded;
         iconColor = colorScheme.error;
-        statusText = 'Aufnahme läuft';
+        statusText = context.l10n.recordingInProgress;
         break;
       case RecordState.pause:
         icon = Icons.pause_circle_rounded;
         iconColor = colorScheme.primary;
-        statusText = 'Pausiert';
+        statusText = context.l10n.paused;
         break;
       default:
         icon = Icons.mic_rounded;
         iconColor = colorScheme.primary;
-        statusText = 'Bereit zur Aufnahme';
+        statusText = context.l10n.readyToRecord;
     }
 
     return Container(
@@ -483,7 +478,7 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
               const AppLoadingIndicator.medium(),
               const SizedBox(height: AppSpacing.m),
               Text(
-                'Aufnahme wird gespeichert...',
+                context.l10n.savingRecording,
                 style: textTheme.bodyMedium?.copyWith(
                   color: colorScheme.onSurfaceVariant,
                 ),
@@ -501,7 +496,7 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
           child: _buildControlButton(
             context: context,
             icon: Icons.close_rounded,
-            label: 'Abbrechen',
+            label: context.l10n.cancel,
             onPressed: _cancelRecording,
             isPrimary: false,
             color: colorScheme.error,
@@ -515,7 +510,7 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
             icon: _recordState == RecordState.pause
                 ? Icons.play_arrow_rounded
                 : Icons.pause_rounded,
-            label: _recordState == RecordState.pause ? 'Fortsetzen' : 'Pause',
+            label: _recordState == RecordState.pause ? context.l10n.resume : context.l10n.pause,
             onPressed: _recordState == RecordState.pause
                 ? _resumeRecording
                 : _pauseRecording,
@@ -529,7 +524,7 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
           child: _buildControlButton(
             context: context,
             icon: Icons.check_rounded,
-            label: 'Fertig',
+            label: context.l10n.done,
             onPressed: _stopRecording,
             isPrimary: true,
             color: colorScheme.tertiary,

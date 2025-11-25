@@ -6,7 +6,8 @@
       "Bash(flutter pub get:*)",
       "Bash(flutter analyze:*)",
       "Bash(git checkout:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(flutter gen-l10n:*)"
     ],
     "deny": [],
     "ask": []

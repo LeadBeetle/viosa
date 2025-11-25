@@ -51,6 +51,12 @@
 	<string>Diese App benötigt Zugriff auf Ihre Medienbibliothek, um Audiodateien auszuwählen.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Diese App benötigt Zugriff auf Ihre Fotobibliothek, um Audiodateien auszuwählen.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Diese App benötigt Zugriff auf die Spracherkennung, um Audio in Text umzuwandeln.</string>
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>

@@ -31,7 +31,7 @@ class TranscriptionHistory {
   final bool isSplitTranscription;
 
   @HiveField(7)
-  final int? _durationMs; // Store as milliseconds for Hive
+  final int? durationMs;
 
   @HiveField(8)
   final List<double>? waveform;
@@ -42,8 +42,7 @@ class TranscriptionHistory {
   @HiveField(10)
   final List<ChatMessage>? chatMessages;
 
-  // Getter to convert milliseconds to Duration
-  Duration? get duration => _durationMs != null ? Duration(milliseconds: _durationMs!) : null;
+  Duration? get duration => durationMs != null ? Duration(milliseconds: durationMs!) : null;
 
   // Getter for chat message count
   int get chatMessageCount => chatMessages?.length ?? 0;
@@ -57,13 +56,14 @@ class TranscriptionHistory {
     this.splitJobId,
     this.isSplitTranscription = false,
     Duration? duration,
+    int? durationMs,
     this.waveform,
     this.audioPath,
     this.chatMessages,
   })  : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
         promptResults = promptResults ?? [],
         createdAt = createdAt ?? DateTime.now(),
-        _durationMs = duration?.inMilliseconds;
+        durationMs = durationMs ?? duration?.inMilliseconds;
 
   /// Creates history entry from JSON
   factory TranscriptionHistory.fromJson(Map<String, dynamic> json) {

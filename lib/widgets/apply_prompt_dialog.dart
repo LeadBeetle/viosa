@@ -5,6 +5,7 @@ import '../providers/prompts_provider.dart';
 import '../providers/settings_provider.dart';
 import '../services/llm_provider.dart';
 import '../services/llm_provider_factory.dart';
+import '../l10n/l10n.dart';
 
 /// Dialog for selecting and applying a prompt to transcription text
 /// Follows Single Responsibility Principle: Handles prompt application UI
@@ -45,14 +46,15 @@ class _ApplyPromptDialogState extends State<ApplyPromptDialog> {
 
     try {
       final promptsProvider = context.read<PromptsProvider>();
-      final prompts = promptsProvider.allPrompts;
+      final l10n = context.l10n;
+      final prompts = promptsProvider.getAllPrompts(l10n);
       setState(() {
         _prompts = prompts;
         _isLoading = false;
       });
     } catch (e) {
       setState(() {
-        _errorMessage = 'Fehler beim Laden der Prompts: $e';
+        _errorMessage = context.l10n.errorLoadingPrompts(e.toString());
         _isLoading = false;
       });
     }
@@ -67,7 +69,7 @@ class _ApplyPromptDialogState extends State<ApplyPromptDialog> {
     final apiKey = settingsProvider.apiKey;
     if (apiKey == null || apiKey.isEmpty) {
       setState(() {
-        _errorMessage = 'Bitte konfigurieren Sie Ihren API-Key in den Einstellungen';
+        _errorMessage = context.l10n.configureApiKey;
       });
       return;
     }
@@ -105,7 +107,7 @@ class _ApplyPromptDialogState extends State<ApplyPromptDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Prompt anwenden'),
+      title: Text(context.l10n.applyPrompt),
       content: SizedBox(
         width: double.maxFinite,
         child: _isLoading
@@ -148,13 +150,13 @@ class _ApplyPromptDialogState extends State<ApplyPromptDialog> {
                     ),
                     const SizedBox(height: 16),
                   ],
-                  const Text('Wählen Sie einen Prompt für Ihre Transkription:'),
+                  Text(context.l10n.selectPromptForTranscription),
                   const SizedBox(height: 16),
                   if (_prompts.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.all(16.0),
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
                       child: Text(
-                        'Keine Prompts verfügbar. Erstellen Sie einen im Prompts-Bereich.',
+                        context.l10n.noPromptsAvailable,
                         textAlign: TextAlign.center,
                       ),
                     )
@@ -206,7 +208,7 @@ class _ApplyPromptDialogState extends State<ApplyPromptDialog> {
       actions: [
         TextButton(
           onPressed: _isApplying ? null : () => Navigator.pop(context),
-          child: const Text('Abbrechen'),
+          child: Text(context.l10n.cancel),
         ),
         FilledButton.icon(
           onPressed: (_isApplying || _selectedPrompt == null) ? null : _applyPrompt,
@@ -217,7 +219,7 @@ class _ApplyPromptDialogState extends State<ApplyPromptDialog> {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               : const Icon(Icons.send),
-          label: Text(_isApplying ? 'Wende an...' : 'Anwenden'),
+          label: Text(_isApplying ? context.l10n.applying : context.l10n.apply),
         ),
       ],
     );
