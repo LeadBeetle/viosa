@@ -17,6 +17,7 @@ class AudioSplitterService implements IAudioSplitterService {
     String audioPath, {
     Duration maxDuration = const Duration(minutes: 10),
     Duration overlap = const Duration(seconds: 5),
+    void Function(SplitProgress progress)? onProgress,
   }) async {
     try {
       // Get total audio duration
@@ -49,6 +50,12 @@ class AudioSplitterService implements IAudioSplitterService {
       final segmentDuration = Duration(milliseconds: (totalMs / splitCount).ceil());
 
       for (int i = 0; i < splitCount; i++) {
+        onProgress?.call(SplitProgress(
+          currentSplit: i,
+          totalSplits: splitCount,
+          currentStatus: 'Teile Audio: ${i + 1}/$splitCount',
+        ));
+
         // Calculate start time (each segment starts where the previous one started + segmentDuration - overlap)
         final startTime = i == 0
             ? Duration.zero
@@ -104,6 +111,12 @@ class AudioSplitterService implements IAudioSplitterService {
 
         splits.add(split);
       }
+
+      onProgress?.call(SplitProgress(
+        currentSplit: splitCount,
+        totalSplits: splitCount,
+        currentStatus: 'Audio aufgeteilt',
+      ));
 
       return splits;
     } catch (e) {

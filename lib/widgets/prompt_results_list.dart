@@ -51,7 +51,7 @@ class _PromptResultsListState extends State<PromptResultsList> {
                 result: result,
                 onDelete: widget.onDelete,
                 onRestore: widget.onRestore,
-                isExpanded: true,
+                isExpanded: false,
                 showHighlight: isNewest,
               );
             },

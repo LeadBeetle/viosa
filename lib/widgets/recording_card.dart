@@ -11,6 +11,7 @@ class RecordingCard extends StatefulWidget {
   final VoidCallback onTap;
   final VoidCallback? onDelete;
   final VoidCallback? onRename;
+  final VoidCallback? onExport;
   final bool isPlaying;
 
   const RecordingCard({
@@ -21,6 +22,7 @@ class RecordingCard extends StatefulWidget {
     required this.onTap,
     this.onDelete,
     this.onRename,
+    this.onExport,
     this.isPlaying = false,
   });
 
@@ -115,6 +117,7 @@ class _RecordingCardState extends State<RecordingCard> {
               // Header: Name, Prompt Count, and Menu
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     child: Column(
@@ -122,7 +125,7 @@ class _RecordingCardState extends State<RecordingCard> {
                       children: [
                         Row(
                           children: [
-                            Flexible(
+                            Expanded(
                               child: Text(
                                 _getBaseNameWithoutExtension(widget.history.audioFileName),
                                 style: theme.textTheme.titleMedium?.copyWith(
@@ -174,13 +177,19 @@ class _RecordingCardState extends State<RecordingCard> {
                       ],
                     ),
                   ),
-                  if (widget.onDelete != null || widget.onRename != null)
-                    PopupMenuButton<String>(
-                      icon: const Icon(Icons.more_vert),
-                      color: theme.colorScheme.surface,
+                  if (widget.onDelete != null || widget.onRename != null || widget.onExport != null)
+                    SizedBox(
+                      height: 24,
+                      width: 24,
+                      child: PopupMenuButton<String>(
+                        icon: const Icon(Icons.more_vert, size: 20),
+                        padding: EdgeInsets.zero,
+                        color: theme.colorScheme.surface,
                       onSelected: (value) {
                         if (value == 'rename') {
                           widget.onRename?.call();
+                        } else if (value == 'export') {
+                          widget.onExport?.call();
                         } else if (value == 'delete') {
                           widget.onDelete?.call();
                         }
@@ -198,6 +207,21 @@ class _RecordingCardState extends State<RecordingCard> {
                                 ),
                                 const SizedBox(width: 8),
                                 const Text('Umbenennen'),
+                              ],
+                            ),
+                          ),
+                        if (widget.onExport != null)
+                          PopupMenuItem<String>(
+                            value: 'export',
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.share_outlined,
+                                  color: theme.colorScheme.onSurface,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                const Text('Exportieren'),
                               ],
                             ),
                           ),
@@ -222,6 +246,7 @@ class _RecordingCardState extends State<RecordingCard> {
                             ),
                           ),
                       ],
+                      ),
                     ),
                 ],
               ),

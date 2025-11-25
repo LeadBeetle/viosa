@@ -17,6 +17,7 @@ class CollapsibleTextSection extends StatefulWidget {
   final Widget? actionButton;
   final VoidCallback? onExpandChanged;
   final double maxExpandedHeight;
+  final List<Widget>? headerActions;
 
   const CollapsibleTextSection({
     super.key,
@@ -30,6 +31,7 @@ class CollapsibleTextSection extends StatefulWidget {
     this.actionButton,
     this.onExpandChanged,
     this.maxExpandedHeight = 600,
+    this.headerActions,
   });
 
   @override
@@ -151,6 +153,7 @@ class _CollapsibleTextSectionState extends State<CollapsibleTextSection>
                         ),
                   ),
                 ),
+                if (widget.headerActions != null) ...widget.headerActions!,
                 if (widget.showCopyButton)
                   IconButton(
                     icon: const Icon(Icons.copy, size: AppIconSize.medium),

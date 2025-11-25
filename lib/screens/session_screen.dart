@@ -311,6 +311,15 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
     await _startSplitTranscription(duration);
   }
 
+  Future<void> _retranscribe() async {
+    setState(() {
+      _transcriptionResult = null;
+      _promptResults.clear();
+    });
+    await _saveToHistory();
+    await _transcribe();
+  }
+
   Future<void> _startSplitTranscription(Duration duration) async {
     final settingsProvider = context.read<SettingsProvider>();
     final shouldSplit = duration > const Duration(minutes: 10);
@@ -659,8 +668,39 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (_isTranscribing) ...[
-            if (_isSplitTranscription && _activeSplitJob != null)
-              SplitTranscriptionProgressCard(job: _activeSplitJob!)
+            if (_isSplitTranscription)
+              _activeSplitJob != null
+                  ? SplitTranscriptionProgressCard(job: _activeSplitJob!)
+                  : Consumer<SplitTranscriptionProvider>(
+                      builder: (context, provider, child) {
+                        final progress = provider.splitProgress;
+                        return Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                            child: Column(
+                              children: [
+                                if (progress != null && progress.totalSplits > 0) ...[
+                                  LinearProgressIndicator(
+                                    value: progress.progress,
+                                  ),
+                                  const SizedBox(height: AppSpacing.m),
+                                  Text(progress.currentStatus ?? 'Audio wird aufgeteilt...'),
+                                  const SizedBox(height: AppSpacing.xs),
+                                  Text(
+                                    '${progress.progressPercentage}%',
+                                    style: Theme.of(context).textTheme.bodySmall,
+                                  ),
+                                ] else ...[
+                                  const CircularProgressIndicator(),
+                                  const SizedBox(height: AppSpacing.m),
+                                  const Text('Audio wird vorbereitet...'),
+                                ],
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    )
             else
               StreamingTranscriptionCard(
                 textStream: _transcriptionStream,
@@ -676,10 +716,12 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
               isPromptActive: _promptStream != null,
               onApplyPrompt: _applyPromptStreaming,
               promptResultCount: _promptResults.length,
+              onRetranscribe: _retranscribe,
             ),
             const SizedBox(height: AppSpacing.m),
             PromptResultsList(
-              results: _promptResults,
+              results: List.from(_promptResults)
+                ..sort((a, b) => b.timestamp.compareTo(a.timestamp)),
               onDelete: (id) {
                 setState(() {
                   _promptResults.removeWhere((r) => r.id == id);

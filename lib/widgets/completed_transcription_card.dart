@@ -13,6 +13,7 @@ class CompletedTranscriptionCard extends StatefulWidget {
   final bool isPromptActive;
   final VoidCallback onApplyPrompt;
   final int promptResultCount;
+  final VoidCallback? onRetranscribe;
 
   const CompletedTranscriptionCard({
     super.key,
@@ -20,6 +21,7 @@ class CompletedTranscriptionCard extends StatefulWidget {
     required this.isPromptActive,
     required this.onApplyPrompt,
     this.promptResultCount = 0,
+    this.onRetranscribe,
   });
 
   @override
@@ -84,6 +86,18 @@ class _CompletedTranscriptionCardState extends State<CompletedTranscriptionCard>
               fontSize: settings.textSize,
               height: 1.5,
             ),
+            headerActions: widget.onRetranscribe != null
+                ? [
+                    IconButton(
+                      icon: const Icon(Icons.refresh, size: AppIconSize.medium),
+                      onPressed: () {
+                        HapticFeedback.mediumImpact();
+                        widget.onRetranscribe!();
+                      },
+                      tooltip: 'Erneut transkribieren',
+                    ),
+                  ]
+                : null,
             metadata: Wrap(
               spacing: AppSpacing.s,
               runSpacing: AppSpacing.s,

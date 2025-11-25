@@ -1,20 +1,20 @@
 import 'package:dio/dio.dart';
 import '../models/transcription_result.dart';
 import '../models/prompt_result.dart';
+import 'completion/i_completion_service.dart';
+import 'transcription_service.dart';
+import 'prompt_processing_service.dart';
 
-/// Unified interface for LLM providers
-/// Abstracts away the specific API implementation details
+export 'llm_exceptions.dart';
+
+/// Facade that provides backward compatibility with the old ILLMProvider interface
+/// Internally delegates to TranscriptionService and PromptProcessingService
+/// @deprecated Use TranscriptionService and PromptProcessingService directly
 abstract class ILLMProvider {
-  /// Unique identifier for this provider (e.g., 'openrouter', 'openai')
   String get providerId;
-
-  /// Human-readable provider name
   String get providerName;
-
-  /// The model ID being used
   String get model;
 
-  /// Transcribe audio to text (non-streaming)
   Future<TranscriptionResult> transcribeAudio({
     required String apiKey,
     required String base64Audio,
@@ -22,7 +22,6 @@ abstract class ILLMProvider {
     required String language,
   });
 
-  /// Transcribe audio to text with streaming
   Stream<String> transcribeAudioStreaming({
     required String apiKey,
     required String base64Audio,
@@ -31,7 +30,6 @@ abstract class ILLMProvider {
     CancelToken? cancelToken,
   });
 
-  /// Apply a prompt to text (non-streaming)
   Future<PromptResult> applyPrompt({
     required String apiKey,
     required String promptName,
@@ -39,7 +37,6 @@ abstract class ILLMProvider {
     required String transcriptionText,
   });
 
-  /// Apply a prompt to text with streaming
   Stream<String> applyPromptStreaming({
     required String apiKey,
     required String promptName,
@@ -48,48 +45,87 @@ abstract class ILLMProvider {
   });
 }
 
-/// Exception for LLM provider errors
-class LLMProviderException implements Exception {
-  final String message;
-  final String? code;
-  final int? statusCode;
+/// Adapter that implements ILLMProvider using the new service architecture
+/// @deprecated Use TranscriptionService and PromptProcessingService directly
+class LLMProviderAdapter implements ILLMProvider {
+  final ICompletionService _completionService;
+  final TranscriptionService _transcriptionService;
+  final PromptProcessingService _promptService;
 
-  LLMProviderException(this.message, {this.code, this.statusCode});
+  LLMProviderAdapter({
+    required ICompletionService completionService,
+  })  : _completionService = completionService,
+        _transcriptionService = TranscriptionService(completionService: completionService),
+        _promptService = PromptProcessingService(completionService: completionService);
 
   @override
-  String toString() => message;
-}
+  String get providerId => _completionService.providerId;
 
-/// Authentication error (invalid API key)
-class LLMAuthException extends LLMProviderException {
-  LLMAuthException([super.message = 'Invalid API key'])
-      : super(code: 'auth_error', statusCode: 401);
-}
+  @override
+  String get providerName => _completionService.providerName;
 
-/// Rate limit exceeded
-class LLMRateLimitException extends LLMProviderException {
-  LLMRateLimitException([super.message = 'Rate limit exceeded. Please try again later.'])
-      : super(code: 'rate_limit', statusCode: 429);
-}
+  @override
+  String get model => _completionService.model;
 
-/// Network/connection error
-class LLMNetworkException extends LLMProviderException {
-  LLMNetworkException([super.message = 'Network error. Please check your internet connection.'])
-      : super(code: 'network_error');
-}
+  @override
+  Future<TranscriptionResult> transcribeAudio({
+    required String apiKey,
+    required String base64Audio,
+    required String mimeType,
+    required String language,
+  }) {
+    return _transcriptionService.transcribe(
+      apiKey: apiKey,
+      base64Audio: base64Audio,
+      mimeType: mimeType,
+      language: language,
+    );
+  }
 
-/// Timeout error
-class LLMTimeoutException extends LLMProviderException {
-  LLMTimeoutException([super.message = 'Request timed out. Please try again.'])
-      : super(code: 'timeout');
-}
+  @override
+  Stream<String> transcribeAudioStreaming({
+    required String apiKey,
+    required String base64Audio,
+    required String mimeType,
+    required String language,
+    CancelToken? cancelToken,
+  }) {
+    return _transcriptionService.transcribeStreaming(
+      apiKey: apiKey,
+      base64Audio: base64Audio,
+      mimeType: mimeType,
+      language: language,
+      cancelToken: cancelToken,
+    );
+  }
 
-/// Server error
-class LLMServerException extends LLMProviderException {
-  LLMServerException(int statusCode, [String? message])
-      : super(
-          message ?? 'Server error ($statusCode). Please try again later.',
-          code: 'server_error',
-          statusCode: statusCode,
-        );
+  @override
+  Future<PromptResult> applyPrompt({
+    required String apiKey,
+    required String promptName,
+    required String promptTemplate,
+    required String transcriptionText,
+  }) {
+    return _promptService.applyPrompt(
+      apiKey: apiKey,
+      promptName: promptName,
+      promptTemplate: promptTemplate,
+      transcriptionText: transcriptionText,
+    );
+  }
+
+  @override
+  Stream<String> applyPromptStreaming({
+    required String apiKey,
+    required String promptName,
+    required String promptTemplate,
+    required String transcriptionText,
+  }) {
+    return _promptService.applyPromptStreaming(
+      apiKey: apiKey,
+      promptName: promptName,
+      promptTemplate: promptTemplate,
+      transcriptionText: transcriptionText,
+    );
+  }
 }

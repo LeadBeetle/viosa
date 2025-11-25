@@ -6,6 +6,7 @@ import '../models/transcription_result.dart';
 import '../models/transcription_history.dart';
 import '../repositories/model_repository.dart';
 import 'audio_splitter_service.dart';
+import 'i_audio_splitter_service.dart';
 import 'llm_provider.dart';
 import 'llm_provider_factory.dart';
 
@@ -35,11 +36,13 @@ class SplitTranscriptionService {
     required String language,
     Duration maxDuration = const Duration(minutes: 10),
     Duration overlap = const Duration(seconds: 5),
+    void Function(SplitProgress progress)? onSplitProgress,
   }) async {
     final splits = await _splitterService.splitAudio(
       audioPath,
       maxDuration: maxDuration,
       overlap: overlap,
+      onProgress: onSplitProgress,
     );
 
     final job = SplitTranscriptionJob(

@@ -73,6 +73,9 @@ dependencies:
   # URL launcher for clickable links
   url_launcher: ^6.3.2
 
+  # Sharing
+  share_plus: ^12.0.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

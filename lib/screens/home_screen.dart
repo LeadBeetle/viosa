@@ -6,6 +6,7 @@ import '../providers/history_provider.dart';
 import '../widgets/recording_card.dart';
 import '../widgets/empty_state_widget.dart';
 import '../widgets/app_bar_title_with_logo.dart';
+import '../services/export/export_service.dart';
 import '../utils/constants.dart';
 import '../services/audio_service.dart';
 import '../services/file_service.dart';
@@ -261,6 +262,11 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _exportRecording(TranscriptionHistory history) async {
+    final exportService = ExportService();
+    await exportService.share(history);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -317,6 +323,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 onTranscribe: () => _openSession(history),
                 onTap: () => _openSession(history),
                 onRename: () => _renameRecording(history),
+                onExport: () => _exportRecording(history),
                 onDelete: () => _deleteRecording(history),
               );
             },

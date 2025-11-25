@@ -5,7 +5,8 @@
       "Bash(./gradlew.bat assembleRelease:*)",
       "Bash(flutter pub get:*)",
       "Bash(flutter analyze:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(ls:*)"
     ],
     "deny": [],
     "ask": []

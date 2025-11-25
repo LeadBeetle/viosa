@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../models/split_transcription_job.dart';
+import '../services/i_audio_splitter_service.dart';
 import '../services/split_transcription_service.dart';
 
 /// Provider for managing split transcription jobs state
@@ -11,6 +12,7 @@ class SplitTranscriptionProvider extends ChangeNotifier {
   SplitTranscriptionJob? _currentJob;
   String? _apiKey;
   String? _model;
+  SplitProgress? _splitProgress;
 
   SplitTranscriptionProvider({
     SplitTranscriptionService? service,
@@ -18,6 +20,8 @@ class SplitTranscriptionProvider extends ChangeNotifier {
         _jobUpdateController = StreamController<SplitTranscriptionJob>.broadcast();
 
   SplitTranscriptionJob? get currentJob => _currentJob;
+  SplitProgress? get splitProgress => _splitProgress;
+  bool get isSplitting => _splitProgress != null && (_currentJob == null || _currentJob!.status == JobStatus.queued);
 
   Stream<SplitTranscriptionJob> get jobUpdates => _jobUpdateController.stream;
 
@@ -37,6 +41,8 @@ class SplitTranscriptionProvider extends ChangeNotifier {
   }) async {
     _apiKey = apiKey;
     _model = model;
+    _splitProgress = const SplitProgress(currentSplit: 0, totalSplits: 0, currentStatus: 'Vorbereiten...');
+    notifyListeners();
 
     final job = await _service.createJob(
       audioPath: audioPath,
@@ -44,8 +50,13 @@ class SplitTranscriptionProvider extends ChangeNotifier {
       language: language,
       maxDuration: maxDuration,
       overlap: overlap,
+      onSplitProgress: (progress) {
+        _splitProgress = progress;
+        notifyListeners();
+      },
     );
 
+    _splitProgress = null;
     _currentJob = job;
     notifyListeners();
     _jobUpdateController.add(job);

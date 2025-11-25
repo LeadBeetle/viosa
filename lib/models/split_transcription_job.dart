@@ -1,5 +1,6 @@
 import 'package:hive/hive.dart';
 import 'audio_split.dart';
+import '../services/text_merger_service.dart';
 
 part 'split_transcription_job.g.dart';
 
@@ -119,32 +120,36 @@ class SplitTranscriptionJob {
   }
 
   /// Returns merged transcription from all completed splits
+  /// Uses TextMergerService to remove duplicate content from overlapping regions
   String? get mergedTranscription {
     if (completedCount == 0) return null;
 
     final sortedSplits = List<AudioSplit>.from(splits)
       ..sort((a, b) => a.index.compareTo(b.index));
 
-    final buffer = StringBuffer();
-    bool hasContent = false;
+    final successfulTexts = <String>[];
+    final failedSegments = <String>[];
 
     for (final split in sortedSplits) {
       if (split.status == SplitStatus.completed && split.transcriptionText != null) {
-        if (hasContent) {
-          buffer.write(' ');
-        }
-        buffer.write(split.transcriptionText);
-        hasContent = true;
+        successfulTexts.add(split.transcriptionText!);
       } else if (split.status == SplitStatus.failed) {
-        if (hasContent) {
-          buffer.write('\n\n');
-        }
-        buffer.write('[Segment ${split.index + 1} (${split.timeRange}) - Transkription fehlgeschlagen]');
-        hasContent = true;
+        failedSegments.add('[Segment ${split.index + 1} (${split.timeRange}) - Transkription fehlgeschlagen]');
       }
     }
 
-    return hasContent ? buffer.toString() : null;
+    if (successfulTexts.isEmpty && failedSegments.isEmpty) {
+      return null;
+    }
+
+    final merger = TextMergerService();
+    final mergedText = merger.mergeTexts(successfulTexts);
+
+    if (failedSegments.isEmpty) {
+      return mergedText;
+    }
+
+    return '$mergedText\n\n${failedSegments.join('\n\n')}';
   }
 
   /// Returns list of failed splits
