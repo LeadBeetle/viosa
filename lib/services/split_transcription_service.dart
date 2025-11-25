@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import '../models/audio_split.dart';
 import '../models/split_transcription_job.dart';
 import '../models/transcription_result.dart';
@@ -9,6 +10,9 @@ import 'audio_splitter_service.dart';
 import 'i_audio_splitter_service.dart';
 import 'llm_provider.dart';
 import 'llm_provider_factory.dart';
+import 'speaker_context_service.dart';
+import 'speaker_extraction_service.dart';
+import 'completion/openrouter_completion_service.dart';
 
 /// Service for managing split transcription jobs
 class SplitTranscriptionService {
@@ -16,6 +20,7 @@ class SplitTranscriptionService {
   final Map<String, SplitTranscriptionJob> _jobs = {};
   String _currentModel = ModelRepository.defaultModelId;
   ILLMProvider? _provider;
+  ISpeakerContextService? _speakerContextService;
 
   static const int maxRetries = 3;
   static const Duration retryDelay = Duration(seconds: 5);
@@ -27,6 +32,13 @@ class SplitTranscriptionService {
   ILLMProvider _getProvider() {
     _provider ??= LLMProviderFactory.createForModel(_currentModel);
     return _provider!;
+  }
+
+  ISpeakerContextService _getSpeakerContextService() {
+    _speakerContextService ??= SpeakerContextService(
+      completionService: OpenRouterCompletionService(model: _currentModel),
+    );
+    return _speakerContextService!;
   }
 
   /// Creates a new split transcription job
@@ -70,10 +82,13 @@ class SplitTranscriptionService {
     if (model != null) {
       _currentModel = model;
       _provider = LLMProviderFactory.createForModel(_currentModel);
+      _speakerContextService = null;
     }
     job.status = JobStatus.processing;
     job.lastUpdatedAt = DateTime.now();
     onProgress?.call(job);
+
+    TranscriptionContext? currentContext;
 
     for (final split in job.splits) {
       if (job.status == JobStatus.cancelled) {
@@ -84,10 +99,25 @@ class SplitTranscriptionService {
         continue;
       }
 
-      await _transcribeSplitWithRetry(job, split, apiKey, onProgress: onProgress);
+      await _transcribeSplitWithRetry(
+        job,
+        split,
+        apiKey,
+        speakerContext: currentContext,
+        onProgress: onProgress,
+      );
 
       if (split.status == SplitStatus.completed) {
         job.completedCount++;
+
+        if (split.transcriptionText != null && split.transcriptionText!.isNotEmpty) {
+          currentContext = await _extractContextSafely(
+            apiKey,
+            split.transcriptionText!,
+            job.language,
+            currentContext,
+          );
+        }
       } else if (split.status == SplitStatus.failed) {
         job.failedCount++;
       }
@@ -107,11 +137,65 @@ class SplitTranscriptionService {
     }
   }
 
+  Future<TranscriptionContext?> _extractContextSafely(
+    String apiKey,
+    String transcription,
+    String language,
+    TranscriptionContext? existingContext,
+  ) async {
+    try {
+      final newContext = await _getSpeakerContextService().extractContext(
+        apiKey: apiKey,
+        transcription: transcription,
+        language: language,
+      );
+
+      if (newContext.isEmpty) {
+        return existingContext;
+      }
+
+      if (existingContext == null || existingContext.isEmpty) {
+        return newContext;
+      }
+
+      return _mergeContexts(existingContext, newContext);
+    } catch (e) {
+      debugPrint('Failed to extract speaker context: $e');
+      return existingContext;
+    }
+  }
+
+  TranscriptionContext _mergeContexts(
+    TranscriptionContext existing,
+    TranscriptionContext newContext,
+  ) {
+    final mergedSpeakers = <String, SpeakerContext>{};
+
+    for (final speaker in existing.speakers) {
+      mergedSpeakers[speaker.label] = speaker;
+    }
+
+    for (final speaker in newContext.speakers) {
+      if (mergedSpeakers.containsKey(speaker.label)) {
+        final existingSummary = mergedSpeakers[speaker.label]!.summary;
+        mergedSpeakers[speaker.label] = SpeakerContext(
+          label: speaker.label,
+          summary: '$existingSummary ${speaker.summary}',
+        );
+      } else {
+        mergedSpeakers[speaker.label] = speaker;
+      }
+    }
+
+    return TranscriptionContext(speakers: mergedSpeakers.values.toList());
+  }
+
   /// Transcribes a single split with retry logic
   Future<void> _transcribeSplitWithRetry(
     SplitTranscriptionJob job,
     AudioSplit split,
     String apiKey, {
+    TranscriptionContext? speakerContext,
     void Function(SplitTranscriptionJob)? onProgress,
   }) async {
     for (int attempt = 1; attempt <= maxRetries; attempt++) {
@@ -130,6 +214,7 @@ class SplitTranscriptionService {
           base64Audio: base64Audio,
           mimeType: split.mimeType,
           language: job.language,
+          speakerContext: speakerContext,
         );
 
         split.transcriptionText = result.text;
@@ -177,7 +262,15 @@ class SplitTranscriptionService {
       job.failedCount--;
     }
 
-    await _transcribeSplitWithRetry(job, split, apiKey, onProgress: onProgress);
+    final speakerContext = await _buildContextFromPreviousSplits(job, split.index, apiKey);
+
+    await _transcribeSplitWithRetry(
+      job,
+      split,
+      apiKey,
+      speakerContext: speakerContext,
+      onProgress: onProgress,
+    );
 
     if (split.status == SplitStatus.completed) {
       job.completedCount++;
@@ -192,6 +285,32 @@ class SplitTranscriptionService {
 
     job.lastUpdatedAt = DateTime.now();
     onProgress?.call(job);
+  }
+
+  Future<TranscriptionContext?> _buildContextFromPreviousSplits(
+    SplitTranscriptionJob job,
+    int currentIndex,
+    String apiKey,
+  ) async {
+    TranscriptionContext? context;
+
+    final previousSplits = job.splits
+        .where((s) => s.index < currentIndex && s.status == SplitStatus.completed)
+        .toList()
+      ..sort((a, b) => a.index.compareTo(b.index));
+
+    for (final split in previousSplits) {
+      if (split.transcriptionText != null && split.transcriptionText!.isNotEmpty) {
+        context = await _extractContextSafely(
+          apiKey,
+          split.transcriptionText!,
+          job.language,
+          context,
+        );
+      }
+    }
+
+    return context;
   }
 
   /// Cancels a job
@@ -217,6 +336,9 @@ class SplitTranscriptionService {
       return null;
     }
 
+    final speakerExtractor = SpeakerExtractionService();
+    final speakers = speakerExtractor.extractSpeakers(mergedText);
+
     return TranscriptionHistory(
       audioFileName: job.originalFileName,
       transcription: TranscriptionResult(
@@ -224,6 +346,7 @@ class SplitTranscriptionService {
         language: job.language,
         modelUsed: _currentModel,
         timestamp: job.completedAt ?? DateTime.now(),
+        speakers: speakers,
       ),
       createdAt: job.createdAt,
       splitJobId: job.id,

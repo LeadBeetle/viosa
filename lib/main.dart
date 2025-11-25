@@ -22,6 +22,7 @@ import 'models/audio_file.dart';
 import 'models/prompt.dart';
 import 'models/audio_split.dart';
 import 'models/split_transcription_job.dart';
+import 'models/speaker.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,6 +35,7 @@ void main() async {
   await Hive.initFlutter();
 
   // Register Hive adapters
+  Hive.registerAdapter(SpeakerAdapter());
   Hive.registerAdapter(TranscriptionResultAdapter());
   Hive.registerAdapter(PromptResultAdapter());
   Hive.registerAdapter(TranscriptionHistoryAdapter());

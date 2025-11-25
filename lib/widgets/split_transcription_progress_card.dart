@@ -155,9 +155,12 @@ class SplitTranscriptionProgressCard extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                     ),
               ),
-              Text(
-                '${job.completedCount}/${job.totalSplits} Segmente abgeschlossen',
-                style: Theme.of(context).textTheme.bodySmall,
+              Flexible(
+                child: Text(
+                  '${job.completedCount}/${job.totalSplits} Segmente',
+                  style: Theme.of(context).textTheme.bodySmall,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),

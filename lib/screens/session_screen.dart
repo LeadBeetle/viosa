@@ -8,6 +8,7 @@ import '../models/prompt_result.dart';
 import '../models/transcription_history.dart';
 import '../models/split_transcription_job.dart';
 import '../services/audio_service.dart';
+import '../services/speaker_extraction_service.dart';
 import '../providers/settings_provider.dart';
 import '../providers/history_provider.dart';
 import '../providers/split_transcription_provider.dart';
@@ -15,7 +16,7 @@ import '../providers/prompts_provider.dart';
 import '../widgets/audio_player_widget.dart';
 import '../widgets/mini_audio_player_widget.dart';
 import '../widgets/audio_recorder_widget.dart';
-import '../widgets/prompt_selector_dialog.dart';
+import '../widgets/prompt_selector_bottom_sheet.dart';
 import '../widgets/split_transcription_progress_card.dart';
 import '../widgets/transcription_button.dart';
 import '../widgets/prompt_results_list.dart';
@@ -33,12 +34,14 @@ import '../services/snackbar_service.dart';
 class SessionScreen extends StatefulWidget {
   final AudioFile? initialFile;
   final bool autoStartRecording;
+  final bool autoStartTranscription;
   final String? historyId;
 
   const SessionScreen({
     super.key,
     this.initialFile,
     this.autoStartRecording = false,
+    this.autoStartTranscription = false,
     this.historyId,
   });
 
@@ -188,6 +191,11 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
           });
 
           await _audioService.loadAudio(audioFile.path);
+
+          // Auto-start transcription if requested and no transcription exists
+          if (widget.autoStartTranscription && history.transcription == null && mounted) {
+            _transcribe();
+          }
         }
       } catch (e) {
         debugPrint('Error loading file from history: $e');
@@ -417,11 +425,14 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
 
       if (mergedText != null && mergedText.isNotEmpty) {
         final settingsProvider = context.read<SettingsProvider>();
+        final speakerExtractor = SpeakerExtractionService();
+        final speakers = speakerExtractor.extractSpeakers(mergedText);
         final result = TranscriptionResult(
           text: mergedText,
           language: job.language,
           modelUsed: settingsProvider.selectedModel,
           timestamp: job.completedAt ?? DateTime.now(),
+          speakers: speakers,
         );
 
         setState(() {
@@ -486,10 +497,7 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
   Future<void> _applyPromptStreaming() async {
     if (_transcriptionResult == null) return;
 
-    final result = await showDialog<Map<String, String>>(
-      context: context,
-      builder: (context) => const PromptSelectorDialog(),
-    );
+    final result = await PromptSelectorBottomSheet.show(context);
 
     if (result != null && mounted) {
       final promptId = result['promptId']!;

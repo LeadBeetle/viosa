@@ -19,12 +19,14 @@ import 'package:viosa/models/audio_file.dart';
 import 'package:viosa/models/prompt.dart';
 import 'package:viosa/models/audio_split.dart';
 import 'package:viosa/models/split_transcription_job.dart';
+import 'package:viosa/models/speaker.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() {
     Hive.init('./test/hive_test');
+    Hive.registerAdapter(SpeakerAdapter());
     Hive.registerAdapter(TranscriptionResultAdapter());
     Hive.registerAdapter(PromptResultAdapter());
     Hive.registerAdapter(TranscriptionHistoryAdapter());

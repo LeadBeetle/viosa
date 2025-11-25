@@ -4,6 +4,7 @@ import '../models/prompt_result.dart';
 import 'completion/i_completion_service.dart';
 import 'transcription_service.dart';
 import 'prompt_processing_service.dart';
+import 'speaker_context_service.dart';
 
 export 'llm_exceptions.dart';
 
@@ -20,6 +21,7 @@ abstract class ILLMProvider {
     required String base64Audio,
     required String mimeType,
     required String language,
+    TranscriptionContext? speakerContext,
   });
 
   Stream<String> transcribeAudioStreaming({
@@ -27,6 +29,7 @@ abstract class ILLMProvider {
     required String base64Audio,
     required String mimeType,
     required String language,
+    TranscriptionContext? speakerContext,
     CancelToken? cancelToken,
   });
 
@@ -73,12 +76,14 @@ class LLMProviderAdapter implements ILLMProvider {
     required String base64Audio,
     required String mimeType,
     required String language,
+    TranscriptionContext? speakerContext,
   }) {
     return _transcriptionService.transcribe(
       apiKey: apiKey,
       base64Audio: base64Audio,
       mimeType: mimeType,
       language: language,
+      speakerContext: speakerContext,
     );
   }
 
@@ -88,6 +93,7 @@ class LLMProviderAdapter implements ILLMProvider {
     required String base64Audio,
     required String mimeType,
     required String language,
+    TranscriptionContext? speakerContext,
     CancelToken? cancelToken,
   }) {
     return _transcriptionService.transcribeStreaming(
@@ -95,6 +101,7 @@ class LLMProviderAdapter implements ILLMProvider {
       base64Audio: base64Audio,
       mimeType: mimeType,
       language: language,
+      speakerContext: speakerContext,
       cancelToken: cancelToken,
     );
   }

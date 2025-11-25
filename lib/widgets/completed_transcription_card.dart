@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../models/transcription_result.dart';
+import '../models/speaker.dart';
 import '../providers/settings_provider.dart';
 import 'collapsible_text_section.dart';
 import 'info_chip.dart';
@@ -98,25 +99,34 @@ class _CompletedTranscriptionCardState extends State<CompletedTranscriptionCard>
                     ),
                   ]
                 : null,
-            metadata: Wrap(
-              spacing: AppSpacing.s,
-              runSpacing: AppSpacing.s,
+            metadata: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                InfoChip(
-                  label: 'Sprache: ${widget.transcriptionResult.language}',
-                  icon: Icons.language,
-                ),
-                InfoChip(
-                  label: 'Modell: ${widget.transcriptionResult.modelUsed}',
-                  icon: Icons.memory,
-                ),
-                InfoChip(
-                  label: '${widget.transcriptionResult.wordCount} Wörter',
-                  icon: Icons.text_fields,
-                ),
-                InfoChip(
-                  label: '${widget.transcriptionResult.characterCount} Zeichen',
-                  icon: Icons.abc,
+                if (widget.transcriptionResult.speakers.isNotEmpty) ...[
+                  _buildSpeakersRow(context),
+                  const SizedBox(height: AppSpacing.s),
+                ],
+                Wrap(
+                  spacing: AppSpacing.s,
+                  runSpacing: AppSpacing.s,
+                  children: [
+                    InfoChip(
+                      label: 'Sprache: ${widget.transcriptionResult.language}',
+                      icon: Icons.language,
+                    ),
+                    InfoChip(
+                      label: 'Modell: ${widget.transcriptionResult.modelUsed}',
+                      icon: Icons.memory,
+                    ),
+                    InfoChip(
+                      label: '${widget.transcriptionResult.wordCount} Wörter',
+                      icon: Icons.text_fields,
+                    ),
+                    InfoChip(
+                      label: '${widget.transcriptionResult.characterCount} Zeichen',
+                      icon: Icons.abc,
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -147,6 +157,64 @@ class _CompletedTranscriptionCardState extends State<CompletedTranscriptionCard>
         ],
         const SizedBox(height: AppConstants.defaultPadding),
       ],
+    );
+  }
+
+  Widget _buildSpeakersRow(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Icon(
+            Icons.people,
+            size: 16,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(width: AppSpacing.xs),
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Text(
+            'Sprecher: ',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+          ),
+        ),
+        Expanded(
+          child: Wrap(
+            spacing: 6,
+            runSpacing: 4,
+            children: widget.transcriptionResult.speakers
+                .map((speaker) => _buildSpeakerChip(context, speaker))
+                .toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSpeakerChip(BuildContext context, Speaker speaker) {
+    final color = speaker.color != null
+        ? Color(int.parse(speaker.color!.replaceFirst('#', '0xFF')))
+        : Theme.of(context).colorScheme.primary;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Text(
+        speaker.label,
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w500,
+            ),
+      ),
     );
   }
 

@@ -166,6 +166,10 @@ class _PromptsScreenState extends State<PromptsScreen>
           floatingActionButton: FloatingActionButton(
             onPressed: _createNewPrompt,
             tooltip: 'Neuer Prompt',
+            backgroundColor: Theme.of(context).colorScheme.primaryContainer.withValues(
+              alpha: Theme.of(context).brightness == Brightness.dark ? 0.95 : 0.85,
+            ),
+            foregroundColor: Colors.white,
             child: const Icon(Icons.add),
           ),
         );

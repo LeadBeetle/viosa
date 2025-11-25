@@ -98,17 +98,18 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _openSession(TranscriptionHistory history) async {
+  void _openSession(TranscriptionHistory history, {bool autoStartTranscription = false}) async {
     await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => SessionScreen(
           historyId: history.id,
           initialFile: null, // Will be loaded from history
+          autoStartTranscription: autoStartTranscription,
         ),
       ),
     );
-    
+
     // Refresh history when returning from session
     if (mounted) {
       debugPrint('=== Refreshing History on HomeScreen (existing session) ===');
@@ -320,7 +321,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 history: history,
                 isPlaying: _currentlyPlayingId == history.id,
                 onPlay: () => _togglePlay(history),
-                onTranscribe: () => _openSession(history),
+                onTranscribe: () => _openSession(history, autoStartTranscription: true),
                 onTap: () => _openSession(history),
                 onRename: () => _renameRecording(history),
                 onExport: () => _exportRecording(history),

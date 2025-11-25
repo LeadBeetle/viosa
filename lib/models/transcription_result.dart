@@ -1,4 +1,5 @@
 import 'package:hive/hive.dart';
+import 'speaker.dart';
 
 part 'transcription_result.g.dart';
 
@@ -18,12 +19,16 @@ class TranscriptionResult {
   @HiveField(3)
   final DateTime timestamp;
 
+  @HiveField(4)
+  final List<Speaker> speakers;
+
   TranscriptionResult({
     required this.text,
     required this.language,
     required this.modelUsed,
     required this.timestamp,
-  });
+    List<Speaker>? speakers,
+  }) : speakers = speakers ?? [];
 
   /// Converts the transcription result to a JSON map
   Map<String, dynamic> toJson() {
@@ -32,6 +37,7 @@ class TranscriptionResult {
       'language': language,
       'modelUsed': modelUsed,
       'timestamp': timestamp.toIso8601String(),
+      'speakers': speakers.map((s) => s.toJson()).toList(),
     };
   }
 
@@ -42,8 +48,15 @@ class TranscriptionResult {
       language: json['language'] as String,
       modelUsed: json['modelUsed'] as String,
       timestamp: DateTime.parse(json['timestamp'] as String),
+      speakers: (json['speakers'] as List<dynamic>?)
+              ?.map((s) => Speaker.fromJson(s as Map<String, dynamic>))
+              .toList() ??
+          [],
     );
   }
+
+  /// Returns true if multiple speakers were identified
+  bool get hasMultipleSpeakers => speakers.length > 1;
 
   /// Returns formatted timestamp
   String get formattedTimestamp {

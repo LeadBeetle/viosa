@@ -3,6 +3,9 @@ import 'package:flutter/foundation.dart';
 import '../models/transcription_result.dart';
 import '../repositories/model_repository.dart';
 import 'completion/i_completion_service.dart';
+import 'speaker_context_service.dart';
+import 'speaker_extraction_service.dart';
+import 'transcription_formatter_service.dart';
 
 /// Interface for transcription services
 abstract class ITranscriptionService {
@@ -11,6 +14,7 @@ abstract class ITranscriptionService {
     required String base64Audio,
     required String mimeType,
     required String language,
+    TranscriptionContext? speakerContext,
   });
 
   Stream<String> transcribeStreaming({
@@ -18,6 +22,7 @@ abstract class ITranscriptionService {
     required String base64Audio,
     required String mimeType,
     required String language,
+    TranscriptionContext? speakerContext,
     CancelToken? cancelToken,
   });
 }
@@ -26,10 +31,18 @@ abstract class ITranscriptionService {
 /// LLM-independent: Uses ICompletionService for actual LLM communication
 class TranscriptionService implements ITranscriptionService {
   final ICompletionService _completionService;
+  final ISpeakerExtractionService _speakerExtractionService;
+  final ITranscriptionFormatterService _formatterService;
 
   TranscriptionService({
     required ICompletionService completionService,
-  }) : _completionService = completionService;
+    ISpeakerExtractionService? speakerExtractionService,
+    ITranscriptionFormatterService? formatterService,
+  })  : _completionService = completionService,
+        _speakerExtractionService =
+            speakerExtractionService ?? SpeakerExtractionService(),
+        _formatterService =
+            formatterService ?? TranscriptionFormatterService();
 
   @override
   Future<TranscriptionResult> transcribe({
@@ -37,21 +50,26 @@ class TranscriptionService implements ITranscriptionService {
     required String base64Audio,
     required String mimeType,
     required String language,
+    TranscriptionContext? speakerContext,
   }) async {
-    final messages = _buildMessages(base64Audio, mimeType, language);
+    final messages = _buildMessages(base64Audio, mimeType, language, speakerContext);
     final config = _getConfig();
 
-    final text = await _completionService.complete(
+    final rawText = await _completionService.complete(
       apiKey: apiKey,
       messages: messages,
       config: config,
     );
 
+    final formattedText = _formatterService.formatTranscription(rawText);
+    final speakers = _speakerExtractionService.extractSpeakers(formattedText);
+
     return TranscriptionResult(
-      text: text,
+      text: formattedText,
       language: language,
       modelUsed: _completionService.model,
       timestamp: DateTime.now(),
+      speakers: speakers,
     );
   }
 
@@ -61,9 +79,10 @@ class TranscriptionService implements ITranscriptionService {
     required String base64Audio,
     required String mimeType,
     required String language,
+    TranscriptionContext? speakerContext,
     CancelToken? cancelToken,
   }) {
-    final messages = _buildMessages(base64Audio, mimeType, language);
+    final messages = _buildMessages(base64Audio, mimeType, language, speakerContext);
     final config = _getConfig();
 
     return _completionService.completeStreaming(
@@ -78,8 +97,13 @@ class TranscriptionService implements ITranscriptionService {
     String base64Audio,
     String mimeType,
     String language,
+    TranscriptionContext? speakerContext,
   ) {
-    final prompt = _getTranscriptionPrompt(language);
+    final basePrompt = _getTranscriptionPrompt(language);
+    final contextPrompt = speakerContext?.toPromptString(language) ?? '';
+    final prompt = contextPrompt.isNotEmpty
+        ? '$contextPrompt\n$basePrompt'
+        : basePrompt;
     final format = _getAudioFormat(mimeType);
 
     return [
@@ -119,6 +143,14 @@ class TranscriptionService implements ITranscriptionService {
       case 'de':
         return '''Transkribiere die folgende Audiodatei auf Deutsch.
 
+Sprecheridentifikation:
+- Identifiziere verschiedene Sprecher anhand ihrer Stimme
+- Versuche, die Namen der Sprecher aus dem Gespräch zu ermitteln (z.B. wenn jemand mit Namen angesprochen wird oder sich vorstellt)
+- Verwende den ermittelten Namen als Label, ansonsten "Sprecher 1:", "Sprecher 2:", etc.
+- Schreibe Sprechernamen fett in Markdown-Syntax (z.B. **Max:** oder **Sprecher 1:**)
+- Behalte die Sprecherzuordnung konsistent über das gesamte Transkript
+- Bei nur einem Sprecher ist keine Kennzeichnung nötig
+
 Bereinige das Transkript wie folgt:
 - Entferne Füllwörter (ähm, äh, hmm, also, halt, irgendwie, sozusagen, quasi, ja also)
 - Entferne Wortwiederholungen und Stotterer
@@ -129,6 +161,14 @@ Bereinige das Transkript wie folgt:
 Gib nur den bereinigten Text zurück, ohne zusätzliche Erklärungen.''';
       case 'en':
         return '''Transcribe the following audio file in English.
+
+Speaker identification:
+- Identify different speakers by their voice
+- Try to determine speaker names from the conversation (e.g. when someone is addressed by name or introduces themselves)
+- Use the identified name as label, otherwise use "Speaker 1:", "Speaker 2:", etc.
+- Write speaker names in bold using Markdown syntax (e.g. **John:** or **Speaker 1:**)
+- Keep speaker assignments consistent throughout the transcript
+- No labeling needed if there is only one speaker
 
 Clean up the transcript as follows:
 - Remove filler words (um, uh, like, you know, basically, actually, I mean)
@@ -141,6 +181,14 @@ Return only the cleaned text without additional explanations.''';
       case 'auto':
       default:
         return '''Transcribe the following audio file in its original language.
+
+Speaker identification:
+- Identify different speakers by their voice
+- Try to determine speaker names from the conversation (e.g. when someone is addressed by name or introduces themselves)
+- Use the identified name as label, otherwise use "Speaker 1:", "Speaker 2:", etc.
+- Write speaker names in bold using Markdown syntax (e.g. **John:** or **Speaker 1:**)
+- Keep speaker assignments consistent throughout the transcript
+- No labeling needed if there is only one speaker
 
 Clean up the transcript as follows:
 - Remove filler words and verbal hesitations

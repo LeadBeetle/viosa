@@ -33,8 +33,12 @@ class SplitItemWidget extends StatelessWidget {
           children: [
             // Header: Split number and time range
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildStatusIcon(context),
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: _buildStatusIcon(context),
+                ),
                 const SizedBox(width: AppSpacing.s),
                 Expanded(
                   child: Column(

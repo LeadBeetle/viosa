@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/transcription_history.dart';
+import '../services/snackbar_service.dart';
 import '../utils/constants.dart';
 import 'waveform_display_widget.dart';
 
@@ -294,23 +295,32 @@ class _RecordingCardState extends State<RecordingCard> {
                       ],
                     ),
                   ] else ...[
-                    Chip(
-                      avatar: const Icon(Icons.info_outline, size: 16),
-                      label: const Text('Alte Aufnahme'),
-                      visualDensity: VisualDensity.compact,
-                      backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                      side: BorderSide.none,
+                    Tooltip(
+                      message: 'Alte Aufnahme ohne Audiodatei',
+                      child: GestureDetector(
+                        onTap: () {
+                          SnackBarService().showInfo(
+                            context,
+                            'Alte Aufnahme: Audiodatei nicht mehr verfügbar',
+                          );
+                        },
+                        child: Icon(
+                          Icons.info_outline,
+                          size: 20,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
                     ),
                   ],
                   const Spacer(),
                   if (!hasTranscription)
-                    FilledButton.icon(
-                      onPressed: widget.onTranscribe,
-                      icon: const Icon(Icons.transcribe, size: 18),
+                    ActionChip(
+                      avatar: const Icon(Icons.transcribe, size: 16),
                       label: const Text('Transkribieren'),
-                      style: FilledButton.styleFrom(
-                        visualDensity: VisualDensity.compact,
-                      ),
+                      onPressed: widget.onTranscribe,
+                      visualDensity: VisualDensity.compact,
+                      backgroundColor: theme.colorScheme.primaryContainer,
+                      side: BorderSide.none,
                     )
                   else
                     Chip(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import '../models/transcription_result.dart';
+import '../models/speaker.dart';
 import '../utils/constants.dart';
 import '../utils/markdown_styles.dart';
 import '../services/snackbar_service.dart';
@@ -76,6 +77,10 @@ class TranscriptionCard extends StatelessWidget {
                   const SizedBox(height: 16),
                   Divider(color: Theme.of(context).colorScheme.outlineVariant),
                   const SizedBox(height: 8),
+                  if (result.speakers.isNotEmpty) ...[
+                    _buildSpeakersRow(context, result.speakers),
+                    const SizedBox(height: 8),
+                  ],
                   _buildMetadataRow(
                     context,
                     Icons.language,
@@ -115,6 +120,56 @@ class TranscriptionCard extends StatelessWidget {
     );
   }
 
+  Widget _buildSpeakersRow(BuildContext context, List<Speaker> speakers) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          Icons.people,
+          size: 16,
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          'Sprecher: ',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+        ),
+        Expanded(
+          child: Wrap(
+            spacing: 6,
+            runSpacing: 4,
+            children: speakers.map((speaker) => _buildSpeakerChip(context, speaker)).toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSpeakerChip(BuildContext context, Speaker speaker) {
+    final color = speaker.color != null
+        ? Color(int.parse(speaker.color!.replaceFirst('#', '0xFF')))
+        : Theme.of(context).colorScheme.primary;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Text(
+        speaker.label,
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w500,
+            ),
+      ),
+    );
+  }
+
   Widget _buildMetadataRow(
     BuildContext context,
     IconData icon,
@@ -126,21 +181,21 @@ class TranscriptionCard extends StatelessWidget {
         Icon(
           icon,
           size: 16,
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
         ),
         const SizedBox(width: 8),
         Text(
           '$label: ',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
               ),
         ),
         Expanded(
           child: Text(
             value,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
                 ),
             overflow: TextOverflow.ellipsis,
           ),

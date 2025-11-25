@@ -21,13 +21,14 @@ class TranscriptionResultAdapter extends TypeAdapter<TranscriptionResult> {
       language: fields[1] as String,
       modelUsed: fields[2] as String,
       timestamp: fields[3] as DateTime,
+      speakers: (fields[4] as List?)?.cast<Speaker>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, TranscriptionResult obj) {
     writer
-      ..writeByte(4)
+      ..writeByte(5)
       ..writeByte(0)
       ..write(obj.text)
       ..writeByte(1)
@@ -35,7 +36,9 @@ class TranscriptionResultAdapter extends TypeAdapter<TranscriptionResult> {
       ..writeByte(2)
       ..write(obj.modelUsed)
       ..writeByte(3)
-      ..write(obj.timestamp);
+      ..write(obj.timestamp)
+      ..writeByte(4)
+      ..write(obj.speakers);
   }
 
   @override
