@@ -30,6 +30,7 @@ import '../utils/constants.dart';
 import '../utils/audio_utils.dart';
 import '../utils/screen_helpers.dart';
 import '../services/snackbar_service.dart';
+import 'chat_screen.dart';
 
 class SessionScreen extends StatefulWidget {
   final AudioFile? initialFile;
@@ -328,6 +329,16 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
     await _transcribe();
   }
 
+  void _openChat() {
+    if (_currentHistoryId == null) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChatScreen(historyId: _currentHistoryId!),
+      ),
+    );
+  }
+
   Future<void> _startSplitTranscription(Duration duration) async {
     final settingsProvider = context.read<SettingsProvider>();
     final shouldSplit = duration > const Duration(minutes: 10);
@@ -602,11 +613,25 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
       );
     }
 
+    final showChatFab = _transcriptionResult != null &&
+        _promptStream == null &&
+        _currentHistoryId != null;
+
     return Scaffold(
       appBar: AppBar(title: Text(title)),
       body: _selectedFile != null
           ? _buildBodyWithCollapsiblePlayer(context)
           : _buildScrollableContent(context),
+      floatingActionButton: showChatFab
+          ? FloatingActionButton(
+              onPressed: _openChat,
+              backgroundColor: Theme.of(context).colorScheme.primaryContainer.withValues(
+                alpha: Theme.of(context).brightness == Brightness.dark ? 0.95 : 0.85,
+              ),
+              foregroundColor: Colors.white,
+              child: const Icon(Icons.chat),
+            )
+          : null,
     );
   }
 

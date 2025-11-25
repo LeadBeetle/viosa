@@ -23,6 +23,7 @@ import 'models/prompt.dart';
 import 'models/audio_split.dart';
 import 'models/split_transcription_job.dart';
 import 'models/speaker.dart';
+import 'models/chat_message.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -45,6 +46,7 @@ void main() async {
   Hive.registerAdapter(AudioSplitAdapter());
   Hive.registerAdapter(JobStatusAdapter());
   Hive.registerAdapter(SplitTranscriptionJobAdapter());
+  Hive.registerAdapter(ChatMessageAdapter());
 
   // Initialize all providers before app starts to ensure state is loaded
   final settingsProvider = SettingsProvider(SettingsService());

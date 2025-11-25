@@ -13,6 +13,7 @@ import '../services/file_service.dart';
 import 'package:just_audio/just_audio.dart';
 import 'session_screen.dart';
 import 'settings_screen.dart';
+import 'chat_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -268,6 +269,20 @@ class _HomeScreenState extends State<HomeScreen> {
     await exportService.share(history);
   }
 
+  Future<void> _openChat(TranscriptionHistory history) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChatScreen(historyId: history.id),
+      ),
+    );
+
+    // Refresh history when returning from chat
+    if (mounted) {
+      await context.read<HistoryProvider>().refresh();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -325,6 +340,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 onTap: () => _openSession(history),
                 onRename: () => _renameRecording(history),
                 onExport: () => _exportRecording(history),
+                onChat: history.transcription != null ? () => _openChat(history) : null,
                 onDelete: () => _deleteRecording(history),
               );
             },

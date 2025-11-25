@@ -13,6 +13,7 @@ class RecordingCard extends StatefulWidget {
   final VoidCallback? onDelete;
   final VoidCallback? onRename;
   final VoidCallback? onExport;
+  final VoidCallback? onChat;
   final bool isPlaying;
 
   const RecordingCard({
@@ -24,6 +25,7 @@ class RecordingCard extends StatefulWidget {
     this.onDelete,
     this.onRename,
     this.onExport,
+    this.onChat,
     this.isPlaying = false,
   });
 
@@ -155,30 +157,49 @@ class _RecordingCardState extends State<RecordingCard> {
                             ],
                           ],
                         ),
-                        if (promptCount > 0) ...[
+                        if (promptCount > 0 || widget.history.chatMessageCount > 0) ...[
                           const SizedBox(height: 4),
                           Row(
                             children: [
-                              Icon(
-                                Icons.auto_awesome,
-                                size: 14,
-                                color: theme.colorScheme.primary,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                '$promptCount Prompt${promptCount != 1 ? 's' : ''}',
-                                style: theme.textTheme.bodySmall?.copyWith(
+                              if (promptCount > 0) ...[
+                                Icon(
+                                  Icons.auto_awesome,
+                                  size: 14,
                                   color: theme.colorScheme.primary,
-                                  fontWeight: FontWeight.w500,
                                 ),
-                              ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '$promptCount Prompt${promptCount != 1 ? 's' : ''}',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.primary,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                              if (promptCount > 0 && widget.history.chatMessageCount > 0)
+                                const SizedBox(width: 12),
+                              if (widget.history.chatMessageCount > 0) ...[
+                                Icon(
+                                  Icons.chat_bubble_outline,
+                                  size: 14,
+                                  color: theme.colorScheme.primary,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${widget.history.chatMessageCount} ${widget.history.chatMessageCount == 1 ? 'Nachricht' : 'Nachrichten'}',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.primary,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                         ],
                       ],
                     ),
                   ),
-                  if (widget.onDelete != null || widget.onRename != null || widget.onExport != null)
+                  if (widget.onDelete != null || widget.onRename != null || widget.onExport != null || widget.onChat != null)
                     SizedBox(
                       height: 24,
                       width: 24,
@@ -191,11 +212,28 @@ class _RecordingCardState extends State<RecordingCard> {
                           widget.onRename?.call();
                         } else if (value == 'export') {
                           widget.onExport?.call();
+                        } else if (value == 'chat') {
+                          widget.onChat?.call();
                         } else if (value == 'delete') {
                           widget.onDelete?.call();
                         }
                       },
                       itemBuilder: (context) => [
+                        if (widget.onChat != null)
+                          PopupMenuItem<String>(
+                            value: 'chat',
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.chat_outlined,
+                                  color: theme.colorScheme.onSurface,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                const Text('Chat'),
+                              ],
+                            ),
+                          ),
                         if (widget.onRename != null)
                           PopupMenuItem<String>(
                             value: 'rename',

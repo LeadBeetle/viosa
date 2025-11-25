@@ -42,6 +42,7 @@ dependencies:
   audio_session: ^0.2.2  # Audio session for background recording
   wakelock_plus: ^1.4.0  # Prevent device sleep during recording
   flutter_foreground_task: ^9.1.0  # Foreground service for recording indicator
+  speech_to_text: ^7.3.0
 
   # Dateiauswahl
   file_picker: ^10.3.6

@@ -164,11 +164,14 @@ class _StreamingTextDisplayState extends State<StreamingTextDisplay> {
                 Expanded(
                   child: Row(
                     children: [
-                      Text(
-                        widget.title,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                      Flexible(
+                        child: Text(
+                          widget.title,
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                       if (_isStreaming) ...[
                         const SizedBox(width: 8),

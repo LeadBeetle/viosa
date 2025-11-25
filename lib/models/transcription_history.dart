@@ -1,6 +1,7 @@
 import 'package:hive/hive.dart';
 import 'transcription_result.dart';
 import 'prompt_result.dart';
+import 'chat_message.dart';
 
 part 'transcription_history.g.dart';
 
@@ -37,9 +38,15 @@ class TranscriptionHistory {
 
   @HiveField(9)
   final String? audioPath;
-  
+
+  @HiveField(10)
+  final List<ChatMessage>? chatMessages;
+
   // Getter to convert milliseconds to Duration
   Duration? get duration => _durationMs != null ? Duration(milliseconds: _durationMs!) : null;
+
+  // Getter for chat message count
+  int get chatMessageCount => chatMessages?.length ?? 0;
 
   TranscriptionHistory({
     String? id,
@@ -52,6 +59,7 @@ class TranscriptionHistory {
     Duration? duration,
     this.waveform,
     this.audioPath,
+    this.chatMessages,
   })  : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
         promptResults = promptResults ?? [],
         createdAt = createdAt ?? DateTime.now(),
@@ -78,6 +86,9 @@ class TranscriptionHistory {
           ?.map((e) => (e as num).toDouble())
           .toList(),
       audioPath: json['audioPath'] as String?,
+      chatMessages: (json['chatMessages'] as List<dynamic>?)
+          ?.map((e) => ChatMessage.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
   }
 
@@ -94,6 +105,7 @@ class TranscriptionHistory {
       'duration': duration?.inMilliseconds,
       'waveform': waveform,
       'audioPath': audioPath,
+      'chatMessages': chatMessages?.map((e) => e.toJson()).toList(),
     };
   }
 
@@ -117,6 +129,7 @@ class TranscriptionHistory {
     Duration? duration,
     List<double>? waveform,
     String? audioPath,
+    List<ChatMessage>? chatMessages,
   }) {
     return TranscriptionHistory(
       id: id ?? this.id,
@@ -129,6 +142,7 @@ class TranscriptionHistory {
       duration: duration ?? this.duration,
       waveform: waveform ?? this.waveform,
       audioPath: audioPath ?? this.audioPath,
+      chatMessages: chatMessages ?? this.chatMessages,
     );
   }
 }

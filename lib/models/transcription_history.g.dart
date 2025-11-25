@@ -26,13 +26,14 @@ class TranscriptionHistoryAdapter extends TypeAdapter<TranscriptionHistory> {
       isSplitTranscription: fields[6] as bool,
       waveform: (fields[8] as List?)?.cast<double>(),
       audioPath: fields[9] as String?,
+      chatMessages: (fields[10] as List?)?.cast<ChatMessage>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, TranscriptionHistory obj) {
     writer
-      ..writeByte(10)
+      ..writeByte(11)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -52,7 +53,9 @@ class TranscriptionHistoryAdapter extends TypeAdapter<TranscriptionHistory> {
       ..writeByte(8)
       ..write(obj.waveform)
       ..writeByte(9)
-      ..write(obj.audioPath);
+      ..write(obj.audioPath)
+      ..writeByte(10)
+      ..write(obj.chatMessages);
   }
 
   @override
