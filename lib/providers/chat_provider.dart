@@ -51,18 +51,19 @@ class ChatProvider with ChangeNotifier {
     };
     _messages = List.from(history.chatMessages ?? []);
 
-    // Reset enabled contexts to default (only transcription)
-    _enabledContexts = {'transcription'};
+    // Enable all available contexts by default
+    _enabledContexts = {};
+    if (_transcription != null) {
+      _enabledContexts.add('transcription');
+    }
+    _enabledContexts.addAll(_promptResults.keys);
 
     _error = null;
     notifyListeners();
   }
 
   /// Toggle a context on or off
-  /// Note: 'transcription' cannot be toggled off - it's always enabled
   void toggleContext(String contextKey) {
-    if (contextKey == 'transcription') return;
-
     if (_enabledContexts.contains(contextKey)) {
       _enabledContexts.remove(contextKey);
     } else {
@@ -151,6 +152,67 @@ class ChatProvider with ChangeNotifier {
     );
 
     await historyProvider.saveHistory(updatedHistory);
+  }
+
+  /// Regenerate the response for a specific assistant message
+  Future<void> regenerateResponse(
+    int messageIndex, {
+    required String apiKey,
+    required String model,
+  }) async {
+    if (messageIndex < 0 || messageIndex >= _messages.length) return;
+    if (_messages[messageIndex].role != 'assistant') return;
+    if (_isStreaming) return;
+
+    _error = null;
+
+    final userMessageIndex = messageIndex - 1;
+    if (userMessageIndex < 0 || _messages[userMessageIndex].role != 'user') {
+      return;
+    }
+
+    final userMessage = _messages[userMessageIndex];
+
+    _messages.removeAt(messageIndex);
+    notifyListeners();
+
+    _isStreaming = true;
+    _currentStreamedResponse = '';
+    notifyListeners();
+
+    try {
+      final context = ChatContext(
+        transcription: _transcription,
+        promptResults: _promptResults,
+        enabledContexts: _enabledContexts,
+      );
+
+      final stream = _chatService.sendMessageStreaming(
+        apiKey: apiKey,
+        model: model,
+        userMessage: userMessage.content,
+        history: _messages.sublist(0, userMessageIndex),
+        context: context,
+      );
+
+      await for (final chunk in stream) {
+        _currentStreamedResponse += chunk;
+        notifyListeners();
+      }
+
+      final assistantMessage = ChatMessage(
+        role: 'assistant',
+        content: _currentStreamedResponse,
+      );
+      _messages.insert(userMessageIndex + 1, assistantMessage);
+    } catch (e) {
+      _error = e.toString();
+      debugPrint('Chat regenerate error: $e');
+    } finally {
+      _isStreaming = false;
+      _currentStreamedResponse = '';
+      notifyListeners();
+    }
   }
 
   /// Clear all messages

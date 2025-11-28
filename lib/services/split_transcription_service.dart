@@ -77,6 +77,7 @@ class SplitTranscriptionService {
     SplitTranscriptionJob job,
     String apiKey, {
     String? model,
+    bool speakerDiarization = false,
     void Function(SplitTranscriptionJob)? onProgress,
   }) async {
     if (model != null) {
@@ -103,14 +104,15 @@ class SplitTranscriptionService {
         job,
         split,
         apiKey,
-        speakerContext: currentContext,
+        speakerContext: speakerDiarization ? currentContext : null,
+        speakerDiarization: speakerDiarization,
         onProgress: onProgress,
       );
 
       if (split.status == SplitStatus.completed) {
         job.completedCount++;
 
-        if (split.transcriptionText != null && split.transcriptionText!.isNotEmpty) {
+        if (speakerDiarization && split.transcriptionText != null && split.transcriptionText!.isNotEmpty) {
           currentContext = await _extractContextSafely(
             apiKey,
             split.transcriptionText!,
@@ -196,6 +198,7 @@ class SplitTranscriptionService {
     AudioSplit split,
     String apiKey, {
     TranscriptionContext? speakerContext,
+    bool speakerDiarization = false,
     void Function(SplitTranscriptionJob)? onProgress,
   }) async {
     for (int attempt = 1; attempt <= maxRetries; attempt++) {
@@ -215,6 +218,7 @@ class SplitTranscriptionService {
           mimeType: split.mimeType,
           language: job.language,
           speakerContext: speakerContext,
+          speakerDiarization: speakerDiarization,
         );
 
         split.transcriptionText = result.text;
@@ -243,6 +247,7 @@ class SplitTranscriptionService {
     SplitTranscriptionJob job,
     String splitId,
     String apiKey, {
+    bool speakerDiarization = false,
     void Function(SplitTranscriptionJob)? onProgress,
   }) async {
     final split = job.splits.firstWhere(
@@ -262,13 +267,16 @@ class SplitTranscriptionService {
       job.failedCount--;
     }
 
-    final speakerContext = await _buildContextFromPreviousSplits(job, split.index, apiKey);
+    final speakerContext = speakerDiarization
+        ? await _buildContextFromPreviousSplits(job, split.index, apiKey)
+        : null;
 
     await _transcribeSplitWithRetry(
       job,
       split,
       apiKey,
       speakerContext: speakerContext,
+      speakerDiarization: speakerDiarization,
       onProgress: onProgress,
     );
 

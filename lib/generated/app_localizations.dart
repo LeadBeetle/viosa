@@ -356,6 +356,18 @@ abstract class AppLocalizations {
   /// **'Englisch'**
   String get transcriptionLanguageEnglish;
 
+  /// No description provided for @speakerDiarization.
+  ///
+  /// In de, this message translates to:
+  /// **'Sprechererkennung'**
+  String get speakerDiarization;
+
+  /// No description provided for @speakerDiarizationDescription.
+  ///
+  /// In de, this message translates to:
+  /// **'Identifiziert verschiedene Sprecher in der Aufnahme'**
+  String get speakerDiarizationDescription;
+
   /// No description provided for @uiLanguage.
   ///
   /// In de, this message translates to:
@@ -1339,6 +1351,66 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Keine Ergebnisse verfügbar'**
   String get noResultsAvailable;
+
+  /// No description provided for @chatContext.
+  ///
+  /// In de, this message translates to:
+  /// **'Chat-Kontext'**
+  String get chatContext;
+
+  /// No description provided for @chatContextDescription.
+  ///
+  /// In de, this message translates to:
+  /// **'Wählen Sie, welche Inhalte der KI zur Verfügung stehen sollen.'**
+  String get chatContextDescription;
+
+  /// No description provided for @chatContextEnabledCount.
+  ///
+  /// In de, this message translates to:
+  /// **'{count} von {total} aktiv'**
+  String chatContextEnabledCount(int count, int total);
+
+  /// No description provided for @sort.
+  ///
+  /// In de, this message translates to:
+  /// **'Sortieren'**
+  String get sort;
+
+  /// No description provided for @sortDateNewest.
+  ///
+  /// In de, this message translates to:
+  /// **'Datum (neueste zuerst)'**
+  String get sortDateNewest;
+
+  /// No description provided for @sortDateOldest.
+  ///
+  /// In de, this message translates to:
+  /// **'Datum (älteste zuerst)'**
+  String get sortDateOldest;
+
+  /// No description provided for @sortNameAZ.
+  ///
+  /// In de, this message translates to:
+  /// **'Name (A-Z)'**
+  String get sortNameAZ;
+
+  /// No description provided for @sortNameZA.
+  ///
+  /// In de, this message translates to:
+  /// **'Name (Z-A)'**
+  String get sortNameZA;
+
+  /// No description provided for @sortDurationLongest.
+  ///
+  /// In de, this message translates to:
+  /// **'Dauer (längste zuerst)'**
+  String get sortDurationLongest;
+
+  /// No description provided for @sortDurationShortest.
+  ///
+  /// In de, this message translates to:
+  /// **'Dauer (kürzeste zuerst)'**
+  String get sortDurationShortest;
 }
 
 class _AppLocalizationsDelegate

@@ -22,6 +22,7 @@ abstract class ILLMProvider {
     required String mimeType,
     required String language,
     TranscriptionContext? speakerContext,
+    bool speakerDiarization = false,
   });
 
   Stream<String> transcribeAudioStreaming({
@@ -30,6 +31,7 @@ abstract class ILLMProvider {
     required String mimeType,
     required String language,
     TranscriptionContext? speakerContext,
+    bool speakerDiarization = false,
     CancelToken? cancelToken,
   });
 
@@ -77,6 +79,7 @@ class LLMProviderAdapter implements ILLMProvider {
     required String mimeType,
     required String language,
     TranscriptionContext? speakerContext,
+    bool speakerDiarization = false,
   }) {
     return _transcriptionService.transcribe(
       apiKey: apiKey,
@@ -84,6 +87,7 @@ class LLMProviderAdapter implements ILLMProvider {
       mimeType: mimeType,
       language: language,
       speakerContext: speakerContext,
+      speakerDiarization: speakerDiarization,
     );
   }
 
@@ -94,6 +98,7 @@ class LLMProviderAdapter implements ILLMProvider {
     required String mimeType,
     required String language,
     TranscriptionContext? speakerContext,
+    bool speakerDiarization = false,
     CancelToken? cancelToken,
   }) {
     return _transcriptionService.transcribeStreaming(
@@ -102,6 +107,7 @@ class LLMProviderAdapter implements ILLMProvider {
       mimeType: mimeType,
       language: language,
       speakerContext: speakerContext,
+      speakerDiarization: speakerDiarization,
       cancelToken: cancelToken,
     );
   }

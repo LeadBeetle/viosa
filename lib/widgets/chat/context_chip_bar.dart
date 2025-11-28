@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../l10n/l10n.dart';
 import '../../utils/constants.dart';
 
 /// Widget for displaying and selecting chat contexts
@@ -89,37 +90,33 @@ class _ContextChipBarState extends State<ContextChipBar>
               child: Row(
                 children: [
                   Icon(
-                    Icons.tune,
+                    Icons.auto_awesome,
                     size: AppIconSize.medium,
-                    color: theme.colorScheme.onSurfaceVariant,
+                    color: theme.colorScheme.primary,
                   ),
                   const SizedBox(width: AppSpacing.s),
-                  Text(
-                    'Kontext',
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          context.l10n.chatContext,
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            color: theme.colorScheme.onSurface,
+                          ),
+                        ),
+                        Text(
+                          context.l10n.chatContextEnabledCount(
+                            widget.enabledContexts.length,
+                            widget.availableContexts.length,
+                          ),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: AppSpacing.s),
-                  // Show count of enabled contexts
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(AppRadius.circular),
-                    ),
-                    child: Text(
-                      '${widget.enabledContexts.length}',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onPrimaryContainer,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const Spacer(),
                   AnimatedRotation(
                     turns: _isExpanded ? 0.5 : 0,
                     duration: AppDuration.normal,
@@ -141,34 +138,56 @@ class _ContextChipBarState extends State<ContextChipBar>
                 right: AppSpacing.m,
                 bottom: AppSpacing.m,
               ),
-              child: Wrap(
-                spacing: AppSpacing.s,
-                runSpacing: AppSpacing.s,
-                children: widget.availableContexts.map((contextKey) {
-                  final isEnabled = widget.enabledContexts.contains(contextKey);
-                  final displayName = widget.getDisplayName(contextKey);
-                  final isTranscription = contextKey == 'transcription';
-
-                  return FilterChip(
-                    label: Text(displayName),
-                    selected: isEnabled,
-                    onSelected: isTranscription ? null : (_) => widget.onToggle(contextKey),
-                    avatar: isEnabled
-                        ? Icon(
-                            isTranscription ? Icons.lock : Icons.check,
-                            size: 16,
-                          )
-                        : null,
-                    showCheckmark: false,
-                    selectedColor: theme.colorScheme.primaryContainer,
-                    backgroundColor: theme.colorScheme.surfaceContainerHigh,
-                    labelStyle: TextStyle(
-                      color: isEnabled
-                          ? theme.colorScheme.onPrimaryContainer
-                          : theme.colorScheme.onSurface,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    context.l10n.chatContextDescription,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
-                  );
-                }).toList(),
+                  ),
+                  const SizedBox(height: AppSpacing.s),
+                  Wrap(
+                    spacing: AppSpacing.xs,
+                    runSpacing: AppSpacing.xs,
+                    children: widget.availableContexts.map((contextKey) {
+                      final isEnabled =
+                          widget.enabledContexts.contains(contextKey);
+                      final displayName = widget.getDisplayName(contextKey);
+                      final isTranscription = contextKey == 'transcription';
+
+                      return FilterChip(
+                        label: Text(displayName),
+                        selected: isEnabled,
+                        onSelected: (_) => widget.onToggle(contextKey),
+                        avatar: Icon(
+                          isTranscription
+                              ? Icons.text_snippet_outlined
+                              : Icons.auto_awesome_outlined,
+                          size: 16,
+                        ),
+                        showCheckmark: true,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        visualDensity: VisualDensity.compact,
+                        selectedColor: theme.colorScheme.primaryContainer,
+                        backgroundColor: theme.colorScheme.surfaceContainerHigh,
+                        side: isEnabled
+                            ? BorderSide.none
+                            : BorderSide(
+                                color: theme.colorScheme.outline.withValues(
+                                  alpha: 0.5,
+                                ),
+                              ),
+                        labelStyle: TextStyle(
+                          color: isEnabled
+                              ? theme.colorScheme.onPrimaryContainer
+                              : theme.colorScheme.onSurfaceVariant,
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
               ),
             ),
           ),

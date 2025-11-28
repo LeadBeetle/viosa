@@ -2,6 +2,15 @@ import 'package:flutter/foundation.dart';
 import '../models/transcription_history.dart';
 import '../services/history_service.dart';
 
+enum SortOption {
+  dateDesc,
+  dateAsc,
+  nameAsc,
+  nameDesc,
+  durationDesc,
+  durationAsc,
+}
+
 /// Provider for transcription history state management
 /// Wraps HistoryService and provides reactive state updates
 class HistoryProvider with ChangeNotifier {
@@ -10,15 +19,43 @@ class HistoryProvider with ChangeNotifier {
   List<TranscriptionHistory> _history = [];
   bool _isInitialized = false;
   bool _isLoading = false;
+  SortOption _sortOption = SortOption.dateDesc;
 
   HistoryProvider(this._historyService);
 
   // Getters
-  List<TranscriptionHistory> get history => List.unmodifiable(_history);
+  List<TranscriptionHistory> get history => _getSortedHistory();
   bool get isInitialized => _isInitialized;
   bool get isLoading => _isLoading;
   bool get isEmpty => _history.isEmpty;
   int get count => _history.length;
+  SortOption get sortOption => _sortOption;
+
+  List<TranscriptionHistory> _getSortedHistory() {
+    final sorted = List<TranscriptionHistory>.from(_history);
+    switch (_sortOption) {
+      case SortOption.dateDesc:
+        sorted.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      case SortOption.dateAsc:
+        sorted.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+      case SortOption.nameAsc:
+        sorted.sort((a, b) => a.audioFileName.toLowerCase().compareTo(b.audioFileName.toLowerCase()));
+      case SortOption.nameDesc:
+        sorted.sort((a, b) => b.audioFileName.toLowerCase().compareTo(a.audioFileName.toLowerCase()));
+      case SortOption.durationDesc:
+        sorted.sort((a, b) => (b.duration ?? Duration.zero).compareTo(a.duration ?? Duration.zero));
+      case SortOption.durationAsc:
+        sorted.sort((a, b) => (a.duration ?? Duration.zero).compareTo(b.duration ?? Duration.zero));
+    }
+    return List.unmodifiable(sorted);
+  }
+
+  void setSortOption(SortOption option) {
+    if (_sortOption != option) {
+      _sortOption = option;
+      notifyListeners();
+    }
+  }
 
   /// Initialize history from storage on app startup
   Future<void> initialize() async {

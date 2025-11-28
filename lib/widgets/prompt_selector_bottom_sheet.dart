@@ -5,6 +5,7 @@ import '../providers/prompts_provider.dart';
 import '../services/snackbar_service.dart';
 import '../utils/constants.dart';
 import '../l10n/l10n.dart';
+import 'prompt_edit_dialog.dart';
 
 /// Bottom sheet for selecting a prompt with tabs for custom and built-in prompts
 class PromptSelectorBottomSheet extends StatefulWidget {
@@ -73,6 +74,46 @@ class _PromptSelectorBottomSheetState extends State<PromptSelectorBottomSheet>
     }
   }
 
+  Future<void> _createNewPrompt() async {
+    final result = await showModalBottomSheet<Prompt>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const PromptEditDialog(),
+    );
+
+    if (result != null && mounted) {
+      final promptsProvider = context.read<PromptsProvider>();
+      await promptsProvider.addPrompt(result);
+      await _loadPrompts();
+      setState(() {
+        _selectedPrompt = result;
+      });
+    }
+  }
+
+  Future<void> _editPrompt(Prompt prompt) async {
+    final result = await showModalBottomSheet<Prompt>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => PromptEditDialog(prompt: prompt),
+    );
+
+    if (result != null && mounted) {
+      final promptsProvider = context.read<PromptsProvider>();
+      await promptsProvider.updatePrompt(result);
+      await _loadPrompts();
+      if (_selectedPrompt?.id == result.id) {
+        setState(() {
+          _selectedPrompt = result;
+        });
+      }
+    }
+  }
+
   void _selectPrompt() {
     if (_selectedPrompt != null) {
       Navigator.of(context).pop({
@@ -83,13 +124,96 @@ class _PromptSelectorBottomSheetState extends State<PromptSelectorBottomSheet>
     }
   }
 
-  Widget _buildPromptList(List<Prompt> prompts, String emptyMessage) {
-    if (prompts.isEmpty) {
+  Future<void> _deletePrompt(Prompt prompt) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(ctx.l10n.deletePrompt),
+        content: Text(ctx.l10n.deleteConfirmation(prompt.name)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(ctx.l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(ctx.l10n.delete),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      final promptsProvider = context.read<PromptsProvider>();
+      await promptsProvider.deletePrompt(prompt.id);
+      if (_selectedPrompt?.id == prompt.id) {
+        setState(() {
+          _selectedPrompt = null;
+        });
+      }
+      await _loadPrompts();
+    }
+  }
+
+  Widget _buildCustomPromptList() {
+    if (_customPrompts.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.l),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.text_snippet_outlined,
+                size: 48,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(height: AppSpacing.m),
+              Text(
+                context.l10n.noCustomPrompts,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: AppSpacing.s),
+              Text(
+                context.l10n.noCustomPromptsSubtitle,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: AppSpacing.l),
+              ElevatedButton.icon(
+                onPressed: _createNewPrompt,
+                icon: const Icon(Icons.add),
+                label: Text(context.l10n.createPrompt),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.only(bottom: AppSpacing.xl),
+      itemCount: _customPrompts.length,
+      itemBuilder: (context, index) {
+        final prompt = _customPrompts[index];
+        final isSelected = _selectedPrompt?.id == prompt.id;
+        return _buildCustomPromptTile(prompt, isSelected);
+      },
+    );
+  }
+
+  Widget _buildPredefinedPromptList() {
+    if (_predefinedPrompts.isEmpty) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.l),
           child: Text(
-            emptyMessage,
+            context.l10n.noPredefinedPromptsAvailable,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -101,9 +225,9 @@ class _PromptSelectorBottomSheetState extends State<PromptSelectorBottomSheet>
 
     return ListView.builder(
       padding: const EdgeInsets.only(bottom: AppSpacing.xl),
-      itemCount: prompts.length,
+      itemCount: _predefinedPrompts.length,
       itemBuilder: (context, index) {
-        final prompt = prompts[index];
+        final prompt = _predefinedPrompts[index];
         final isSelected = _selectedPrompt?.id == prompt.id;
         return _buildPromptTile(prompt, isSelected);
       },
@@ -112,6 +236,7 @@ class _PromptSelectorBottomSheetState extends State<PromptSelectorBottomSheet>
 
   Widget _buildPromptTile(Prompt prompt, bool isSelected) {
     return ListTile(
+      titleAlignment: ListTileTitleAlignment.top,
       title: Row(
         children: [
           Expanded(
@@ -151,6 +276,90 @@ class _PromptSelectorBottomSheetState extends State<PromptSelectorBottomSheet>
         color: isSelected
             ? Theme.of(context).colorScheme.primary
             : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+      ),
+      selected: isSelected,
+      onTap: () {
+        setState(() {
+          _selectedPrompt = prompt;
+        });
+      },
+    );
+  }
+
+  Widget _buildCustomPromptTile(Prompt prompt, bool isSelected) {
+    return ListTile(
+      titleAlignment: ListTileTitleAlignment.top,
+      title: Row(
+        children: [
+          Expanded(
+            child: Text(
+              prompt.name,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (prompt.usageCount > 0)
+            Container(
+              margin: const EdgeInsets.only(left: AppSpacing.s),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s, vertical: 2),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(AppRadius.medium),
+              ),
+              child: Text(
+                '${prompt.usageCount}x',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
+              ),
+            ),
+        ],
+      ),
+      subtitle: Text(
+        prompt.template.length > 100
+            ? '${prompt.template.substring(0, 100)}...'
+            : prompt.template,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+      ),
+      leading: Icon(
+        isSelected
+            ? Icons.radio_button_checked
+            : Icons.radio_button_unchecked,
+        color: isSelected
+            ? Theme.of(context).colorScheme.primary
+            : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+      ),
+      trailing: PopupMenuButton<String>(
+        color: Theme.of(context).colorScheme.surface,
+        onSelected: (value) {
+          if (value == 'edit') {
+            _editPrompt(prompt);
+          } else if (value == 'delete') {
+            _deletePrompt(prompt);
+          }
+        },
+        itemBuilder: (context) => [
+          PopupMenuItem(
+            value: 'edit',
+            child: Row(
+              children: [
+                Icon(Icons.edit, color: Theme.of(context).colorScheme.onSurface),
+                const SizedBox(width: 8),
+                Text(context.l10n.edit),
+              ],
+            ),
+          ),
+          PopupMenuItem(
+            value: 'delete',
+            child: Row(
+              children: [
+                Icon(Icons.delete, color: Theme.of(context).colorScheme.error),
+                const SizedBox(width: 8),
+                Text(context.l10n.delete, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+              ],
+            ),
+          ),
+        ],
       ),
       selected: isSelected,
       onTap: () {
@@ -229,14 +438,8 @@ class _PromptSelectorBottomSheetState extends State<PromptSelectorBottomSheet>
                           child: TabBarView(
                             controller: _tabController,
                             children: [
-                              _buildPromptList(
-                                _customPrompts,
-                                context.l10n.noCustomPromptsAvailable,
-                              ),
-                              _buildPromptList(
-                                _predefinedPrompts,
-                                context.l10n.noPredefinedPromptsAvailable,
-                              ),
+                              _buildCustomPromptList(),
+                              _buildPredefinedPromptList(),
                             ],
                           ),
                         ),

@@ -15,6 +15,7 @@ abstract class ITranscriptionService {
     required String mimeType,
     required String language,
     TranscriptionContext? speakerContext,
+    bool speakerDiarization = false,
   });
 
   Stream<String> transcribeStreaming({
@@ -23,6 +24,7 @@ abstract class ITranscriptionService {
     required String mimeType,
     required String language,
     TranscriptionContext? speakerContext,
+    bool speakerDiarization = false,
     CancelToken? cancelToken,
   });
 }
@@ -51,8 +53,9 @@ class TranscriptionService implements ITranscriptionService {
     required String mimeType,
     required String language,
     TranscriptionContext? speakerContext,
+    bool speakerDiarization = false,
   }) async {
-    final messages = _buildMessages(base64Audio, mimeType, language, speakerContext);
+    final messages = _buildMessages(base64Audio, mimeType, language, speakerContext, speakerDiarization);
     final config = _getConfig();
 
     final rawText = await _completionService.complete(
@@ -80,9 +83,10 @@ class TranscriptionService implements ITranscriptionService {
     required String mimeType,
     required String language,
     TranscriptionContext? speakerContext,
+    bool speakerDiarization = false,
     CancelToken? cancelToken,
   }) {
-    final messages = _buildMessages(base64Audio, mimeType, language, speakerContext);
+    final messages = _buildMessages(base64Audio, mimeType, language, speakerContext, speakerDiarization);
     final config = _getConfig();
 
     return _completionService.completeStreaming(
@@ -98,8 +102,9 @@ class TranscriptionService implements ITranscriptionService {
     String mimeType,
     String language,
     TranscriptionContext? speakerContext,
+    bool speakerDiarization,
   ) {
-    final basePrompt = _getTranscriptionPrompt(language);
+    final basePrompt = _getTranscriptionPrompt(language, speakerDiarization);
     final contextPrompt = speakerContext?.toPromptString(language) ?? '';
     final prompt = contextPrompt.isNotEmpty
         ? '$contextPrompt\n$basePrompt'
@@ -138,10 +143,9 @@ class TranscriptionService implements ITranscriptionService {
     return 'mp3';
   }
 
-  String _getTranscriptionPrompt(String language) {
-    switch (language) {
-      case 'de':
-        return '''Transkribiere die folgende Audiodatei auf Deutsch.
+  String _getTranscriptionPrompt(String language, bool speakerDiarization) {
+    final diarizationDe = speakerDiarization
+        ? '''
 
 Sprecheridentifikation:
 - Identifiziere verschiedene Sprecher anhand ihrer Stimme
@@ -150,7 +154,26 @@ Sprecheridentifikation:
 - Schreibe Sprechernamen fett in Markdown-Syntax (z.B. **Max:** oder **Sprecher 1:**)
 - Behalte die Sprecherzuordnung konsistent über das gesamte Transkript
 - Bei nur einem Sprecher ist keine Kennzeichnung nötig
+'''
+        : '';
 
+    final diarizationEn = speakerDiarization
+        ? '''
+
+Speaker identification:
+- Identify different speakers by their voice
+- Try to determine speaker names from the conversation (e.g. when someone is addressed by name or introduces themselves)
+- Use the identified name as label, otherwise use "Speaker 1:", "Speaker 2:", etc.
+- Write speaker names in bold using Markdown syntax (e.g. **John:** or **Speaker 1:**)
+- Keep speaker assignments consistent throughout the transcript
+- No labeling needed if there is only one speaker
+'''
+        : '';
+
+    switch (language) {
+      case 'de':
+        return '''Transkribiere die folgende Audiodatei auf Deutsch.
+$diarizationDe
 Bereinige das Transkript wie folgt:
 - Entferne Füllwörter (ähm, äh, hmm, also, halt, irgendwie, sozusagen, quasi, ja also)
 - Entferne Wortwiederholungen und Stotterer
@@ -161,15 +184,7 @@ Bereinige das Transkript wie folgt:
 Gib nur den bereinigten Text zurück, ohne zusätzliche Erklärungen.''';
       case 'en':
         return '''Transcribe the following audio file in English.
-
-Speaker identification:
-- Identify different speakers by their voice
-- Try to determine speaker names from the conversation (e.g. when someone is addressed by name or introduces themselves)
-- Use the identified name as label, otherwise use "Speaker 1:", "Speaker 2:", etc.
-- Write speaker names in bold using Markdown syntax (e.g. **John:** or **Speaker 1:**)
-- Keep speaker assignments consistent throughout the transcript
-- No labeling needed if there is only one speaker
-
+$diarizationEn
 Clean up the transcript as follows:
 - Remove filler words (um, uh, like, you know, basically, actually, I mean)
 - Remove word repetitions and stutters
@@ -181,15 +196,7 @@ Return only the cleaned text without additional explanations.''';
       case 'auto':
       default:
         return '''Transcribe the following audio file in its original language.
-
-Speaker identification:
-- Identify different speakers by their voice
-- Try to determine speaker names from the conversation (e.g. when someone is addressed by name or introduces themselves)
-- Use the identified name as label, otherwise use "Speaker 1:", "Speaker 2:", etc.
-- Write speaker names in bold using Markdown syntax (e.g. **John:** or **Speaker 1:**)
-- Keep speaker assignments consistent throughout the transcript
-- No labeling needed if there is only one speaker
-
+$diarizationEn
 Clean up the transcript as follows:
 - Remove filler words and verbal hesitations
 - Remove word repetitions and stutters

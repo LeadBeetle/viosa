@@ -143,6 +143,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get transcriptionLanguageEnglish => 'Englisch';
 
   @override
+  String get speakerDiarization => 'Sprechererkennung';
+
+  @override
+  String get speakerDiarizationDescription =>
+      'Identifiziert verschiedene Sprecher in der Aufnahme';
+
+  @override
   String get uiLanguage => 'App-Sprache';
 
   @override
@@ -770,4 +777,37 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get noResultsAvailable => 'Keine Ergebnisse verfügbar';
+
+  @override
+  String get chatContext => 'Chat-Kontext';
+
+  @override
+  String get chatContextDescription =>
+      'Wählen Sie, welche Inhalte der KI zur Verfügung stehen sollen.';
+
+  @override
+  String chatContextEnabledCount(int count, int total) {
+    return '$count von $total aktiv';
+  }
+
+  @override
+  String get sort => 'Sortieren';
+
+  @override
+  String get sortDateNewest => 'Datum (neueste zuerst)';
+
+  @override
+  String get sortDateOldest => 'Datum (älteste zuerst)';
+
+  @override
+  String get sortNameAZ => 'Name (A-Z)';
+
+  @override
+  String get sortNameZA => 'Name (Z-A)';
+
+  @override
+  String get sortDurationLongest => 'Dauer (längste zuerst)';
+
+  @override
+  String get sortDurationShortest => 'Dauer (kürzeste zuerst)';
 }

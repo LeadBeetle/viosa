@@ -640,10 +640,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  Icons.folder,
-                  size: 20,
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Icon(
+                    Icons.folder,
+                    size: 20,
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
+                  ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -688,36 +691,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 16),
             const Divider(),
             const SizedBox(height: 16),
-            Row(
+            Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  Icons.language,
-                  size: 20,
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.language,
+                      size: 20,
+                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      context.l10n.transcriptionLanguage,
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    InfoChip(
+                      label: _getLanguageName(context, _selectedLanguage),
+                      icon: Icons.translate,
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                Expanded(
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.only(left: 28),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Text(
-                            context.l10n.transcriptionLanguage,
-                            style:
-                                Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          InfoChip(
-                            label: _getLanguageName(context, _selectedLanguage),
-                            icon: Icons.translate,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
                         isExpanded: true,
                         decoration: const InputDecoration(
@@ -760,9 +763,59 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ],
             ),
+            const SizedBox(height: 16),
+            const Divider(),
+            const SizedBox(height: 8),
+            _buildSpeakerDiarizationToggle(context),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildSpeakerDiarizationToggle(BuildContext context) {
+    final settingsProvider = context.watch<SettingsProvider>();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.record_voice_over,
+              size: 20,
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                context.l10n.speakerDiarization,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            Switch(
+              value: settingsProvider.speakerDiarization,
+              onChanged: (value) {
+                settingsProvider.saveSpeakerDiarization(value);
+              },
+            ),
+          ],
+        ),
+        Padding(
+          padding: const EdgeInsets.only(left: 28),
+          child: Text(
+            context.l10n.speakerDiarizationDescription,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context)
+                  .colorScheme
+                  .onSurface
+                  .withValues(alpha: 0.6),
+            ),
+          ),
+        ),
+      ],
     );
   }
 

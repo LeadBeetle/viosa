@@ -409,6 +409,7 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
         language: language,
         apiKey: apiKey,
         model: selectedModelId,
+        speakerDiarization: settingsProvider.speakerDiarization,
       );
 
       if (mounted) {

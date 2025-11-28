@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/transcription_history.dart';
-import '../providers/history_provider.dart';
+import '../providers/history_provider.dart' show HistoryProvider, SortOption;
 import '../widgets/recording_card.dart';
 import '../widgets/empty_state_widget.dart';
 import '../widgets/app_bar_title_with_logo.dart';
@@ -26,6 +26,45 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   String? _currentlyPlayingId;
   bool _isFabExpanded = false;
+
+  PopupMenuItem<SortOption> _buildSortMenuItem(
+    BuildContext context,
+    SortOption option,
+    String label,
+    IconData directionIcon,
+    SortOption currentOption,
+  ) {
+    final isSelected = option == currentOption;
+    final theme = Theme.of(context);
+    return PopupMenuItem<SortOption>(
+      value: option,
+      child: Row(
+        children: [
+          Icon(
+            directionIcon,
+            size: 18,
+            color: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? theme.colorScheme.primary : null,
+                fontWeight: isSelected ? FontWeight.w600 : null,
+              ),
+            ),
+          ),
+          if (isSelected)
+            Icon(
+              Icons.check,
+              size: 18,
+              color: theme.colorScheme.primary,
+            ),
+        ],
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -290,6 +329,23 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const AppBarTitleWithLogo(),
         actions: [
+          Consumer<HistoryProvider>(
+            builder: (context, provider, _) => PopupMenuButton<SortOption>(
+              icon: const Icon(Icons.sort),
+              tooltip: context.l10n.sort,
+              onSelected: (option) => provider.setSortOption(option),
+              itemBuilder: (context) => [
+                _buildSortMenuItem(context, SortOption.dateDesc, context.l10n.sortDateNewest, Icons.arrow_downward, provider.sortOption),
+                _buildSortMenuItem(context, SortOption.dateAsc, context.l10n.sortDateOldest, Icons.arrow_upward, provider.sortOption),
+                const PopupMenuDivider(),
+                _buildSortMenuItem(context, SortOption.nameAsc, context.l10n.sortNameAZ, Icons.arrow_upward, provider.sortOption),
+                _buildSortMenuItem(context, SortOption.nameDesc, context.l10n.sortNameZA, Icons.arrow_downward, provider.sortOption),
+                const PopupMenuDivider(),
+                _buildSortMenuItem(context, SortOption.durationDesc, context.l10n.sortDurationLongest, Icons.arrow_downward, provider.sortOption),
+                _buildSortMenuItem(context, SortOption.durationAsc, context.l10n.sortDurationShortest, Icons.arrow_upward, provider.sortOption),
+              ],
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.auto_awesome),
             onPressed: () {
@@ -322,16 +378,12 @@ class _HomeScreenState extends State<HomeScreen> {
             );
           }
 
-          // Sort by date descending
-          final sortedHistory = List<TranscriptionHistory>.from(historyProvider.history)
-            ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-
           return ListView.builder(
             padding: const EdgeInsets.all(AppConstants.defaultPadding),
             cacheExtent: 500,
-            itemCount: sortedHistory.length,
+            itemCount: historyProvider.history.length,
             itemBuilder: (context, index) {
-              final history = sortedHistory[index];
+              final history = historyProvider.history[index];
               return RecordingCard(
                 key: ValueKey(history.id),
                 history: history,
