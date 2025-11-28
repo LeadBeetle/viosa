@@ -225,12 +225,13 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildMessageList(List<ChatMessage> messages, bool isStreaming) {
+    final settings = context.read<SettingsProvider>();
+
     return ListView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.m),
       itemCount: messages.length + (isStreaming ? 1 : 0),
       itemBuilder: (context, index) {
-        // Show streaming message at the end
         if (isStreaming && index == messages.length) {
           return ChatMessageBubble(
             message: ChatMessage(
@@ -242,9 +243,41 @@ class _ChatScreenState extends State<ChatScreen> {
           );
         }
 
-        return ChatMessageBubble(message: messages[index]);
+        final message = messages[index];
+        return ChatMessageBubble(
+          message: message,
+          onRegenerate: message.role == 'assistant'
+              ? () => _handleRegenerate(index, settings)
+              : null,
+        );
       },
     );
+  }
+
+  Future<void> _handleRegenerate(int messageIndex, SettingsProvider settings) async {
+    if (settings.apiKey == null || settings.apiKey!.isEmpty) {
+      SnackBarService().showError(
+        context,
+        context.l10n.apiKeyNotConfigured,
+      );
+      return;
+    }
+
+    await _chatProvider.regenerateResponse(
+      messageIndex,
+      apiKey: settings.apiKey!,
+      model: settings.selectedModel,
+    );
+
+    _scrollToBottom();
+    await _saveChat();
+
+    if (_chatProvider.error != null && mounted) {
+      SnackBarService().showError(
+        context,
+        context.l10n.errorGeneric(_chatProvider.error ?? ''),
+      );
+    }
   }
 
   void _showClearConfirmation() {

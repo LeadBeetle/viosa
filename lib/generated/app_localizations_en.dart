@@ -142,6 +142,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get transcriptionLanguageEnglish => 'English';
 
   @override
+  String get speakerDiarization => 'Speaker Recognition';
+
+  @override
+  String get speakerDiarizationDescription =>
+      'Identifies different speakers in the recording';
+
+  @override
   String get uiLanguage => 'App Language';
 
   @override
@@ -763,4 +770,37 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noResultsAvailable => 'No results available';
+
+  @override
+  String get chatContext => 'Chat Context';
+
+  @override
+  String get chatContextDescription =>
+      'Select which content should be available to the AI.';
+
+  @override
+  String chatContextEnabledCount(int count, int total) {
+    return '$count of $total active';
+  }
+
+  @override
+  String get sort => 'Sort';
+
+  @override
+  String get sortDateNewest => 'Date (newest first)';
+
+  @override
+  String get sortDateOldest => 'Date (oldest first)';
+
+  @override
+  String get sortNameAZ => 'Name (A-Z)';
+
+  @override
+  String get sortNameZA => 'Name (Z-A)';
+
+  @override
+  String get sortDurationLongest => 'Duration (longest first)';
+
+  @override
+  String get sortDurationShortest => 'Duration (shortest first)';
 }

@@ -53,6 +53,8 @@
   "transcriptionLanguageAuto": "Automatisch erkennen",
   "transcriptionLanguageGerman": "Deutsch",
   "transcriptionLanguageEnglish": "Englisch",
+  "speakerDiarization": "Sprechererkennung",
+  "speakerDiarizationDescription": "Identifiziert verschiedene Sprecher in der Aufnahme",
 
   "uiLanguage": "App-Sprache",
   "uiLanguageDescription": "Wählen Sie die Sprache der Benutzeroberfläche",
@@ -424,5 +426,23 @@
   "collapse": "Einklappen",
 
   "audioFileNotFoundWarning": "Die Audiodatei wurde nicht gefunden. Sie können die vorhandenen Ergebnisse ansehen, aber keine neue Transkription starten.",
-  "noResultsAvailable": "Keine Ergebnisse verfügbar"
+  "noResultsAvailable": "Keine Ergebnisse verfügbar",
+
+  "chatContext": "Chat-Kontext",
+  "chatContextDescription": "Wählen Sie, welche Inhalte der KI zur Verfügung stehen sollen.",
+  "chatContextEnabledCount": "{count} von {total} aktiv",
+  "@chatContextEnabledCount": {
+    "placeholders": {
+      "count": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+
+  "sort": "Sortieren",
+  "sortDateNewest": "Datum (neueste zuerst)",
+  "sortDateOldest": "Datum (älteste zuerst)",
+  "sortNameAZ": "Name (A-Z)",
+  "sortNameZA": "Name (Z-A)",
+  "sortDurationLongest": "Dauer (längste zuerst)",
+  "sortDurationShortest": "Dauer (kürzeste zuerst)"
 }

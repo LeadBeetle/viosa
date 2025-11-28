@@ -48,6 +48,8 @@
   "transcriptionLanguageAuto": "Auto-Detect",
   "transcriptionLanguageGerman": "German",
   "transcriptionLanguageEnglish": "English",
+  "speakerDiarization": "Speaker Recognition",
+  "speakerDiarizationDescription": "Identifies different speakers in the recording",
 
   "uiLanguage": "App Language",
   "uiLanguageDescription": "Select the user interface language",
@@ -243,5 +245,17 @@
   "collapse": "Collapse",
 
   "audioFileNotFoundWarning": "The audio file was not found. You can view existing results, but cannot start a new transcription.",
-  "noResultsAvailable": "No results available"
+  "noResultsAvailable": "No results available",
+
+  "chatContext": "Chat Context",
+  "chatContextDescription": "Select which content should be available to the AI.",
+  "chatContextEnabledCount": "{count} of {total} active",
+
+  "sort": "Sort",
+  "sortDateNewest": "Date (newest first)",
+  "sortDateOldest": "Date (oldest first)",
+  "sortNameAZ": "Name (A-Z)",
+  "sortNameZA": "Name (Z-A)",
+  "sortDurationLongest": "Duration (longest first)",
+  "sortDurationShortest": "Duration (shortest first)"
 }

@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/transcription_history.dart';
 import '../services/snackbar_service.dart';
@@ -35,27 +34,6 @@ class RecordingCard extends StatefulWidget {
 }
 
 class _RecordingCardState extends State<RecordingCard> {
-  Timer? _timer;
-  late final ValueNotifier<DateTime> _createdAtNotifier;
-
-  @override
-  void initState() {
-    super.initState();
-    _createdAtNotifier = ValueNotifier(widget.history.createdAt);
-    _timer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      if (mounted) {
-        // Trigger rebuild by updating the notifier
-        _createdAtNotifier.value = widget.history.createdAt;
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    _createdAtNotifier.dispose();
-    super.dispose();
-  }
 
   String _formatDuration(Duration duration) {
     String twoDigits(int n) => n.toString().padLeft(2, '0');
@@ -66,22 +44,13 @@ class _RecordingCardState extends State<RecordingCard> {
         : "$minutes:$seconds";
   }
 
-  String _formatRelativeTime(BuildContext context, DateTime dateTime) {
-    final now = DateTime.now();
-    final difference = now.difference(dateTime);
-
-    if (difference.inSeconds < 60) {
-      return context.l10n.timeAgoSeconds(difference.inSeconds);
-    } else if (difference.inMinutes < 60) {
-      return context.l10n.timeAgoMinutes(difference.inMinutes);
-    } else if (difference.inHours < 24) {
-      return context.l10n.timeAgoHours(difference.inHours);
-    } else if (difference.inDays < 365) {
-      return context.l10n.timeAgoDays(difference.inDays);
-    } else {
-      final years = (difference.inDays / 365).floor();
-      return context.l10n.timeAgoYears(years);
-    }
+  String _formatDateTime(DateTime dateTime) {
+    final day = dateTime.day.toString().padLeft(2, '0');
+    final month = dateTime.month.toString().padLeft(2, '0');
+    final year = dateTime.year;
+    final hour = dateTime.hour.toString().padLeft(2, '0');
+    final minute = dateTime.minute.toString().padLeft(2, '0');
+    return '$day.$month.$year, $hour:$minute';
   }
 
   String _getBaseNameWithoutExtension(String fileName) {
@@ -100,50 +69,127 @@ class _RecordingCardState extends State<RecordingCard> {
     return '';
   }
 
-  Widget? _buildStatusChip(BuildContext context, ThemeData theme, bool hasTranscription) {
+  Widget? _buildStatusWidget(BuildContext context, ThemeData theme, bool hasTranscription) {
     final hasAudioFile = widget.history.audioPath != null;
-    final hasResults = hasTranscription || widget.history.promptResults.isNotEmpty;
 
-    if (!hasAudioFile) {
-      if (hasResults) {
-        return Chip(
-          avatar: const Icon(Icons.check_circle, size: 16),
-          label: Text(
-            context.l10n.transcribed,
-            overflow: TextOverflow.ellipsis,
-          ),
-          visualDensity: VisualDensity.compact,
-          backgroundColor: theme.colorScheme.secondaryContainer.withValues(alpha: 0.5),
-          side: BorderSide.none,
-        );
-      }
+    if (!hasAudioFile || hasTranscription) {
       return null;
     }
 
-    if (!hasTranscription) {
-      return ActionChip(
-        avatar: const Icon(Icons.transcribe, size: 16),
-        label: Text(
-          context.l10n.transcribe,
-          overflow: TextOverflow.ellipsis,
-        ),
-        onPressed: widget.onTranscribe,
-        visualDensity: VisualDensity.compact,
+    return IconButton.filled(
+      onPressed: widget.onTranscribe,
+      icon: const Icon(Icons.text_snippet_outlined),
+      tooltip: context.l10n.transcribe,
+      style: IconButton.styleFrom(
         backgroundColor: theme.colorScheme.primaryContainer,
-        side: BorderSide.none,
+        foregroundColor: theme.colorScheme.onPrimaryContainer,
+      ),
+    );
+  }
+
+  void _showContextMenu(BuildContext context, TapDownDetails? details) {
+    final theme = Theme.of(context);
+    final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+    final RenderBox cardBox = context.findRenderObject() as RenderBox;
+
+    final RelativeRect position;
+    if (details != null) {
+      position = RelativeRect.fromRect(
+        Rect.fromPoints(details.globalPosition, details.globalPosition),
+        Offset.zero & overlay.size,
+      );
+    } else {
+      final cardPosition = cardBox.localToGlobal(Offset.zero);
+      position = RelativeRect.fromLTRB(
+        cardPosition.dx + cardBox.size.width - 48,
+        cardPosition.dy,
+        cardPosition.dx + cardBox.size.width,
+        cardPosition.dy + 48,
       );
     }
 
-    return Chip(
-      avatar: const Icon(Icons.check_circle, size: 16),
-      label: Text(
-        context.l10n.transcribed,
-        overflow: TextOverflow.ellipsis,
-      ),
-      visualDensity: VisualDensity.compact,
-      backgroundColor: theme.colorScheme.secondaryContainer.withValues(alpha: 0.5),
-      side: BorderSide.none,
-    );
+    showMenu<String>(
+      context: context,
+      position: position,
+      color: theme.colorScheme.surface,
+      items: [
+        if (widget.onChat != null)
+          PopupMenuItem<String>(
+            value: 'chat',
+            child: Row(
+              children: [
+                Icon(
+                  Icons.chat_outlined,
+                  color: theme.colorScheme.onSurface,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(context.l10n.chat),
+              ],
+            ),
+          ),
+        if (widget.onRename != null)
+          PopupMenuItem<String>(
+            value: 'rename',
+            child: Row(
+              children: [
+                Icon(
+                  Icons.edit_outlined,
+                  color: theme.colorScheme.onSurface,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(context.l10n.menuRename),
+              ],
+            ),
+          ),
+        if (widget.onExport != null)
+          PopupMenuItem<String>(
+            value: 'export',
+            child: Row(
+              children: [
+                Icon(
+                  Icons.share_outlined,
+                  color: theme.colorScheme.onSurface,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(context.l10n.menuExport),
+              ],
+            ),
+          ),
+        if (widget.onDelete != null)
+          PopupMenuItem<String>(
+            value: 'delete',
+            child: Row(
+              children: [
+                Icon(
+                  Icons.delete_outline,
+                  color: theme.colorScheme.error,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  context.l10n.delete,
+                  style: TextStyle(
+                    color: theme.colorScheme.error,
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    ).then((value) {
+      if (value == 'rename') {
+        widget.onRename?.call();
+      } else if (value == 'export') {
+        widget.onExport?.call();
+      } else if (value == 'chat') {
+        widget.onChat?.call();
+      } else if (value == 'delete') {
+        widget.onDelete?.call();
+      }
+    });
   }
 
   @override
@@ -151,23 +197,25 @@ class _RecordingCardState extends State<RecordingCard> {
     final theme = Theme.of(context);
     final hasTranscription = widget.history.transcription != null;
     final promptCount = widget.history.promptResults.length;
+    final hasContextMenu = widget.onDelete != null || widget.onRename != null || widget.onExport != null || widget.onChat != null;
+    final hasInfoRow = promptCount > 0 || widget.history.chatMessageCount > 0;
 
     return Card(
       margin: const EdgeInsets.only(bottom: AppSpacing.m),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: widget.onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(AppConstants.defaultPadding),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header: Name, Prompt Count, and Menu
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        onLongPress: hasContextMenu ? () => _showContextMenu(context, null) : null,
+        child: Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(AppConstants.defaultPadding),
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
+                  // Header: Name, Prompt Count, and Info
+                  Padding(
+                    padding: EdgeInsets.only(right: hasContextMenu ? 32 : 0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -202,7 +250,7 @@ class _RecordingCardState extends State<RecordingCard> {
                             ],
                           ],
                         ),
-                        if (promptCount > 0 || widget.history.chatMessageCount > 0) ...[
+                        if (hasInfoRow) ...[
                           const SizedBox(height: 4),
                           Row(
                             children: [
@@ -244,168 +292,92 @@ class _RecordingCardState extends State<RecordingCard> {
                       ],
                     ),
                   ),
-                  if (widget.onDelete != null || widget.onRename != null || widget.onExport != null || widget.onChat != null)
-                    SizedBox(
-                      height: 24,
-                      width: 24,
-                      child: PopupMenuButton<String>(
-                        icon: const Icon(Icons.more_vert, size: 20),
-                        padding: EdgeInsets.zero,
-                        color: theme.colorScheme.surface,
-                      onSelected: (value) {
-                        if (value == 'rename') {
-                          widget.onRename?.call();
-                        } else if (value == 'export') {
-                          widget.onExport?.call();
-                        } else if (value == 'chat') {
-                          widget.onChat?.call();
-                        } else if (value == 'delete') {
-                          widget.onDelete?.call();
-                        }
-                      },
-                      itemBuilder: (context) => [
-                        if (widget.onChat != null)
-                          PopupMenuItem<String>(
-                            value: 'chat',
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.chat_outlined,
-                                  color: theme.colorScheme.onSurface,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(context.l10n.chat),
-                              ],
-                            ),
-                          ),
-                        if (widget.onRename != null)
-                          PopupMenuItem<String>(
-                            value: 'rename',
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.edit_outlined,
-                                  color: theme.colorScheme.onSurface,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(context.l10n.menuRename),
-                              ],
-                            ),
-                          ),
-                        if (widget.onExport != null)
-                          PopupMenuItem<String>(
-                            value: 'export',
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.share_outlined,
-                                  color: theme.colorScheme.onSurface,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(context.l10n.menuExport),
-                              ],
-                            ),
-                          ),
-                        if (widget.onDelete != null)
-                          PopupMenuItem<String>(
-                            value: 'delete',
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.delete_outline,
-                                  color: theme.colorScheme.error,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  context.l10n.delete,
-                                  style: TextStyle(
-                                    color: theme.colorScheme.error,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                      ],
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.s),
-              
-              // Waveform Visualization
-              WaveformDisplayWidget(
-                samples: widget.history.waveform,
-                height: 60,
-                showEmptyState: true,
-              ),
-              const SizedBox(height: AppSpacing.m),
+                  SizedBox(height: hasInfoRow ? AppSpacing.s : AppSpacing.m),
 
-              // Footer: Controls, Time, and Status
-              Row(
-                children: [
-                  if (widget.history.audioPath != null) ...[
-                    IconButton.filled(
-                      onPressed: widget.onPlay,
-                      icon: Icon(widget.isPlaying ? Icons.pause : Icons.play_arrow),
-                      style: IconButton.styleFrom(
-                        backgroundColor: theme.colorScheme.primaryContainer,
-                        foregroundColor: theme.colorScheme.onPrimaryContainer,
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.s),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _formatDuration(widget.history.duration ?? Duration.zero),
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w500,
+                  // Waveform Visualization
+                  WaveformDisplayWidget(
+                    samples: widget.history.waveform,
+                    height: 60,
+                    showEmptyState: true,
+                  ),
+                  const SizedBox(height: AppSpacing.m),
+
+                  // Footer: Controls, Time, and Status
+                  Row(
+                    children: [
+                      if (widget.history.audioPath != null) ...[
+                        IconButton.filled(
+                          onPressed: widget.onPlay,
+                          icon: Icon(widget.isPlaying ? Icons.pause : Icons.play_arrow),
+                          style: IconButton.styleFrom(
+                            backgroundColor: theme.colorScheme.primaryContainer,
+                            foregroundColor: theme.colorScheme.onPrimaryContainer,
                           ),
                         ),
-                        ValueListenableBuilder<DateTime>(
-                          valueListenable: _createdAtNotifier,
-                          builder: (context, createdAt, _) => Text(
-                            _formatRelativeTime(context, createdAt),
-                            style: theme.textTheme.bodySmall?.copyWith(
+                        const SizedBox(width: AppSpacing.s),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _formatDuration(widget.history.duration ?? Duration.zero),
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            Text(
+                              _formatDateTime(widget.history.createdAt),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ] else ...[
+                        Tooltip(
+                          message: context.l10n.oldRecordingNoAudio,
+                          child: GestureDetector(
+                            onTap: () {
+                              SnackBarService().showInfo(
+                                context,
+                                context.l10n.oldRecordingAudioUnavailable,
+                              );
+                            },
+                            child: Icon(
+                              Icons.info_outline,
+                              size: 20,
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ),
                       ],
-                    ),
-                  ] else ...[
-                    Tooltip(
-                      message: context.l10n.oldRecordingNoAudio,
-                      child: GestureDetector(
-                        onTap: () {
-                          SnackBarService().showInfo(
-                            context,
-                            context.l10n.oldRecordingAudioUnavailable,
-                          );
-                        },
-                        child: Icon(
-                          Icons.info_outline,
-                          size: 20,
-                          color: theme.colorScheme.onSurfaceVariant,
+                      const SizedBox(width: AppSpacing.s),
+                      Expanded(
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: _buildStatusWidget(context, theme, hasTranscription),
                         ),
                       ),
-                    ),
-                  ],
-                  const SizedBox(width: AppSpacing.s),
-                  Expanded(
-                    child: Align(
-                      alignment: Alignment.centerRight,
-                      child: _buildStatusChip(context, theme, hasTranscription),
-                    ),
+                    ],
                   ),
                 ],
               ),
-            ],
-          ),
+            ),
+            // Menu button positioned absolutely - offset to align icon with title
+            if (hasContextMenu)
+              Positioned(
+                top: (AppConstants.defaultPadding - 56 / 2) + 10,
+                right: AppConstants.defaultPadding - 56 / 2 + 12,
+                child: SizedBox(
+                  height: 56,
+                  width: 56,
+                  child: IconButton(
+                    icon: const Icon(Icons.more_vert, size: 24),
+                    padding: EdgeInsets.zero,
+                    onPressed: () => _showContextMenu(context, null),
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );

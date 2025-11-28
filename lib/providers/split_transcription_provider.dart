@@ -12,6 +12,7 @@ class SplitTranscriptionProvider extends ChangeNotifier {
   SplitTranscriptionJob? _currentJob;
   String? _apiKey;
   String? _model;
+  bool _speakerDiarization = false;
   SplitProgress? _splitProgress;
 
   SplitTranscriptionProvider({
@@ -36,11 +37,13 @@ class SplitTranscriptionProvider extends ChangeNotifier {
     required String language,
     required String apiKey,
     String? model,
+    bool speakerDiarization = false,
     Duration maxDuration = const Duration(minutes: 10),
     Duration overlap = const Duration(seconds: 5),
   }) async {
     _apiKey = apiKey;
     _model = model;
+    _speakerDiarization = speakerDiarization;
     _splitProgress = const SplitProgress(currentSplit: 0, totalSplits: 0, currentStatus: 'Vorbereiten...');
     notifyListeners();
 
@@ -76,6 +79,7 @@ class SplitTranscriptionProvider extends ChangeNotifier {
         job,
         _apiKey!,
         model: _model,
+        speakerDiarization: _speakerDiarization,
         onProgress: (updatedJob) {
           _currentJob = updatedJob;
           _jobUpdateController.add(updatedJob);
@@ -113,6 +117,7 @@ class SplitTranscriptionProvider extends ChangeNotifier {
       _currentJob!,
       splitId,
       _apiKey!,
+      speakerDiarization: _speakerDiarization,
       onProgress: (updatedJob) {
         _currentJob = updatedJob;
         _jobUpdateController.add(updatedJob);

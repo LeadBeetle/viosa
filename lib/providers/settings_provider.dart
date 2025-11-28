@@ -17,6 +17,7 @@ class SettingsProvider with ChangeNotifier {
   double _textSize = 16.0;
   String _selectedModel = ModelRepository.defaultModelId;
   String _themeMode = 'system';
+  bool _speakerDiarization = false;
   bool _isInitialized = false;
   bool _isLoading = false;
 
@@ -32,6 +33,7 @@ class SettingsProvider with ChangeNotifier {
   double get textSize => _textSize;
   String get selectedModel => _selectedModel;
   String get themeModeString => _themeMode;
+  bool get speakerDiarization => _speakerDiarization;
   bool get isInitialized => _isInitialized;
   bool get isLoading => _isLoading;
   bool get hasApiKey => _apiKey != null && _apiKey!.isNotEmpty;
@@ -63,6 +65,7 @@ class SettingsProvider with ChangeNotifier {
       _textSize = await _settingsService.getTextSize();
       _selectedModel = await _settingsService.getModel();
       _themeMode = await _settingsService.getThemeMode();
+      _speakerDiarization = await _settingsService.getSpeakerDiarization();
       _isInitialized = true;
     } catch (e) {
       debugPrint('Error initializing settings: $e');
@@ -121,6 +124,13 @@ class SettingsProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  /// Save speaker diarization setting and update state
+  Future<void> saveSpeakerDiarization(bool enabled) async {
+    await _settingsService.saveSpeakerDiarization(enabled);
+    _speakerDiarization = enabled;
+    notifyListeners();
+  }
+
   /// Clear all settings
   Future<void> clearSettings() async {
     await _settingsService.clearAllSettings();
@@ -130,6 +140,7 @@ class SettingsProvider with ChangeNotifier {
     _textSize = 16.0;
     _selectedModel = ModelRepository.defaultModelId;
     _themeMode = 'system';
+    _speakerDiarization = false;
     notifyListeners();
   }
 }
