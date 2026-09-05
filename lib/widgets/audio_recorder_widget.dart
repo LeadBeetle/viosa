@@ -92,9 +92,49 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
 
   Future<void> _checkPermission() async {
     final hasPermission = await _recordingService.hasPermission();
+    if (!mounted) return;
     setState(() {
       _hasPermission = hasPermission;
     });
+  }
+
+  /// Requests the microphone permission, offering app settings when blocked
+  Future<void> _requestMicPermission() async {
+    final status = await Permission.microphone.request();
+
+    if (status.isGranted) {
+      await _checkPermission();
+      return;
+    }
+
+    if (!mounted) return;
+
+    if (status.isPermanentlyDenied) {
+      final openSettings = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(ctx.l10n.permissionDeniedTitle),
+          content: Text(ctx.l10n.permissionDeniedContent),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(ctx.l10n.no),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(ctx.l10n.openSettings),
+            ),
+          ],
+        ),
+      );
+
+      if (openSettings == true) {
+        await openAppSettings();
+      }
+      return;
+    }
+
+    _showErrorSnackBar(context.l10n.micPermissionRequired);
   }
 
   Future<void> _startRecording() async {
@@ -120,7 +160,7 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
       });
     } catch (e) {
       if (mounted) {
-        _showErrorSnackBar('Fehler beim Starten der Aufnahme: $e');
+        _showErrorSnackBar(context.l10n.errorStartingRecording(e.toString()));
       }
       // Cleanup visualization on error
       setState(() {
@@ -200,7 +240,7 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
       }
     } else if (mounted) {
       // Permission denied but not permanently
-      _showErrorSnackBar('Speicherberechtigung wurde verweigert. Die Aufnahme wird im Standard-Ordner gespeichert.');
+      _showErrorSnackBar(context.l10n.storagePermissionDeniedDefaultFolder);
       // Allow recording to default location
       return false;
     }
@@ -222,12 +262,12 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
       if (audioFile != null && mounted) {
         widget.onRecordingComplete(audioFile);
       } else if (audioFile == null && mounted) {
-        _showErrorSnackBar('Fehler: Aufnahme konnte nicht gespeichert werden');
+        _showErrorSnackBar(context.l10n.errorSavingRecording);
       }
     } catch (e) {
       debugPrint('Error stopping recording: $e');
       if (mounted) {
-        _showErrorSnackBar('Fehler beim Beenden der Aufnahme: $e');
+        _showErrorSnackBar(context.l10n.errorStoppingRecording(e.toString()));
       }
     } finally {
       // Always reset state, even if not mounted
@@ -246,7 +286,7 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
       await _recordingService.pauseRecording();
     } catch (e) {
       if (mounted) {
-        _showErrorSnackBar('Fehler beim Pausieren: $e');
+        _showErrorSnackBar(context.l10n.errorPausingRecording(e.toString()));
       }
     }
   }
@@ -256,12 +296,37 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
       await _recordingService.resumeRecording();
     } catch (e) {
       if (mounted) {
-        _showErrorSnackBar('Fehler beim Fortsetzen: $e');
+        _showErrorSnackBar(context.l10n.errorResumingRecording(e.toString()));
       }
     }
   }
 
   Future<void> _cancelRecording() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(ctx.l10n.discardRecordingTitle),
+        content: Text(
+          ctx.l10n.discardRecordingContent(_formatDuration(_currentDuration)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(ctx.l10n.continueRecording),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(ctx).colorScheme.error,
+            ),
+            child: Text(ctx.l10n.discard),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
     try {
       // Stop visualization
       setState(() {
@@ -271,7 +336,7 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
       await _recordingService.cancelRecording();
     } catch (e) {
       if (mounted) {
-        _showErrorSnackBar('Fehler beim Abbrechen: $e');
+        _showErrorSnackBar(context.l10n.errorCancellingRecording(e.toString()));
       }
     }
   }
@@ -319,7 +384,7 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
               ),
               const SizedBox(height: AppSpacing.l),
               Text(
-                'Mikrofon-Berechtigung erforderlich',
+                context.l10n.micPermissionTitle,
                 style: textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -327,7 +392,7 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
               ),
               const SizedBox(height: AppSpacing.s),
               Text(
-                'Bitte erteilen Sie die Berechtigung in den Einstellungen',
+                context.l10n.micPermissionDescription,
                 style: textTheme.bodyMedium?.copyWith(
                   color: colorScheme.onSurfaceVariant,
                 ),
@@ -335,9 +400,15 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> with WidgetsB
               ),
               const SizedBox(height: AppSpacing.l),
               FilledButton.icon(
+                onPressed: _requestMicPermission,
+                icon: const Icon(Icons.mic_rounded),
+                label: Text(context.l10n.grantPermission),
+              ),
+              const SizedBox(height: AppSpacing.s),
+              TextButton.icon(
                 onPressed: _checkPermission,
                 icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Erneut prüfen'),
+                label: Text(context.l10n.checkAgain),
               ),
             ],
           ),

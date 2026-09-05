@@ -435,5 +435,95 @@
   "sortNameAZ": "Name (A-Z)",
   "sortNameZA": "Name (Z-A)",
   "sortDurationLongest": "Dauer (längste zuerst)",
-  "sortDurationShortest": "Dauer (kürzeste zuerst)"
+  "sortDurationShortest": "Dauer (kürzeste zuerst)",
+  "cancelTranscription": "Transkription abbrechen",
+  "transcriptionCancelled": "Transkription abgebrochen",
+  "transcriptionRunningTitle": "Transkription läuft",
+  "transcriptionRunningContent": "Wenn Sie diesen Bildschirm verlassen, wird die laufende Transkription abgebrochen. Trotzdem verlassen?",
+  "leaveAndCancel": "Verlassen",
+  "stay": "Bleiben",
+  "discardRecordingTitle": "Aufnahme verwerfen?",
+  "discardRecordingContent": "Die Aufnahme ({duration}) wird gelöscht und kann nicht wiederhergestellt werden.",
+  "@discardRecordingContent": {
+    "placeholders": {
+      "duration": {"type": "String"}
+    }
+  },
+  "discard": "Verwerfen",
+  "continueRecording": "Weiter aufnehmen",
+  "apiKeyMissingTitle": "API-Schlüssel fehlt",
+  "apiKeyMissingDescription": "Hinterlegen Sie einen OpenRouter-Schlüssel, um Aufnahmen zu transkribieren.",
+  "setUp": "Einrichten",
+  "errorStartingRecording": "Aufnahme konnte nicht gestartet werden: {error}",
+  "@errorStartingRecording": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "errorStoppingRecording": "Aufnahme konnte nicht beendet werden: {error}",
+  "@errorStoppingRecording": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "errorSavingRecording": "Aufnahme konnte nicht gespeichert werden",
+  "errorPausingRecording": "Aufnahme konnte nicht pausiert werden: {error}",
+  "@errorPausingRecording": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "errorResumingRecording": "Aufnahme konnte nicht fortgesetzt werden: {error}",
+  "@errorResumingRecording": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "errorCancellingRecording": "Aufnahme konnte nicht verworfen werden: {error}",
+  "@errorCancellingRecording": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "storagePermissionDeniedDefaultFolder": "Speicherberechtigung verweigert. Die Aufnahme wird im Standard-Ordner gespeichert.",
+  "micPermissionTitle": "Mikrofon-Berechtigung erforderlich",
+  "micPermissionDescription": "VIOSA braucht Zugriff auf das Mikrofon, um aufnehmen zu können.",
+  "micPermissionRequired": "Mikrofonberechtigung erforderlich",
+  "checkAgain": "Erneut prüfen",
+  "enterMessage": "Nachricht eingeben ...",
+  "speakNow": "Sprechen ...",
+  "stopGeneration": "Antwort stoppen",
+  "noAudioFilesFound": "Keine Audio-Dateien gefunden",
+  "reload": "Erneut laden",
+  "noSearchResults": "Keine Ergebnisse",
+  "noFilesMatchSearch": "Keine Dateien entsprechen Ihrer Suche.",
+  "errorLoadingFiles": "Dateien konnten nicht geladen werden: {error}",
+  "@errorLoadingFiles": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "processing": "Wird verarbeitet",
+  "retry": "Erneut versuchen",
+  "showTranscription": "Transkription anzeigen",
+  "errorRetrying": "Erneuter Versuch fehlgeschlagen: {error}",
+  "@errorRetrying": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "transcribed": "Transkribiert",
+  "errorAuth": "API-Schlüssel ungültig. Bitte in den Einstellungen prüfen.",
+  "errorRateLimit": "Zu viele Anfragen. Bitte kurz warten und erneut versuchen.",
+  "errorNetwork": "Keine Verbindung. Bitte Internetverbindung prüfen.",
+  "errorTimeout": "Zeitüberschreitung. Bitte erneut versuchen.",
+  "errorServer": "Der Dienst ist gerade nicht erreichbar. Bitte später erneut versuchen.",
+  "errorUnknown": "Etwas ist schiefgelaufen. Bitte erneut versuchen.",
+  "speechUnavailable": "Spracherkennung nicht verfügbar",
+  "speechInitError": "Spracherkennung konnte nicht gestartet werden",
+  "speechRecognitionError": "Spracherkennung fehlgeschlagen",
+  "tapToStop": "Tippen zum Stoppen",
+  "tapToSpeak": "Tippen zum Sprechen",
+  "copiedToClipboard": "In Zwischenablage kopiert",
+  "regenerate": "Neu generieren"
 }

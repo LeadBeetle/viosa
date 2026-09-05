@@ -8,15 +8,22 @@ class SnackBarService implements ISnackBarService {
   factory SnackBarService() => _instance;
   SnackBarService._internal();
 
-  /// Shows an error snackbar
+  /// Shows an error snackbar, optionally with a single action
   @override
-  void showError(BuildContext context, String message) {
+  void showError(
+    BuildContext context,
+    String message, {
+    String? actionLabel,
+    VoidCallback? onAction,
+  }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     _showSnackBar(
       context,
       message,
       backgroundColor: isDark ? AppTheme.snackbarErrorDark : AppTheme.snackbarErrorLight,
       textColor: Colors.white,
+      actionLabel: actionLabel,
+      onAction: onAction,
     );
   }
 
@@ -56,6 +63,8 @@ class SnackBarService implements ISnackBarService {
     Color? backgroundColor,
     Color? textColor,
     Duration duration = const Duration(seconds: 5),
+    String? actionLabel,
+    VoidCallback? onAction,
   }) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -65,6 +74,13 @@ class SnackBarService implements ISnackBarService {
         ),
         backgroundColor: backgroundColor,
         duration: duration,
+        action: actionLabel != null && onAction != null
+            ? SnackBarAction(
+                label: actionLabel,
+                textColor: textColor,
+                onPressed: onAction,
+              )
+            : null,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8.0),

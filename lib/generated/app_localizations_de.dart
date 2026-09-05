@@ -793,4 +793,176 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get sortDurationShortest => 'Dauer (kürzeste zuerst)';
+
+  @override
+  String get cancelTranscription => 'Transkription abbrechen';
+
+  @override
+  String get transcriptionCancelled => 'Transkription abgebrochen';
+
+  @override
+  String get transcriptionRunningTitle => 'Transkription läuft';
+
+  @override
+  String get transcriptionRunningContent =>
+      'Wenn Sie diesen Bildschirm verlassen, wird die laufende Transkription abgebrochen. Trotzdem verlassen?';
+
+  @override
+  String get leaveAndCancel => 'Verlassen';
+
+  @override
+  String get stay => 'Bleiben';
+
+  @override
+  String get discardRecordingTitle => 'Aufnahme verwerfen?';
+
+  @override
+  String discardRecordingContent(String duration) {
+    return 'Die Aufnahme ($duration) wird gelöscht und kann nicht wiederhergestellt werden.';
+  }
+
+  @override
+  String get discard => 'Verwerfen';
+
+  @override
+  String get continueRecording => 'Weiter aufnehmen';
+
+  @override
+  String get apiKeyMissingTitle => 'API-Schlüssel fehlt';
+
+  @override
+  String get apiKeyMissingDescription =>
+      'Hinterlegen Sie einen OpenRouter-Schlüssel, um Aufnahmen zu transkribieren.';
+
+  @override
+  String get setUp => 'Einrichten';
+
+  @override
+  String errorStartingRecording(String error) {
+    return 'Aufnahme konnte nicht gestartet werden: $error';
+  }
+
+  @override
+  String errorStoppingRecording(String error) {
+    return 'Aufnahme konnte nicht beendet werden: $error';
+  }
+
+  @override
+  String get errorSavingRecording => 'Aufnahme konnte nicht gespeichert werden';
+
+  @override
+  String errorPausingRecording(String error) {
+    return 'Aufnahme konnte nicht pausiert werden: $error';
+  }
+
+  @override
+  String errorResumingRecording(String error) {
+    return 'Aufnahme konnte nicht fortgesetzt werden: $error';
+  }
+
+  @override
+  String errorCancellingRecording(String error) {
+    return 'Aufnahme konnte nicht verworfen werden: $error';
+  }
+
+  @override
+  String get storagePermissionDeniedDefaultFolder =>
+      'Speicherberechtigung verweigert. Die Aufnahme wird im Standard-Ordner gespeichert.';
+
+  @override
+  String get micPermissionTitle => 'Mikrofon-Berechtigung erforderlich';
+
+  @override
+  String get micPermissionDescription =>
+      'VIOSA braucht Zugriff auf das Mikrofon, um aufnehmen zu können.';
+
+  @override
+  String get micPermissionRequired => 'Mikrofonberechtigung erforderlich';
+
+  @override
+  String get checkAgain => 'Erneut prüfen';
+
+  @override
+  String get enterMessage => 'Nachricht eingeben ...';
+
+  @override
+  String get speakNow => 'Sprechen ...';
+
+  @override
+  String get stopGeneration => 'Antwort stoppen';
+
+  @override
+  String get noAudioFilesFound => 'Keine Audio-Dateien gefunden';
+
+  @override
+  String get reload => 'Erneut laden';
+
+  @override
+  String get noSearchResults => 'Keine Ergebnisse';
+
+  @override
+  String get noFilesMatchSearch => 'Keine Dateien entsprechen Ihrer Suche.';
+
+  @override
+  String errorLoadingFiles(String error) {
+    return 'Dateien konnten nicht geladen werden: $error';
+  }
+
+  @override
+  String get processing => 'Wird verarbeitet';
+
+  @override
+  String get retry => 'Erneut versuchen';
+
+  @override
+  String get showTranscription => 'Transkription anzeigen';
+
+  @override
+  String errorRetrying(String error) {
+    return 'Erneuter Versuch fehlgeschlagen: $error';
+  }
+
+  @override
+  String get errorAuth =>
+      'API-Schlüssel ungültig. Bitte in den Einstellungen prüfen.';
+
+  @override
+  String get errorRateLimit =>
+      'Zu viele Anfragen. Bitte kurz warten und erneut versuchen.';
+
+  @override
+  String get errorNetwork =>
+      'Keine Verbindung. Bitte Internetverbindung prüfen.';
+
+  @override
+  String get errorTimeout => 'Zeitüberschreitung. Bitte erneut versuchen.';
+
+  @override
+  String get errorServer =>
+      'Der Dienst ist gerade nicht erreichbar. Bitte später erneut versuchen.';
+
+  @override
+  String get errorUnknown =>
+      'Etwas ist schiefgelaufen. Bitte erneut versuchen.';
+
+  @override
+  String get speechUnavailable => 'Spracherkennung nicht verfügbar';
+
+  @override
+  String get speechInitError => 'Spracherkennung konnte nicht gestartet werden';
+
+  @override
+  String get speechRecognitionError => 'Spracherkennung fehlgeschlagen';
+
+  @override
+  String get tapToStop => 'Tippen zum Stoppen';
+
+  @override
+  String get tapToSpeak => 'Tippen zum Sprechen';
+
+  @override
+  String get copiedToClipboard => 'In Zwischenablage kopiert';
+
+  @override
+  String get regenerate => 'Neu generieren';
 }

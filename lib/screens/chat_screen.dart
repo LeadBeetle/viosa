@@ -9,6 +9,7 @@ import '../widgets/chat/context_chip_bar.dart';
 import '../widgets/chat/chat_input_bar.dart';
 import '../utils/constants.dart';
 import '../services/snackbar_service.dart';
+import '../utils/error_messages.dart';
 import '../l10n/l10n.dart';
 
 /// Screen for chatting about transcription results
@@ -46,6 +47,7 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void dispose() {
     _saveChat();
+    _chatProvider.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -111,9 +113,14 @@ class _ChatScreenState extends State<ChatScreen> {
     if (_chatProvider.error != null && mounted) {
       SnackBarService().showError(
         context,
-        context.l10n.errorGeneric(_chatProvider.error ?? ''),
+        ErrorMessages.forError(context, _chatProvider.error),
       );
     }
+  }
+
+  Future<void> _handleStopStreaming() async {
+    await _chatProvider.stopStreaming();
+    await _saveChat();
   }
 
   @override
@@ -167,6 +174,7 @@ class _ChatScreenState extends State<ChatScreen> {
               // Input bar
               ChatInputBar(
                 onSend: _handleSendMessage,
+                onStop: _handleStopStreaming,
                 availableMentions: _chatProvider.availableContexts,
                 getDisplayName: _chatProvider.getContextDisplayName,
                 enabled: !isStreaming,
@@ -275,7 +283,7 @@ class _ChatScreenState extends State<ChatScreen> {
     if (_chatProvider.error != null && mounted) {
       SnackBarService().showError(
         context,
-        context.l10n.errorGeneric(_chatProvider.error ?? ''),
+        ErrorMessages.forError(context, _chatProvider.error),
       );
     }
   }

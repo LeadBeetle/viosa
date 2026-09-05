@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/audio_split.dart';
+import '../l10n/l10n.dart';
 import '../utils/constants.dart';
 
 /// Widget for displaying a single audio split item
@@ -119,7 +120,7 @@ class SplitItemWidget extends StatelessWidget {
         color = Theme.of(context).colorScheme.outline;
         break;
       case SplitStatus.processing:
-        text = 'Wird verarbeitet';
+        text = context.l10n.processing;
         color = Theme.of(context).colorScheme.primary;
         break;
       case SplitStatus.completed:
@@ -273,7 +274,7 @@ class SplitItemWidget extends StatelessWidget {
                 child: OutlinedButton.icon(
                   onPressed: onRetry,
                   icon: Icon(Icons.refresh, size: AppIconSize.small),
-                  label: const Text('Erneut versuchen'),
+                  label: Text(context.l10n.retry),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Theme.of(context).colorScheme.primary,
                   ),

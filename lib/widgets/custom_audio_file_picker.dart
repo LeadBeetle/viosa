@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../models/audio_file_info.dart';
 import '../services/audio_file_scanner_service.dart';
+import '../l10n/l10n.dart';
 import 'audio_file_item.dart';
 
 /// Enum for sort options
@@ -66,12 +67,13 @@ class _CustomAudioFilePickerState extends State<CustomAudioFilePicker> {
 
     // Check and request permissions
     final hasPermission = await _requestStoragePermission();
+    if (!mounted) return;
 
     if (!hasPermission) {
       setState(() {
         _isLoading = false;
         _hasPermission = false;
-        _errorMessage = 'Speicherberechtigung erforderlich';
+        _errorMessage = context.l10n.storagePermissionRequired;
       });
       return;
     }
@@ -131,6 +133,7 @@ class _CustomAudioFilePickerState extends State<CustomAudioFilePicker> {
         recursive: true,
         maxFilesPerDirectory: 200,
       );
+      if (!mounted) return;
 
       setState(() {
         _audioFiles = files;
@@ -140,13 +143,14 @@ class _CustomAudioFilePickerState extends State<CustomAudioFilePicker> {
 
       if (files.isEmpty) {
         setState(() {
-          _errorMessage = 'Keine Audio-Dateien gefunden';
+          _errorMessage = context.l10n.noAudioFilesFound;
         });
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
-        _errorMessage = 'Fehler beim Laden der Dateien: $e';
+        _errorMessage = context.l10n.errorLoadingFiles(e.toString());
       });
     }
   }
@@ -424,8 +428,8 @@ class _CustomAudioFilePickerState extends State<CustomAudioFilePicker> {
             children: [
               const Icon(Icons.music_note, size: 64, color: Colors.grey),
               const SizedBox(height: 16),
-              const Text(
-                'Keine Audio-Dateien gefunden',
+              Text(
+                context.l10n.noAudioFilesFound,
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
@@ -437,7 +441,7 @@ class _CustomAudioFilePickerState extends State<CustomAudioFilePicker> {
               FilledButton.icon(
                 onPressed: _loadAudioFiles,
                 icon: const Icon(Icons.refresh),
-                label: const Text('Erneut laden'),
+                label: Text(context.l10n.reload),
               ),
             ],
           ),
@@ -454,13 +458,13 @@ class _CustomAudioFilePickerState extends State<CustomAudioFilePicker> {
             children: [
               const Icon(Icons.search_off, size: 64, color: Colors.grey),
               const SizedBox(height: 16),
-              const Text(
-                'Keine Ergebnisse',
+              Text(
+                context.l10n.noSearchResults,
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'Keine Dateien entsprechen Ihrer Suche.',
+              Text(
+                context.l10n.noFilesMatchSearch,
                 textAlign: TextAlign.center,
               ),
             ],

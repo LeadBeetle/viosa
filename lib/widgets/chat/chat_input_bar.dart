@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../l10n/l10n.dart';
 import '../../utils/constants.dart';
 import 'mention_text_field.dart';
 import 'voice_input_button.dart';
@@ -6,6 +7,7 @@ import 'voice_input_button.dart';
 /// Chat input bar with text field, voice input, and send button
 class ChatInputBar extends StatefulWidget {
   final void Function(String message) onSend;
+  final VoidCallback? onStop;
   final List<String> availableMentions;
   final String Function(String contextKey) getDisplayName;
   final bool enabled;
@@ -14,6 +16,7 @@ class ChatInputBar extends StatefulWidget {
   const ChatInputBar({
     super.key,
     required this.onSend,
+    this.onStop,
     required this.availableMentions,
     required this.getDisplayName,
     this.enabled = true,
@@ -122,31 +125,41 @@ class _ChatInputBarState extends State<ChatInputBar> {
                           getDisplayName: widget.getDisplayName,
                           onSubmit: _handleSend,
                           hintText: _isListening
-                              ? 'Sprechen...'
-                              : 'Nachricht eingeben...',
+                              ? context.l10n.speakNow
+                              : context.l10n.enterMessage,
                           enabled: widget.enabled && !widget.isStreaming,
                         ),
                       ),
-                      // Send button
+                      // Send button, or stop button while a response streams
                       Padding(
                         padding: const EdgeInsets.only(
                           right: AppSpacing.xs,
                           bottom: AppSpacing.xs,
                         ),
-                        child: AnimatedOpacity(
-                          opacity: canSend ? 1.0 : 0.5,
-                          duration: AppDuration.fast,
-                          child: IconButton(
-                            onPressed: canSend ? _handleSend : null,
-                            icon: Icon(
-                              Icons.send_rounded,
-                              color: canSend
-                                  ? theme.colorScheme.primary
-                                  : theme.colorScheme.onSurfaceVariant,
-                            ),
-                            visualDensity: VisualDensity.compact,
-                          ),
-                        ),
+                        child: widget.isStreaming && widget.onStop != null
+                            ? IconButton(
+                                onPressed: widget.onStop,
+                                icon: Icon(
+                                  Icons.stop_circle_outlined,
+                                  color: theme.colorScheme.error,
+                                ),
+                                tooltip: context.l10n.stopGeneration,
+                                visualDensity: VisualDensity.compact,
+                              )
+                            : AnimatedOpacity(
+                                opacity: canSend ? 1.0 : 0.5,
+                                duration: AppDuration.fast,
+                                child: IconButton(
+                                  onPressed: canSend ? _handleSend : null,
+                                  icon: Icon(
+                                    Icons.send_rounded,
+                                    color: canSend
+                                        ? theme.colorScheme.primary
+                                        : theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                  visualDensity: VisualDensity.compact,
+                                ),
+                              ),
                       ),
                     ],
                   ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../l10n/l10n.dart';
 import '../../utils/constants.dart';
 
 /// Text field with @ mention autocomplete support
@@ -193,7 +194,7 @@ class _MentionTextFieldState extends State<MentionTextField> {
         textInputAction: TextInputAction.send,
         onSubmitted: widget.enabled ? (_) => widget.onSubmit?.call() : null,
         decoration: InputDecoration(
-          hintText: widget.hintText ?? 'Nachricht eingeben...',
+          hintText: widget.hintText ?? context.l10n.enterMessage,
           hintStyle: TextStyle(
             color: theme.colorScheme.onSurfaceVariant,
           ),

@@ -44,6 +44,7 @@ class AppOpacity {
   static const double disabled = 0.38;
   static const double secondary = 0.60;
   static const double tertiary = 0.40;
+  static const double scrim = 0.32;
 }
 
 /// Icon sizes for consistent iconography

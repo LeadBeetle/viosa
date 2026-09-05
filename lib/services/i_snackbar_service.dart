@@ -3,8 +3,13 @@ import 'package:flutter/material.dart';
 /// Interface for displaying snackbars with consistent styling
 /// Follows Interface Segregation Principle and Dependency Inversion Principle
 abstract class ISnackBarService {
-  /// Shows an error snackbar
-  void showError(BuildContext context, String message);
+  /// Shows an error snackbar, optionally with a single action
+  void showError(
+    BuildContext context,
+    String message, {
+    String? actionLabel,
+    VoidCallback? onAction,
+  });
 
   /// Shows a success snackbar
   void showSuccess(BuildContext context, String message);

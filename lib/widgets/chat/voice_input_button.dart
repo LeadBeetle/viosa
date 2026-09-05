@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../l10n/l10n.dart';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../services/i_speech_recognition_service.dart';
@@ -62,19 +63,21 @@ class _VoiceInputButtonState extends State<VoiceInputButton>
     try {
       // Request microphone permission
       final status = await Permission.microphone.request();
+      if (!mounted) return false;
       if (!status.isGranted) {
         setState(() {
-          _initError = 'Mikrofonberechtigung erforderlich';
+          _initError = context.l10n.micPermissionRequired;
           _isInitializing = false;
         });
         return false;
       }
 
       _isInitialized = await _speechService.initialize();
+      if (!mounted) return false;
 
       if (!_isInitialized) {
         setState(() {
-          _initError = 'Spracherkennung nicht verfügbar';
+          _initError = context.l10n.speechUnavailable;
           _isInitializing = false;
         });
         return false;
@@ -87,7 +90,7 @@ class _VoiceInputButtonState extends State<VoiceInputButton>
     } catch (e) {
       debugPrint('Speech initialization error: $e');
       setState(() {
-        _initError = 'Initialisierungsfehler: $e';
+        _initError = context.l10n.speechInitError;
         _isInitializing = false;
       });
       return false;
@@ -143,7 +146,7 @@ class _VoiceInputButtonState extends State<VoiceInputButton>
     } catch (e) {
       debugPrint('Speech recognition error: $e');
       if (mounted) {
-        SnackBarService().showError(context, 'Spracherkennungsfehler: $e');
+        SnackBarService().showError(context, context.l10n.speechRecognitionError);
       }
       _stopListening();
     }
@@ -170,8 +173,8 @@ class _VoiceInputButtonState extends State<VoiceInputButton>
 
     return Tooltip(
       message: _isListening
-          ? 'Tippen zum Stoppen'
-          : 'Tippen zum Sprechen',
+          ? context.l10n.tapToStop
+          : context.l10n.tapToSpeak,
       child: GestureDetector(
         // Tap to toggle listening
         onTap: isAvailable ? _toggleListening : null,

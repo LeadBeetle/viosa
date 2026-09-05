@@ -786,4 +786,174 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sortDurationShortest => 'Duration (shortest first)';
+
+  @override
+  String get cancelTranscription => 'Cancel transcription';
+
+  @override
+  String get transcriptionCancelled => 'Transcription cancelled';
+
+  @override
+  String get transcriptionRunningTitle => 'Transcription running';
+
+  @override
+  String get transcriptionRunningContent =>
+      'Leaving this screen cancels the running transcription. Leave anyway?';
+
+  @override
+  String get leaveAndCancel => 'Leave';
+
+  @override
+  String get stay => 'Stay';
+
+  @override
+  String get discardRecordingTitle => 'Discard recording?';
+
+  @override
+  String discardRecordingContent(String duration) {
+    return 'The recording ($duration) will be deleted and cannot be restored.';
+  }
+
+  @override
+  String get discard => 'Discard';
+
+  @override
+  String get continueRecording => 'Keep recording';
+
+  @override
+  String get apiKeyMissingTitle => 'API key missing';
+
+  @override
+  String get apiKeyMissingDescription =>
+      'Add an OpenRouter key to transcribe your recordings.';
+
+  @override
+  String get setUp => 'Set up';
+
+  @override
+  String errorStartingRecording(String error) {
+    return 'Could not start recording: $error';
+  }
+
+  @override
+  String errorStoppingRecording(String error) {
+    return 'Could not stop recording: $error';
+  }
+
+  @override
+  String get errorSavingRecording => 'Recording could not be saved';
+
+  @override
+  String errorPausingRecording(String error) {
+    return 'Could not pause recording: $error';
+  }
+
+  @override
+  String errorResumingRecording(String error) {
+    return 'Could not resume recording: $error';
+  }
+
+  @override
+  String errorCancellingRecording(String error) {
+    return 'Could not discard recording: $error';
+  }
+
+  @override
+  String get storagePermissionDeniedDefaultFolder =>
+      'Storage permission denied. The recording is saved to the default folder.';
+
+  @override
+  String get micPermissionTitle => 'Microphone permission required';
+
+  @override
+  String get micPermissionDescription =>
+      'VIOSA needs microphone access to record.';
+
+  @override
+  String get micPermissionRequired => 'Microphone permission required';
+
+  @override
+  String get checkAgain => 'Check again';
+
+  @override
+  String get enterMessage => 'Type a message ...';
+
+  @override
+  String get speakNow => 'Listening ...';
+
+  @override
+  String get stopGeneration => 'Stop generating';
+
+  @override
+  String get noAudioFilesFound => 'No audio files found';
+
+  @override
+  String get reload => 'Reload';
+
+  @override
+  String get noSearchResults => 'No results';
+
+  @override
+  String get noFilesMatchSearch => 'No files match your search.';
+
+  @override
+  String errorLoadingFiles(String error) {
+    return 'Could not load files: $error';
+  }
+
+  @override
+  String get processing => 'Processing';
+
+  @override
+  String get retry => 'Try again';
+
+  @override
+  String get showTranscription => 'Show transcription';
+
+  @override
+  String errorRetrying(String error) {
+    return 'Retry failed: $error';
+  }
+
+  @override
+  String get errorAuth => 'Invalid API key. Please check it in settings.';
+
+  @override
+  String get errorRateLimit =>
+      'Too many requests. Please wait a moment and try again.';
+
+  @override
+  String get errorNetwork =>
+      'No connection. Please check your internet connection.';
+
+  @override
+  String get errorTimeout => 'The request timed out. Please try again.';
+
+  @override
+  String get errorServer =>
+      'The service is unavailable right now. Please try again later.';
+
+  @override
+  String get errorUnknown => 'Something went wrong. Please try again.';
+
+  @override
+  String get speechUnavailable => 'Speech recognition unavailable';
+
+  @override
+  String get speechInitError => 'Speech recognition could not be started';
+
+  @override
+  String get speechRecognitionError => 'Speech recognition failed';
+
+  @override
+  String get tapToStop => 'Tap to stop';
+
+  @override
+  String get tapToSpeak => 'Tap to speak';
+
+  @override
+  String get copiedToClipboard => 'Copied to clipboard';
+
+  @override
+  String get regenerate => 'Regenerate';
 }

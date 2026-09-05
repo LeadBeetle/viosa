@@ -27,10 +27,12 @@ import '../services/llm_provider_factory.dart';
 import '../repositories/model_repository.dart';
 import '../utils/constants.dart';
 import '../utils/audio_utils.dart';
+import '../utils/error_messages.dart';
 import '../utils/screen_helpers.dart';
 import '../services/snackbar_service.dart';
 import '../l10n/l10n.dart';
 import 'chat_screen.dart';
+import 'settings_screen.dart';
 
 class SessionScreen extends StatefulWidget {
   final AudioFile? initialFile;
@@ -82,6 +84,8 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
 
   // Split transcription state
   SplitTranscriptionJob? _activeSplitJob;
+  StreamSubscription<SplitTranscriptionJob>? _jobSubscription;
+  bool _transcriptionJustCompleted = false;
 
 
   // Audio file missing state
@@ -294,6 +298,7 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
 
   @override
   void dispose() {
+    _jobSubscription?.cancel();
     for (final subscription in _audioSubscriptions) {
       subscription.cancel();
     }
@@ -330,7 +335,12 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
     final apiKey = settingsProvider.apiKey;
 
     if (apiKey == null || apiKey.isEmpty) {
-      SnackBarService().showError(context, context.l10n.configureApiKey);
+      SnackBarService().showError(
+        context,
+        context.l10n.configureApiKey,
+        actionLabel: context.l10n.setUp,
+        onAction: _openSettings,
+      );
       return;
     }
 
@@ -339,12 +349,14 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
   }
 
   Future<void> _retranscribe() async {
-    setState(() {
-      _transcriptionResult = null;
-      _promptResults.clear();
-    });
-    await _saveToHistory();
     await _transcribe();
+  }
+
+  void _openSettings() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const SettingsScreen()),
+    );
   }
 
   void _openChat() {
@@ -386,6 +398,8 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
         _transcriptionResult = null;
         _promptResults.clear();
       });
+      await _saveToHistory();
+      if (!mounted) return;
     }
 
     final splitProvider = context.read<SplitTranscriptionProvider>();
@@ -420,16 +434,67 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
         _activeSplitJob = null;
       });
       if (mounted) {
-        SnackBarService().showError(context, context.l10n.errorGeneric(e.toString()));
+        SnackBarService().showError(context, ErrorMessages.forError(context, e));
       }
     }
+  }
+
+  /// Cancels the running transcription and clears the progress card
+  Future<void> _cancelTranscription() async {
+    if (!_isTranscribing) return;
+
+    final job = _activeSplitJob;
+    final splitProvider = context.read<SplitTranscriptionProvider>();
+    await _jobSubscription?.cancel();
+    _jobSubscription = null;
+
+    if (job != null) {
+      await splitProvider.cancelJob(job.id);
+      await splitProvider.cleanupJob(job);
+    }
+    splitProvider.clearCurrentJob();
+
+    if (!mounted) return;
+
+    setState(() {
+      _isTranscribing = false;
+      _activeSplitJob = null;
+    });
+    SnackBarService().showInfo(context, context.l10n.transcriptionCancelled);
+  }
+
+  /// Asks before leaving while a transcription is still running
+  Future<bool> _confirmLeaveWhileTranscribing() async {
+    final leave = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(ctx.l10n.transcriptionRunningTitle),
+        content: Text(ctx.l10n.transcriptionRunningContent),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(ctx.l10n.stay),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(ctx).colorScheme.error,
+            ),
+            child: Text(ctx.l10n.leaveAndCancel),
+          ),
+        ],
+      ),
+    );
+
+    return leave == true;
   }
 
   void _listenToSplitJobUpdates(String jobId) {
     final splitProvider = context.read<SplitTranscriptionProvider>();
     bool completionHandled = false;
 
-    splitProvider.jobUpdates.listen((job) {
+    _jobSubscription?.cancel();
+    _jobSubscription = splitProvider.jobUpdates.listen((job) {
       if (!mounted) return;
       if (job.id != jobId) return;
 
@@ -468,6 +533,7 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
         setState(() {
           _transcriptionResult = result;
           _activeSplitJob = null;
+          _transcriptionJustCompleted = true;
         });
 
         await _saveToHistory();
@@ -572,7 +638,7 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
         },
         onError: (e) {
           if (mounted) {
-            SnackBarService().showError(context, context.l10n.errorGeneric(e.toString()));
+            SnackBarService().showError(context, ErrorMessages.forError(context, e));
             setState(() {
               _promptStream = null;
             });
@@ -580,7 +646,7 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
         },
       );
     } catch (e) {
-      SnackBarService().showError(context, context.l10n.errorGeneric(e.toString()));
+      SnackBarService().showError(context, ErrorMessages.forError(context, e));
     }
   }
 
@@ -631,21 +697,34 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
         _promptStream == null &&
         _currentHistoryId != null;
 
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: _selectedFile != null
-          ? _buildBodyWithCollapsiblePlayer(context)
-          : _buildScrollableContent(context),
-      floatingActionButton: showChatFab
-          ? FloatingActionButton(
-              onPressed: _openChat,
-              backgroundColor: Theme.of(context).colorScheme.primaryContainer.withValues(
-                alpha: Theme.of(context).brightness == Brightness.dark ? 0.95 : 0.85,
-              ),
-              foregroundColor: Colors.white,
-              child: const Icon(Icons.chat),
-            )
-          : null,
+    return PopScope(
+      canPop: !_isTranscribing,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+
+        final shouldLeave = await _confirmLeaveWhileTranscribing();
+        if (!shouldLeave || !mounted) return;
+
+        await _cancelTranscription();
+        if (!context.mounted) return;
+        Navigator.of(context).pop();
+      },
+      child: Scaffold(
+        appBar: AppBar(title: Text(title)),
+        body: _selectedFile != null
+            ? _buildBodyWithCollapsiblePlayer(context)
+            : _buildScrollableContent(context),
+        floatingActionButton: showChatFab
+            ? FloatingActionButton(
+                onPressed: _openChat,
+                backgroundColor: Theme.of(context).colorScheme.primaryContainer.withValues(
+                  alpha: Theme.of(context).brightness == Brightness.dark ? 0.95 : 0.85,
+                ),
+                foregroundColor: Colors.white,
+                child: const Icon(Icons.chat),
+              )
+            : null,
+      ),
     );
   }
 
@@ -694,11 +773,12 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
           child: NotificationListener<ScrollNotification>(
             onNotification: (notification) {
               final pixels = notification.metrics.pixels;
-              if (pixels > 20 && !_isPlayerCollapsed) {
+              final shouldCollapse = pixels > 20;
+              if (shouldCollapse != _isPlayerCollapsed) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (mounted) {
                     setState(() {
-                      _isPlayerCollapsed = true;
+                      _isPlayerCollapsed = shouldCollapse;
                     });
                   }
                 });
@@ -749,7 +829,10 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
           ],
           if (_isTranscribing) ...[
             _activeSplitJob != null
-                  ? SplitTranscriptionProgressCard(job: _activeSplitJob!)
+                  ? SplitTranscriptionProgressCard(
+                      job: _activeSplitJob!,
+                      onCancel: _cancelTranscription,
+                    )
                   : Consumer<SplitTranscriptionProvider>(
                       builder: (context, provider, child) {
                         final progress = provider.splitProgress;
@@ -783,6 +866,7 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
           ] else if (_transcriptionResult != null) ...[
             CompletedTranscriptionCard(
               transcriptionResult: _transcriptionResult!,
+              initiallyExpanded: _transcriptionJustCompleted,
               isPromptActive: _promptStream != null,
               onApplyPrompt: _applyPromptStreaming,
               promptResultCount: _promptResults.length,
@@ -798,6 +882,12 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
                 });
                 _saveToHistory();
               },
+              onRestore: (result) {
+                setState(() {
+                  _promptResults.add(result);
+                });
+                _saveToHistory();
+              },
             ),
             if (_promptStream != null)
               StreamingPromptCard(
@@ -805,7 +895,7 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
                 textStream: _promptStream,
                 onStreamComplete: () {},
                 onStreamError: (error) {
-                  SnackBarService().showError(context, context.l10n.errorGeneric(error.toString()));
+                  SnackBarService().showError(context, ErrorMessages.forError(context, error));
                 },
                 onChunk: (chunk) {},
               ),

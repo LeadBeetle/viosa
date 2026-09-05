@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import '../../models/chat_message.dart';
+import '../../l10n/l10n.dart';
 import '../../utils/constants.dart';
 import '../../services/snackbar_service.dart';
 import '../expandable_content.dart';
@@ -121,14 +122,14 @@ class ChatMessageBubble extends StatelessWidget {
                     children: [
                       _ActionButton(
                         icon: Icons.copy_outlined,
-                        tooltip: 'Kopieren',
+                        tooltip: context.l10n.copy,
                         onPressed: () => _copyToClipboard(context, content),
                       ),
                       if (!isUser && onRegenerate != null) ...[
                         const SizedBox(width: 2),
                         _ActionButton(
                           icon: Icons.refresh,
-                          tooltip: 'Neu generieren',
+                          tooltip: context.l10n.regenerate,
                           onPressed: onRegenerate!,
                         ),
                       ],
@@ -157,7 +158,7 @@ class ChatMessageBubble extends StatelessWidget {
 
   void _copyToClipboard(BuildContext context, String content) {
     Clipboard.setData(ClipboardData(text: content));
-    SnackBarService().showSuccess(context, 'In Zwischenablage kopiert');
+    SnackBarService().showSuccess(context, context.l10n.copiedToClipboard);
   }
 }
 

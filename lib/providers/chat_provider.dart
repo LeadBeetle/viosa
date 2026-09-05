@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import '../models/chat_message.dart';
 import '../models/transcription_history.dart';
@@ -14,7 +16,10 @@ class ChatProvider with ChangeNotifier {
   Set<String> _enabledContexts = {'transcription'};
   bool _isStreaming = false;
   String _currentStreamedResponse = '';
-  String? _error;
+  Object? _error;
+  StreamSubscription<String>? _streamSubscription;
+  Completer<void>? _streamCompleter;
+  bool _stopRequested = false;
 
   // Context data
   String? _transcription;
@@ -27,7 +32,7 @@ class ChatProvider with ChangeNotifier {
   Set<String> get enabledContexts => Set.unmodifiable(_enabledContexts);
   bool get isStreaming => _isStreaming;
   String get currentStreamedResponse => _currentStreamedResponse;
-  String? get error => _error;
+  Object? get error => _error;
   String? get historyId => _historyId;
   String? get recordingName => _recordingName;
 
@@ -119,24 +124,62 @@ class ChatProvider with ChangeNotifier {
         context: context,
       );
 
-      await for (final chunk in stream) {
-        _currentStreamedResponse += chunk;
-        notifyListeners();
-      }
+      await _consumeStream(stream);
 
-      // Add assistant message
-      final assistantMessage = ChatMessage(
-        role: 'assistant',
-        content: _currentStreamedResponse,
-      );
-      _messages.add(assistantMessage);
+      if (_currentStreamedResponse.isNotEmpty) {
+        _messages.add(ChatMessage(
+          role: 'assistant',
+          content: _currentStreamedResponse,
+        ));
+      }
     } catch (e) {
-      _error = e.toString();
+      _error = e;
       debugPrint('Chat error: $e');
     } finally {
+      _streamSubscription = null;
+      _streamCompleter = null;
+      _stopRequested = false;
       _isStreaming = false;
       _currentStreamedResponse = '';
       notifyListeners();
+    }
+  }
+
+  /// Consumes a response stream, keeping the subscription cancellable
+  Future<void> _consumeStream(Stream<String> stream) {
+    final completer = Completer<void>();
+    _streamCompleter = completer;
+
+    _streamSubscription = stream.listen(
+      (chunk) {
+        _currentStreamedResponse += chunk;
+        notifyListeners();
+      },
+      onDone: () {
+        if (!completer.isCompleted) completer.complete();
+      },
+      onError: (Object e) {
+        if (!completer.isCompleted) completer.completeError(e);
+      },
+      cancelOnError: true,
+    );
+
+    return completer.future;
+  }
+
+  /// Stops the running response and keeps what was streamed so far
+  Future<void> stopStreaming() async {
+    if (!_isStreaming || _stopRequested) return;
+
+    _stopRequested = true;
+    final subscription = _streamSubscription;
+    _streamSubscription = null;
+    await subscription?.cancel();
+
+    final completer = _streamCompleter;
+    _streamCompleter = null;
+    if (completer != null && !completer.isCompleted) {
+      completer.complete();
     }
   }
 
@@ -195,20 +238,21 @@ class ChatProvider with ChangeNotifier {
         context: context,
       );
 
-      await for (final chunk in stream) {
-        _currentStreamedResponse += chunk;
-        notifyListeners();
-      }
+      await _consumeStream(stream);
 
-      final assistantMessage = ChatMessage(
-        role: 'assistant',
-        content: _currentStreamedResponse,
-      );
-      _messages.insert(userMessageIndex + 1, assistantMessage);
+      if (_currentStreamedResponse.isNotEmpty) {
+        _messages.insert(
+          userMessageIndex + 1,
+          ChatMessage(role: 'assistant', content: _currentStreamedResponse),
+        );
+      }
     } catch (e) {
-      _error = e.toString();
+      _error = e;
       debugPrint('Chat regenerate error: $e');
     } finally {
+      _streamSubscription = null;
+      _streamCompleter = null;
+      _stopRequested = false;
       _isStreaming = false;
       _currentStreamedResponse = '';
       notifyListeners();
@@ -225,6 +269,14 @@ class ChatProvider with ChangeNotifier {
   /// Get display name for a context key
   String getContextDisplayName(String contextKey) {
     return _chatService.getContextDisplayName(contextKey);
+  }
+
+  @override
+  void dispose() {
+    _streamSubscription?.cancel();
+    _streamSubscription = null;
+    _streamCompleter = null;
+    super.dispose();
   }
 
   /// Reset the provider state

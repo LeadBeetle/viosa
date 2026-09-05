@@ -10,6 +10,7 @@ import '../services/export/export_service.dart';
 import '../utils/constants.dart';
 import '../services/audio_service.dart';
 import '../services/file_service.dart';
+import '../providers/settings_provider.dart';
 import '../l10n/l10n.dart';
 import 'package:just_audio/just_audio.dart';
 import 'session_screen.dart';
@@ -90,6 +91,8 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _isFabExpanded = false;
     });
+    await _stopPlayback();
+    if (!mounted) return;
 
     await Navigator.push(
       context,
@@ -102,11 +105,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // Refresh history when returning from session
     if (mounted) {
-      debugPrint('=== Refreshing History on HomeScreen (new recording) ===');
-      final provider = context.read<HistoryProvider>();
-      debugPrint('History count before refresh: ${provider.count}');
-      await provider.refresh();
-      debugPrint('History count after refresh: ${provider.count}');
+      await context.read<HistoryProvider>().refresh();
     }
   }
 
@@ -119,6 +118,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final selectedFile = await fileService.pickAudioFile(context);
 
     if (selectedFile != null && mounted) {
+      await _stopPlayback();
+      if (!mounted) return;
+
       await Navigator.push(
         context,
         MaterialPageRoute(
@@ -130,16 +132,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
       // Refresh history when returning from session
       if (mounted) {
-        debugPrint('=== Refreshing History on HomeScreen (file picker) ===');
-        final provider = context.read<HistoryProvider>();
-        debugPrint('History count before refresh: ${provider.count}');
-        await provider.refresh();
-        debugPrint('History count after refresh: ${provider.count}');
+        await context.read<HistoryProvider>().refresh();
       }
     }
   }
 
   void _openSession(TranscriptionHistory history, {bool autoStartTranscription = false}) async {
+    await _stopPlayback();
+    if (!mounted) return;
+
     await Navigator.push(
       context,
       MaterialPageRoute(
@@ -153,11 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // Refresh history when returning from session
     if (mounted) {
-      debugPrint('=== Refreshing History on HomeScreen (existing session) ===');
-      final provider = context.read<HistoryProvider>();
-      debugPrint('History count before refresh: ${provider.count}');
-      await provider.refresh();
-      debugPrint('History count after refresh: ${provider.count}');
+      await context.read<HistoryProvider>().refresh();
     }
   }
 
@@ -169,14 +166,22 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  /// Stops list playback so it never overlaps another screen's player
+  Future<void> _stopPlayback() async {
+    if (_currentlyPlayingId == null) return;
+
+    await _audioService.pause();
+    if (mounted) {
+      setState(() {
+        _currentlyPlayingId = null;
+      });
+    } else {
+      _currentlyPlayingId = null;
+    }
+  }
+
   Future<void> _togglePlay(TranscriptionHistory history) async {
-    debugPrint('=== Audio Playback Debug ===');
-    debugPrint('History ID: ${history.id}');
-    debugPrint('Audio Path: ${history.audioPath}');
-    debugPrint('Currently Playing ID: $_currentlyPlayingId');
-    
     if (history.audioPath == null) {
-      debugPrint('ERROR: Audio path is null');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(context.l10n.noAudioPath)),
@@ -188,10 +193,8 @@ class _HomeScreenState extends State<HomeScreen> {
     // Check if file exists
     final file = File(history.audioPath!);
     final exists = await file.exists();
-    debugPrint('File exists: $exists');
-    
+
     if (!exists) {
-      debugPrint('ERROR: Audio file does not exist at path: ${history.audioPath}');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(context.l10n.audioFileNotFound)),
@@ -202,7 +205,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
     try {
       if (_currentlyPlayingId == history.id) {
-        debugPrint('Pausing current audio');
         setState(() {
           _currentlyPlayingId = null;
         });
@@ -210,7 +212,6 @@ class _HomeScreenState extends State<HomeScreen> {
       } else {
         // Stop previous if any
         if (_currentlyPlayingId != null) {
-          debugPrint('Stopping previous audio');
           await _audioService.pause();
         }
 
@@ -218,17 +219,11 @@ class _HomeScreenState extends State<HomeScreen> {
           _currentlyPlayingId = history.id;
         });
 
-        debugPrint('Loading audio from: ${history.audioPath}');
         await _audioService.loadAudio(history.audioPath!);
-
-        debugPrint('Playing audio');
         await _audioService.play();
-
-        debugPrint('Audio playback started successfully');
       }
-    } catch (e, stackTrace) {
-      debugPrint('ERROR playing audio: $e');
-      debugPrint('Stack trace: $stackTrace');
+    } catch (e) {
+      debugPrint('Error playing audio: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(context.l10n.errorPlaying(e.toString()))),
@@ -310,6 +305,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _openChat(TranscriptionHistory history) async {
+    await _stopPlayback();
+    if (!mounted) return;
+
     await Navigator.push(
       context,
       MaterialPageRoute(
@@ -323,8 +321,80 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  void _openSettings() {
+    setState(() {
+      _isFabExpanded = false;
+    });
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const SettingsScreen()),
+    );
+  }
+
+  /// Banner shown while no API key is configured
+  Widget _buildApiKeyBanner(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Card(
+      margin: const EdgeInsets.fromLTRB(
+        AppConstants.defaultPadding,
+        AppConstants.defaultPadding,
+        AppConstants.defaultPadding,
+        0,
+      ),
+      color: theme.colorScheme.tertiaryContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(AppConstants.defaultPadding),
+        child: Row(
+          children: [
+            Icon(Icons.key_off_outlined, color: theme.colorScheme.onTertiaryContainer),
+            const SizedBox(width: AppSpacing.m),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    context.l10n.apiKeyMissingTitle,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      color: theme.colorScheme.onTertiaryContainer,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    context.l10n.apiKeyMissingDescription,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onTertiaryContainer,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: AppSpacing.s),
+            FilledButton(
+              onPressed: _openSettings,
+              child: Text(context.l10n.setUp),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    return PopScope(
+      canPop: !_isFabExpanded,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        setState(() {
+          _isFabExpanded = false;
+        });
+      },
+      child: _buildScaffold(context),
+    );
+  }
+
+  Widget _buildScaffold(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const AppBarTitleWithLogo(),
@@ -355,50 +425,87 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.settings),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const SettingsScreen()),
-              );
-            },
+            onPressed: _openSettings,
+            tooltip: context.l10n.settings,
           ),
         ],
       ),
-      body: Consumer<HistoryProvider>(
+      body: Stack(
+        children: [
+          Consumer<HistoryProvider>(
         builder: (context, historyProvider, child) {
           if (historyProvider.isLoading) {
             return const Center(child: CircularProgressIndicator());
           }
 
+          final hasApiKey = context.select<SettingsProvider, bool>((s) => s.hasApiKey);
+
           if (historyProvider.history.isEmpty) {
-            return EmptyStateWidget(
-              icon: Icons.mic,
-              title: context.l10n.noRecordings,
-              subtitle: context.l10n.noRecordingsSubtitle,
+            return Column(
+              children: [
+                if (!hasApiKey) _buildApiKeyBanner(context),
+                Expanded(
+                  child: EmptyStateWidget(
+                    icon: Icons.mic,
+                    title: context.l10n.noRecordings,
+                    subtitle: context.l10n.noRecordingsSubtitle,
+                    action: FilledButton.icon(
+                      onPressed: _startNewRecording,
+                      icon: const Icon(Icons.mic),
+                      label: Text(context.l10n.recording),
+                    ),
+                  ),
+                ),
+              ],
             );
           }
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(AppConstants.defaultPadding),
-            cacheExtent: 500,
-            itemCount: historyProvider.history.length,
-            itemBuilder: (context, index) {
-              final history = historyProvider.history[index];
-              return RecordingCard(
-                key: ValueKey(history.id),
-                history: history,
-                isPlaying: _currentlyPlayingId == history.id,
-                onPlay: () => _togglePlay(history),
-                onTranscribe: () => _openSession(history, autoStartTranscription: true),
-                onTap: () => _openSession(history),
-                onRename: () => _renameRecording(history),
-                onExport: () => _exportRecording(history),
-                onChat: history.transcription != null ? () => _openChat(history) : null,
-                onDelete: () => _deleteRecording(history),
-              );
-            },
+          return Column(
+            children: [
+              if (!hasApiKey) _buildApiKeyBanner(context),
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                  cacheExtent: 500,
+                  itemCount: historyProvider.history.length,
+                  itemBuilder: (context, index) {
+                    final history = historyProvider.history[index];
+                    return RecordingCard(
+                      key: ValueKey(history.id),
+                      history: history,
+                      isPlaying: _currentlyPlayingId == history.id,
+                      onPlay: () => _togglePlay(history),
+                      onTranscribe: () => _openSession(history, autoStartTranscription: true),
+                      onTap: () => _openSession(history),
+                      onRename: () => _renameRecording(history),
+                      onExport: () => _exportRecording(history),
+                      onChat: history.transcription != null ? () => _openChat(history) : null,
+                      onDelete: () => _deleteRecording(history),
+                    );
+                  },
+                ),
+              ),
+            ],
           );
         },
+      ),
+          if (_isFabExpanded)
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () {
+                  setState(() {
+                    _isFabExpanded = false;
+                  });
+                },
+                child: ColoredBox(
+                  color: Theme.of(context).colorScheme.scrim.withValues(
+                        alpha: AppOpacity.scrim,
+                      ),
+                ),
+              ),
+            ),
+        ],
       ),
       floatingActionButton: Column(
         mainAxisSize: MainAxisSize.min,

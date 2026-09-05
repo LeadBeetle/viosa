@@ -1387,6 +1387,300 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Dauer (kürzeste zuerst)'**
   String get sortDurationShortest;
+
+  /// No description provided for @cancelTranscription.
+  ///
+  /// In de, this message translates to:
+  /// **'Transkription abbrechen'**
+  String get cancelTranscription;
+
+  /// No description provided for @transcriptionCancelled.
+  ///
+  /// In de, this message translates to:
+  /// **'Transkription abgebrochen'**
+  String get transcriptionCancelled;
+
+  /// No description provided for @transcriptionRunningTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Transkription läuft'**
+  String get transcriptionRunningTitle;
+
+  /// No description provided for @transcriptionRunningContent.
+  ///
+  /// In de, this message translates to:
+  /// **'Wenn Sie diesen Bildschirm verlassen, wird die laufende Transkription abgebrochen. Trotzdem verlassen?'**
+  String get transcriptionRunningContent;
+
+  /// No description provided for @leaveAndCancel.
+  ///
+  /// In de, this message translates to:
+  /// **'Verlassen'**
+  String get leaveAndCancel;
+
+  /// No description provided for @stay.
+  ///
+  /// In de, this message translates to:
+  /// **'Bleiben'**
+  String get stay;
+
+  /// No description provided for @discardRecordingTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Aufnahme verwerfen?'**
+  String get discardRecordingTitle;
+
+  /// No description provided for @discardRecordingContent.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Aufnahme ({duration}) wird gelöscht und kann nicht wiederhergestellt werden.'**
+  String discardRecordingContent(String duration);
+
+  /// No description provided for @discard.
+  ///
+  /// In de, this message translates to:
+  /// **'Verwerfen'**
+  String get discard;
+
+  /// No description provided for @continueRecording.
+  ///
+  /// In de, this message translates to:
+  /// **'Weiter aufnehmen'**
+  String get continueRecording;
+
+  /// No description provided for @apiKeyMissingTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'API-Schlüssel fehlt'**
+  String get apiKeyMissingTitle;
+
+  /// No description provided for @apiKeyMissingDescription.
+  ///
+  /// In de, this message translates to:
+  /// **'Hinterlegen Sie einen OpenRouter-Schlüssel, um Aufnahmen zu transkribieren.'**
+  String get apiKeyMissingDescription;
+
+  /// No description provided for @setUp.
+  ///
+  /// In de, this message translates to:
+  /// **'Einrichten'**
+  String get setUp;
+
+  /// No description provided for @errorStartingRecording.
+  ///
+  /// In de, this message translates to:
+  /// **'Aufnahme konnte nicht gestartet werden: {error}'**
+  String errorStartingRecording(String error);
+
+  /// No description provided for @errorStoppingRecording.
+  ///
+  /// In de, this message translates to:
+  /// **'Aufnahme konnte nicht beendet werden: {error}'**
+  String errorStoppingRecording(String error);
+
+  /// No description provided for @errorSavingRecording.
+  ///
+  /// In de, this message translates to:
+  /// **'Aufnahme konnte nicht gespeichert werden'**
+  String get errorSavingRecording;
+
+  /// No description provided for @errorPausingRecording.
+  ///
+  /// In de, this message translates to:
+  /// **'Aufnahme konnte nicht pausiert werden: {error}'**
+  String errorPausingRecording(String error);
+
+  /// No description provided for @errorResumingRecording.
+  ///
+  /// In de, this message translates to:
+  /// **'Aufnahme konnte nicht fortgesetzt werden: {error}'**
+  String errorResumingRecording(String error);
+
+  /// No description provided for @errorCancellingRecording.
+  ///
+  /// In de, this message translates to:
+  /// **'Aufnahme konnte nicht verworfen werden: {error}'**
+  String errorCancellingRecording(String error);
+
+  /// No description provided for @storagePermissionDeniedDefaultFolder.
+  ///
+  /// In de, this message translates to:
+  /// **'Speicherberechtigung verweigert. Die Aufnahme wird im Standard-Ordner gespeichert.'**
+  String get storagePermissionDeniedDefaultFolder;
+
+  /// No description provided for @micPermissionTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Mikrofon-Berechtigung erforderlich'**
+  String get micPermissionTitle;
+
+  /// No description provided for @micPermissionDescription.
+  ///
+  /// In de, this message translates to:
+  /// **'VIOSA braucht Zugriff auf das Mikrofon, um aufnehmen zu können.'**
+  String get micPermissionDescription;
+
+  /// No description provided for @micPermissionRequired.
+  ///
+  /// In de, this message translates to:
+  /// **'Mikrofonberechtigung erforderlich'**
+  String get micPermissionRequired;
+
+  /// No description provided for @checkAgain.
+  ///
+  /// In de, this message translates to:
+  /// **'Erneut prüfen'**
+  String get checkAgain;
+
+  /// No description provided for @enterMessage.
+  ///
+  /// In de, this message translates to:
+  /// **'Nachricht eingeben ...'**
+  String get enterMessage;
+
+  /// No description provided for @speakNow.
+  ///
+  /// In de, this message translates to:
+  /// **'Sprechen ...'**
+  String get speakNow;
+
+  /// No description provided for @stopGeneration.
+  ///
+  /// In de, this message translates to:
+  /// **'Antwort stoppen'**
+  String get stopGeneration;
+
+  /// No description provided for @noAudioFilesFound.
+  ///
+  /// In de, this message translates to:
+  /// **'Keine Audio-Dateien gefunden'**
+  String get noAudioFilesFound;
+
+  /// No description provided for @reload.
+  ///
+  /// In de, this message translates to:
+  /// **'Erneut laden'**
+  String get reload;
+
+  /// No description provided for @noSearchResults.
+  ///
+  /// In de, this message translates to:
+  /// **'Keine Ergebnisse'**
+  String get noSearchResults;
+
+  /// No description provided for @noFilesMatchSearch.
+  ///
+  /// In de, this message translates to:
+  /// **'Keine Dateien entsprechen Ihrer Suche.'**
+  String get noFilesMatchSearch;
+
+  /// No description provided for @errorLoadingFiles.
+  ///
+  /// In de, this message translates to:
+  /// **'Dateien konnten nicht geladen werden: {error}'**
+  String errorLoadingFiles(String error);
+
+  /// No description provided for @processing.
+  ///
+  /// In de, this message translates to:
+  /// **'Wird verarbeitet'**
+  String get processing;
+
+  /// No description provided for @retry.
+  ///
+  /// In de, this message translates to:
+  /// **'Erneut versuchen'**
+  String get retry;
+
+  /// No description provided for @showTranscription.
+  ///
+  /// In de, this message translates to:
+  /// **'Transkription anzeigen'**
+  String get showTranscription;
+
+  /// No description provided for @errorRetrying.
+  ///
+  /// In de, this message translates to:
+  /// **'Erneuter Versuch fehlgeschlagen: {error}'**
+  String errorRetrying(String error);
+
+  /// No description provided for @errorAuth.
+  ///
+  /// In de, this message translates to:
+  /// **'API-Schlüssel ungültig. Bitte in den Einstellungen prüfen.'**
+  String get errorAuth;
+
+  /// No description provided for @errorRateLimit.
+  ///
+  /// In de, this message translates to:
+  /// **'Zu viele Anfragen. Bitte kurz warten und erneut versuchen.'**
+  String get errorRateLimit;
+
+  /// No description provided for @errorNetwork.
+  ///
+  /// In de, this message translates to:
+  /// **'Keine Verbindung. Bitte Internetverbindung prüfen.'**
+  String get errorNetwork;
+
+  /// No description provided for @errorTimeout.
+  ///
+  /// In de, this message translates to:
+  /// **'Zeitüberschreitung. Bitte erneut versuchen.'**
+  String get errorTimeout;
+
+  /// No description provided for @errorServer.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Dienst ist gerade nicht erreichbar. Bitte später erneut versuchen.'**
+  String get errorServer;
+
+  /// No description provided for @errorUnknown.
+  ///
+  /// In de, this message translates to:
+  /// **'Etwas ist schiefgelaufen. Bitte erneut versuchen.'**
+  String get errorUnknown;
+
+  /// No description provided for @speechUnavailable.
+  ///
+  /// In de, this message translates to:
+  /// **'Spracherkennung nicht verfügbar'**
+  String get speechUnavailable;
+
+  /// No description provided for @speechInitError.
+  ///
+  /// In de, this message translates to:
+  /// **'Spracherkennung konnte nicht gestartet werden'**
+  String get speechInitError;
+
+  /// No description provided for @speechRecognitionError.
+  ///
+  /// In de, this message translates to:
+  /// **'Spracherkennung fehlgeschlagen'**
+  String get speechRecognitionError;
+
+  /// No description provided for @tapToStop.
+  ///
+  /// In de, this message translates to:
+  /// **'Tippen zum Stoppen'**
+  String get tapToStop;
+
+  /// No description provided for @tapToSpeak.
+  ///
+  /// In de, this message translates to:
+  /// **'Tippen zum Sprechen'**
+  String get tapToSpeak;
+
+  /// No description provided for @copiedToClipboard.
+  ///
+  /// In de, this message translates to:
+  /// **'In Zwischenablage kopiert'**
+  String get copiedToClipboard;
+
+  /// No description provided for @regenerate.
+  ///
+  /// In de, this message translates to:
+  /// **'Neu generieren'**
+  String get regenerate;
 }
 
 class _AppLocalizationsDelegate

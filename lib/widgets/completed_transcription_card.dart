@@ -16,6 +16,7 @@ class CompletedTranscriptionCard extends StatefulWidget {
   final VoidCallback onApplyPrompt;
   final int promptResultCount;
   final VoidCallback? onRetranscribe;
+  final bool initiallyExpanded;
 
   const CompletedTranscriptionCard({
     super.key,
@@ -24,6 +25,7 @@ class CompletedTranscriptionCard extends StatefulWidget {
     required this.onApplyPrompt,
     this.promptResultCount = 0,
     this.onRetranscribe,
+    this.initiallyExpanded = false,
   });
 
   @override
@@ -83,7 +85,7 @@ class _CompletedTranscriptionCardState extends State<CompletedTranscriptionCard>
           builder: (context, settings, _) => CollapsibleTextSection(
             title: context.l10n.transcription,
             content: widget.transcriptionResult.text,
-            isExpanded: false,
+            isExpanded: widget.initiallyExpanded,
             contentStyle: TextStyle(
               fontSize: settings.textSize,
               height: 1.5,

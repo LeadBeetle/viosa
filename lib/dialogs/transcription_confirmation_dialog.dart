@@ -56,8 +56,10 @@ class TranscriptionConfirmationDialog extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.orange.shade50,
-                border: Border.all(color: Colors.orange.shade300),
+                color: Theme.of(context).colorScheme.errorContainer,
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.error,
+                ),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -66,14 +68,14 @@ class TranscriptionConfirmationDialog extends StatelessWidget {
                   Icon(
                     Icons.warning_amber_rounded,
                     size: 20,
-                    color: Colors.orange.shade700,
+                    color: Theme.of(context).colorScheme.onErrorContainer,
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       context.l10n.warningExistingData,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.orange.shade900,
+                            color: Theme.of(context).colorScheme.onErrorContainer,
                             fontWeight: FontWeight.w500,
                           ),
                     ),

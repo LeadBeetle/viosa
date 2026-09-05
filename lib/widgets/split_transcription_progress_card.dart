@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/split_transcription_job.dart';
 import '../providers/split_transcription_provider.dart';
+import '../l10n/l10n.dart';
 import '../utils/constants.dart';
 import 'split_item_widget.dart';
 
@@ -77,7 +78,7 @@ class SplitTranscriptionProgressCard extends StatelessWidget {
                 IconButton(
                   onPressed: onCancel,
                   icon: const Icon(Icons.close),
-                  tooltip: 'Transkription abbrechen',
+                  tooltip: context.l10n.cancelTranscription,
                   color: Theme.of(context).colorScheme.error,
                   iconSize: AppIconSize.medium,
                 ),
@@ -104,7 +105,7 @@ class SplitTranscriptionProgressCard extends StatelessWidget {
         break;
       case JobStatus.processing:
         icon = Icons.sync;
-        text = 'Wird verarbeitet';
+        text = context.l10n.processing;
         color = Theme.of(context).colorScheme.primary;
         break;
       case JobStatus.completed:
@@ -273,7 +274,7 @@ class SplitTranscriptionProgressCard extends StatelessWidget {
           ElevatedButton.icon(
             onPressed: onViewMerged,
             icon: const Icon(Icons.visibility),
-            label: const Text('Transkription anzeigen'),
+            label: Text(context.l10n.showTranscription),
           ),
         ],
       ),
@@ -299,7 +300,7 @@ class SplitTranscriptionProgressCard extends StatelessWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Fehler beim erneuten Versuch: $e'),
+            content: Text(context.l10n.errorRetrying(e.toString())),
             backgroundColor: Theme.of(context).colorScheme.error,
             duration: const Duration(seconds: 3),
           ),

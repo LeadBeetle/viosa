@@ -72,7 +72,38 @@ class _RecordingCardState extends State<RecordingCard> {
   Widget? _buildStatusWidget(BuildContext context, ThemeData theme, bool hasTranscription) {
     final hasAudioFile = widget.history.audioPath != null;
 
-    if (!hasAudioFile || hasTranscription) {
+    if (hasTranscription) {
+      return Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.s,
+          vertical: AppSpacing.xs,
+        ),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.primaryContainer,
+          borderRadius: BorderRadius.circular(AppRadius.circular),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.check_circle_outline,
+              size: AppIconSize.small,
+              color: theme.colorScheme.onPrimaryContainer,
+            ),
+            const SizedBox(width: AppSpacing.xs),
+            Text(
+              context.l10n.transcribed,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onPrimaryContainer,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (!hasAudioFile) {
       return null;
     }
 
