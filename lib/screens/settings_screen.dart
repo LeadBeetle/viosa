@@ -132,7 +132,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         }
       }
 
-      final String? selectedDirectory = await FilePicker.platform.getDirectoryPath();
+      final String? selectedDirectory = await FilePicker.getDirectoryPath();
 
       if (selectedDirectory != null) {
         if (mounted) {
