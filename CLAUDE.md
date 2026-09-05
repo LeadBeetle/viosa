@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-VIOSA (Voice Intelligent Output and Speech Analyzer) is an Android application for audio transcription using the OpenRouter API with Gemini models. Built with Flutter/Dart.
+VIOSA (Voice Intelligent Output and Speech Analyzer) is a Flutter app for audio transcription via the OpenRouter API. Android is the primary target; iOS, macOS, Windows, Linux and web build directories exist (see `docs/DEPLOYMENT_MACOS_IOS.md`).
 
 **Key Features:**
 - Audio file transcription (MP3, WAV, MP4, M4A)
@@ -18,8 +18,15 @@ VIOSA (Voice Intelligent Output and Speech Analyzer) is an Android application f
 ## Quick Commands
 
 ```bash
+flutter pub get
+flutter analyze          # flutter_lints 6.0, must be clean
+flutter test
+
 # Generate Hive adapters after modifying models
-flutter pub run build_runner build --delete-conflicting-outputs
+dart run build_runner build --delete-conflicting-outputs
+
+# Regenerate localizations after editing lib/l10n/*.arb
+flutter gen-l10n
 
 # Run in debug mode
 flutter run
@@ -27,6 +34,17 @@ flutter run
 # Build release APK
 flutter build apk --release
 ```
+
+## Directory Map
+
+- `lib/services/` — flat services plus `completion/`, `transcription/`, `export/` sub-layers, each with an `i_*.dart` interface
+- `lib/providers/` — 6 ChangeNotifiers wired in `main.dart` MultiProvider
+- `lib/repositories/model_repository.dart` — single source of truth for model IDs
+- `lib/utils/constants.dart`, `app_theme.dart` — design tokens (see `UI_GUIDELINES.md`)
+
+## Models
+
+`ModelRepository` is the only place model IDs live. LLM (prompts, chat, speaker context, post-processing): `google/gemini-3.8-flash`. Speech-to-text: `microsoft/mai-transcribe-2`. Never hardcode a model ID elsewhere.
 
 ## Architecture Principles
 
@@ -108,8 +126,15 @@ class ExampleService implements IExampleService {
 - Implement retry logic for transient failures
 
 ### Localization
-- UI strings are in German
-- Keep language consistent across the app
+- ARB-based: `lib/l10n/app_de.arb` (template) and `app_en.arb`, generated into `lib/generated/`
+- Never hardcode UI strings. Add a key to both ARB files, run `flutter gen-l10n`, read via `context.l10n.<key>` (extension in `lib/l10n/l10n.dart`)
+- German is the template locale; docs and code comments follow suit
+
+## Gotchas
+
+- **Hive typeIds in use: 0–8, 10, 11. Next free: 9.** Reusing an id corrupts stored data silently.
+- `permission_handler` pinned to ^12: 13.x pulls permission_handler_android 14, which needs AGP 9 / compileSdk 37.
+- UI design tokens (`AppSpacing`, `AppOpacity`, `AppIconSize`) documented in `UI_GUIDELINES.md` — use them, don't invent values.
 
 ## Development Guidelines
 
