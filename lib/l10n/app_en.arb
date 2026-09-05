@@ -1,6 +1,5 @@
 {
   "@@locale": "en",
-
   "settings": "Settings",
   "cancel": "Cancel",
   "delete": "Delete",
@@ -11,7 +10,6 @@
   "start": "Start",
   "choose": "Choose",
   "example": "Example",
-
   "noRecordings": "No Recordings",
   "noRecordingsSubtitle": "Start a new recording with the + button",
   "deleteRecording": "Delete Recording",
@@ -26,7 +24,6 @@
   "newName": "New name",
   "noAudioPath": "No audio path available",
   "audioFileNotFound": "Audio file not found",
-
   "apiConfiguration": "API Configuration",
   "apiKeyLabel": "OpenRouter API Key",
   "apiKeyHint": "sk-or-v1-...",
@@ -35,12 +32,10 @@
   "hideApiKey": "Hide API key",
   "pleaseEnterApiKey": "Please enter an API key",
   "configureApiKey": "Please configure API key",
-
   "modelsSectionTitle": "Models",
   "speechToTextModelLabel": "Speech recognition",
   "languageModelLabel": "Language model",
   "aiModel": "AI Model",
-
   "audioTranscription": "Audio & Transcription",
   "storageLocation": "Storage Location for Recordings",
   "defaultStorageLocation": "Default storage location",
@@ -51,27 +46,22 @@
   "transcriptionLanguageEnglish": "English",
   "speakerDiarization": "Speaker Recognition",
   "speakerDiarizationDescription": "Identifies different speakers in the recording",
-
   "uiLanguage": "App Language",
   "uiLanguageDescription": "Select the user interface language",
   "languageGerman": "German",
   "languageEnglish": "English",
-
   "appearance": "Appearance",
   "theme": "Theme",
   "themeSystem": "System",
   "themeLight": "Light",
   "themeDark": "Dark",
   "themeDescription": "Select the app's color scheme",
-
   "promptsManage": "Manage Prompts",
   "promptsDescription": "Create and edit your AI prompts",
-
   "aboutViosa": "About VIOSA",
   "aboutDescription": "VIOSA (Voice Intelligent Output and Speech Analyzer) uses the OpenRouter API for audio transcription with cutting-edge AI models.",
   "apiKeySecurityNote": "Your API key is securely stored on your device and never shared with third parties.",
   "version": "Version {version}",
-
   "prompts": "Prompts",
   "customPrompts": "Custom",
   "customPromptsCount": "Custom ({count})",
@@ -99,24 +89,20 @@
   "transcriptionPlaceholderFound": "''{transcription}'' found",
   "transcriptionPlacementHintAdvanced": "Use ''{transcription}'' where the text should be inserted",
   "transcriptionPlacementHintSimple": "The transcription will be automatically appended to your prompt",
-
   "sessionDiscardTitle": "Discard current session?",
   "sessionDiscardMessage": "You have already selected or transcribed an audio file. Do you want to discard this session and start a new one?",
   "startNewSession": "Start New Session",
-
   "longAudioDetected": "Long audio file detected",
   "startTranscription": "Start Transcription",
   "warningExistingData": "Warning: Existing transcription and prompt results will be deleted.",
   "longAudioDescription": "This audio file is {duration} long and will be split into {splitCount} segments (~10 minutes each).\n\nThe transcription runs in the background and may take a few minutes.",
   "shortAudioDescription": "This audio file is {duration} long.",
   "modelLabel": "Model: {modelName}",
-
   "newRecording": "New Recording",
   "splittingAudio": "Splitting audio...",
   "preparingAudio": "Preparing audio...",
   "transcriptionFailed": "Transcription failed",
   "startChat": "Start Chat",
-
   "chat": "Chat",
   "clearChat": "Clear Chat",
   "clearChatConfirmTitle": "Clear chat?",
@@ -125,7 +111,6 @@
   "startChatDescription": "Ask questions about the transcript or use @Transcript to reference it.",
   "apiKeyNotConfigured": "API key not configured",
   "recordingNotFound": "Recording not found",
-
   "errorPlaying": "Error playing: {error}",
   "errorRenaming": "Error renaming: {error}",
   "errorDeleting": "Error deleting: {error}",
@@ -136,13 +121,10 @@
   "errorSelectingFolder": "Error selecting folder: {error}",
   "errorOpeningUrl": "Could not open URL: {url}",
   "errorGeneric": "Error: {error}",
-
   "storagePermissionRequired": "Storage permission required. Please allow access in the app settings.",
   "storageSavedSuccess": "Storage location saved successfully",
-
   "examplePromptAdvanced": "Summarize the following text:\n\n''{transcription}''\n\nFocus on the main points.",
   "examplePromptSimple": "Summarize the text and list the key points.",
-
   "transcriptionSuccess": "Success!",
   "transcribing": "Transcribing...",
   "transcribe": "Transcribe",
@@ -156,64 +138,48 @@
   "generating": "Generating...",
   "applyAnotherPrompt": "Apply another prompt",
   "applyPrompt": "Apply prompt",
-
   "messageCount": "{count} {count, plural, =1{message} other{messages}}",
   "transcribed": "Transcribed",
   "oldRecordingNoAudio": "Old recording without audio file",
   "oldRecordingAudioUnavailable": "Old recording: Audio file no longer available",
-
-
   "timeAgoSeconds": "{count} sec ago",
   "timeAgoMinutes": "{count} min ago",
   "timeAgoHours": "{count} hr ago",
   "timeAgoDays": "{count} {count, plural, =1{day} other{days}} ago",
   "timeAgoYears": "{count} {count, plural, =1{year} other{years}} ago",
-
   "menuRename": "Rename",
   "menuExport": "Export",
   "promptCount": "{count} {count, plural, =1{prompt} other{prompts}}",
-
   "paused": "Paused",
   "resume": "Resume",
   "pause": "Pause",
   "done": "Done",
   "no": "No",
-
   "storagePermissionRequiredTitle": "Storage permission required",
   "storagePermissionRequiredContent": "To save recordings in your selected folder, VIOSA needs access to storage.\n\nPlease allow access.",
   "grantPermission": "Grant permission",
   "permissionDeniedTitle": "Permission denied",
   "permissionDeniedContent": "To save in your selected folder, storage permission must be enabled.\n\nWould you like to open settings?",
   "openSettings": "Open Settings",
-
   "recordingInProgress": "Recording in progress",
   "readyToRecord": "Ready to record",
   "savingRecording": "Saving recording...",
-
   "predefinedPromptQuestionsName": "Generate Questions",
   "predefinedPromptQuestionsTemplate": "Generate 5-7 comprehension questions about the following text. The questions should:\n- Cover different difficulty levels (easy to challenging)\n- Ask about both facts and relationships\n- Be clearly and precisely formulated\n\nText:\n[[transcription]]",
-
   "predefinedPromptActionItemsName": "Action Items",
   "predefinedPromptActionItemsTemplate": "Extract all tasks and to-dos from the following text.\n\nFormat the output as a structured list:\n- Group by topic or responsibility (if recognizable)\n- Mark deadlines or due dates (if mentioned)\n- Prioritize by urgency (if derivable)\n\nIf no specific tasks are recognizable, indicate this.\n\nText:\n[[transcription]]",
-
   "predefinedPromptSummaryName": "Summarize",
   "predefinedPromptSummaryTemplate": "Create a comprehensive and detailed summary of the following text.\n\nThe summary should:\n- Be structured into thematic sections\n- Capture all essential content, arguments, and insights\n- Clarify the context, purpose, and conclusions of the conversation/text\n- Retain important details and nuances\n\nUse headings and paragraphs for better readability.\n\nText:\n[[transcription]]",
-
   "predefinedPromptKeyPointsName": "Key Points",
   "predefinedPromptKeyPointsTemplate": "List the most important points from the following text.\n\nFor each point:\n- Formulate a clear main statement\n- Add relevant details, reasoning, or context\n- Explain the significance or implication of the point\n\nNote:\n- Maximum 5-10 points\n- Prioritize by relevance\n\nText:\n[[transcription]]",
-
   "predefinedPromptDecisionsName": "Decisions",
   "predefinedPromptDecisionsTemplate": "Extract all decisions from the following text.\n\nFor each decision:\n- What was decided?\n- Why was it decided this way? (Reasoning/arguments)\n- Who is responsible? (if recognizable)\n- By when? (if mentioned)\n\nIf no clear decisions were made, list the open discussion points and pending clarifications.\n\nText:\n[[transcription]]",
-
   "predefinedPromptProContraName": "Pro & Contra",
   "predefinedPromptProContraTemplate": "Analyze the following text and create a Pro & Contra analysis.\n\nStructure:\n- Identify the topic or question\n- List pro arguments with reasoning\n- List contra arguments with reasoning\n- Summarize conclusion or tendency (if recognizable from the conversation)\n\nText:\n[[transcription]]",
-
   "predefinedPromptReportName": "Create Report",
   "predefinedPromptReportTemplate": "Create a formal report based on the following text.\n\nStructure:\n- Title and date/occasion (if recognizable)\n- Introduction: Context and purpose\n- Main part: Discussed topics with key statements and details\n- Results: Decisions made and agreements\n- Outlook: Next steps and open points\n\nUse an objective, professional style.\n\nText:\n[[transcription]]",
-
   "predefinedPromptControversyName": "Deepen Controversies",
   "predefinedPromptControversyTemplate": "Identify controversial or disputed points from the following text and analyze them in depth.\n\nFor each controversial point:\n- Describe the point of contention and the different viewpoints\n- Analyze the arguments presented by each side\n- Add important aspects that were missing or underrepresented in the discussion\n- Provide additional facts, perspectives, or counterarguments for deeper understanding\n- Give a balanced assessment\n\nThe goal is to create a well-founded basis for further opinion formation.\n\nText:\n[[transcription]]",
-
   "selectPrompt": "Select Prompt",
   "apply": "Apply",
   "noPromptsAvailable": "No prompts available. Create one in the Prompts section.",
@@ -224,7 +190,6 @@
   "generatingResponse": "Generating response...",
   "applying": "Applying...",
   "cancelled": "Cancelled",
-
   "promptResultsCount": "Prompt Results ({count})",
   "deletePromptResult": "Delete prompt result?",
   "deletePromptResultConfirmation": "Do you really want to delete the result \"{name}\"?",
@@ -234,19 +199,15 @@
   "modelUsedLabel": "Model: {model}",
   "wordsLabel": "{count} words",
   "charactersLabel": "{count} characters",
-
   "showMore": "Show more",
   "showLess": "Show less",
   "copy": "Copy",
   "collapse": "Collapse",
-
   "audioFileNotFoundWarning": "The audio file was not found. You can view existing results, but cannot start a new transcription.",
   "noResultsAvailable": "No results available",
-
   "chatContext": "Chat Context",
   "chatContextDescription": "Select which content should be available to the AI.",
   "chatContextEnabledCount": "{count} of {total} active",
-
   "sort": "Sort",
   "sortDateNewest": "Date (newest first)",
   "sortDateOldest": "Date (oldest first)",
@@ -290,7 +251,6 @@
   "retry": "Try again",
   "showTranscription": "Show transcription",
   "errorRetrying": "Retry failed: {error}",
-  "transcribed": "Transcribed",
   "errorAuth": "Invalid API key. Please check it in settings.",
   "errorRateLimit": "Too many requests. Please wait a moment and try again.",
   "errorNetwork": "No connection. Please check your internet connection.",
@@ -303,5 +263,32 @@
   "tapToStop": "Tap to stop",
   "tapToSpeak": "Tap to speak",
   "copiedToClipboard": "Copied to clipboard",
-  "regenerate": "Regenerate"
+  "regenerate": "Regenerate",
+  "selectAudioFileTitle": "Select audio file",
+  "searchFilesHint": "Search...",
+  "loadingAudioFiles": "Loading audio files...",
+  "browseAllFiles": "Open another file",
+  "browseAllFilesHint": "Open a file from any folder or cloud storage",
+  "importingFile": "Importing file...",
+  "unsupportedAudioFormat": "This file format is not supported.",
+  "storageAccessOptionalHint": "Without storage access only the app's own recordings are listed. Other files can still be opened via \"Open another file\".",
+  "scanResultsTruncated": "Not all files are shown. Narrow the search or use \"Open another file\".",
+  "sortNewestShort": "Newest",
+  "sortOldestShort": "Oldest",
+  "sortNameAZShort": "Name A-Z",
+  "sortNameZAShort": "Name Z-A",
+  "sortSizeDescShort": "Size ↓",
+  "sortSizeAscShort": "Size ↑",
+  "fileTypeAll": "All",
+  "fileTypeOther": "Other",
+  "relinkAudioFile": "Select file again",
+  "audioFileRelinked": "Audio file relinked",
+  "errorImportingFile": "Could not import file: {error}",
+  "@errorImportingFile": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  }
 }

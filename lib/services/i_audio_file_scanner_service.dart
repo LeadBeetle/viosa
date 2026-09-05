@@ -1,37 +1,65 @@
 import 'dart:io';
+
 import '../models/audio_file_info.dart';
 
-/// Interface for scanning directories and finding audio files
-/// Follows Interface Segregation Principle and Dependency Inversion Principle
+/// Ergebnis eines Verzeichnis-Scans.
+///
+/// Meldet zusätzlich, ob das Limit erreicht wurde, damit die Oberfläche
+/// eine unvollständige Liste kenntlich machen kann.
+class AudioScanResult {
+  final List<AudioFileInfo> files;
+  final bool truncated;
+
+  const AudioScanResult({
+    required this.files,
+    this.truncated = false,
+  });
+
+  static const AudioScanResult empty =
+      AudioScanResult(files: <AudioFileInfo>[], truncated: false);
+}
+
+/// Schnittstelle für das Durchsuchen von Verzeichnissen nach Audiodateien.
 abstract class IAudioFileScannerService {
-  /// Get common audio directories based on platform
+  /// Verzeichnisse, die je nach Plattform durchsucht werden.
   Future<List<Directory>> getCommonAudioDirectories();
 
-  /// Scan a directory for audio files
-  /// Returns list of AudioFileInfo sorted by creation date (newest first)
-  Future<List<AudioFileInfo>> scanDirectory(
+  /// Durchsucht ein Verzeichnis nach Audiodateien.
+  Future<AudioScanResult> scanDirectory(
     Directory directory, {
     bool recursive = false,
     int maxFiles = 500,
   });
 
-  /// Scan multiple directories and combine results
-  Future<List<AudioFileInfo>> scanMultipleDirectories(
+  /// Durchsucht mehrere Verzeichnisse und führt die Ergebnisse zusammen.
+  Future<AudioScanResult> scanMultipleDirectories(
     List<Directory> directories, {
     bool recursive = false,
     int maxFilesPerDirectory = 200,
   });
 
-  /// Scan a custom directory path
-  Future<List<AudioFileInfo>> scanCustomPath(
+  /// Durchsucht einen frei gewählten Pfad.
+  ///
+  /// Wirft eine [DirectoryNotFoundException], wenn das Verzeichnis fehlt.
+  Future<AudioScanResult> scanCustomPath(
     String path, {
     bool recursive = false,
     int maxFiles = 500,
   });
 
-  /// Get all audio files from common directories
-  Future<List<AudioFileInfo>> getAllAudioFiles({
+  /// Liefert alle Audiodateien aus den bekannten Verzeichnissen.
+  Future<AudioScanResult> getAllAudioFiles({
     bool recursive = false,
     int maxFilesPerDirectory = 200,
   });
+}
+
+/// Fehler, wenn ein zu durchsuchendes Verzeichnis nicht existiert.
+class DirectoryNotFoundException implements Exception {
+  final String path;
+
+  const DirectoryNotFoundException(this.path);
+
+  @override
+  String toString() => 'Verzeichnis existiert nicht: $path';
 }

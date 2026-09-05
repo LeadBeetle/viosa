@@ -153,14 +153,16 @@ class AudioSplitterService implements IAudioSplitterService {
       final startTimeStr = _formatFFmpegTime(startTime);
       final durationStr = _formatFFmpegTime(duration);
 
-      // FFmpeg command to extract segment
-      // -ss: start time
-      // -t: duration
-      // -c copy: copy codec (no re-encoding for speed)
-      // -avoid_negative_ts make_zero: handle timestamp issues
-      final command = '-i "$inputPath" -ss $startTimeStr -t $durationStr -c copy -avoid_negative_ts make_zero "$outputPath"';
+      final arguments = [
+        '-i', inputPath,
+        '-ss', startTimeStr,
+        '-t', durationStr,
+        '-c', 'copy',
+        '-avoid_negative_ts', 'make_zero',
+        outputPath,
+      ];
 
-      final session = await FFmpegKit.execute(command);
+      final session = await FFmpegKit.executeWithArguments(arguments);
       final returnCode = await session.getReturnCode();
 
       return ReturnCode.isSuccess(returnCode);

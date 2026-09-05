@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+
 import '../models/audio_file_info.dart';
+import '../utils/constants.dart';
 
 /// Widget for displaying a single audio file in the file picker
 /// Shows file name, size, and creation date
@@ -16,35 +18,35 @@ class AudioFileItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      margin: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.s,
+        vertical: AppSpacing.xs,
+      ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.medium),
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(AppSpacing.m),
           child: Row(
             children: [
-              // Audio icon
               Container(
-                width: 48,
-                height: 48,
+                width: AppIconSize.xxlarge,
+                height: AppIconSize.xxlarge,
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppRadius.small),
                 ),
                 child: Icon(
                   Icons.audio_file,
                   color: Theme.of(context).colorScheme.primary,
-                  size: 28,
+                  size: AppIconSize.large,
                 ),
               ),
-              const SizedBox(width: 12),
-              // File info
+              const SizedBox(width: AppSpacing.s),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // File name
                     Text(
                       fileInfo.name,
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
@@ -53,19 +55,18 @@ class AudioFileItem extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
-                    // File metadata
+                    const SizedBox(height: AppSpacing.xs),
                     Row(
                       children: [
                         Icon(
                           Icons.calendar_today,
-                          size: 14,
+                          size: AppIconSize.small,
                           color: Theme.of(context)
                               .colorScheme
                               .onSurface
-                              .withValues(alpha: 0.6),
+                              .withValues(alpha: AppOpacity.secondary),
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: AppSpacing.xs),
                         Flexible(
                           child: Text(
                             fileInfo.shortFormattedDate,
@@ -73,21 +74,21 @@ class AudioFileItem extends StatelessWidget {
                                   color: Theme.of(context)
                                       .colorScheme
                                       .onSurface
-                                      .withValues(alpha: 0.6),
+                                      .withValues(alpha: AppOpacity.secondary),
                                 ),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: AppSpacing.s),
                         Icon(
                           Icons.data_usage,
-                          size: 14,
+                          size: AppIconSize.small,
                           color: Theme.of(context)
                               .colorScheme
                               .onSurface
-                              .withValues(alpha: 0.6),
+                              .withValues(alpha: AppOpacity.secondary),
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: AppSpacing.xs),
                         Flexible(
                           child: Text(
                             fileInfo.formattedSize,
@@ -95,7 +96,7 @@ class AudioFileItem extends StatelessWidget {
                                   color: Theme.of(context)
                                       .colorScheme
                                       .onSurface
-                                      .withValues(alpha: 0.6),
+                                      .withValues(alpha: AppOpacity.secondary),
                                 ),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -105,12 +106,14 @@ class AudioFileItem extends StatelessWidget {
                   ],
                 ),
               ),
-              // Extension badge
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.s,
+                  vertical: AppSpacing.xs,
+                ),
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.secondaryContainer,
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(AppRadius.xs),
                 ),
                 child: Text(
                   fileInfo.extension.toUpperCase(),

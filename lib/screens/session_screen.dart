@@ -8,6 +8,9 @@ import '../models/prompt_result.dart';
 import '../models/transcription_history.dart';
 import '../models/split_transcription_job.dart';
 import '../services/audio_service.dart';
+import '../services/file_service.dart';
+import '../services/i_file_service.dart';
+import '../services/i_audio_service.dart';
 import '../services/speaker_extraction_service.dart';
 import '../providers/settings_provider.dart';
 import '../providers/history_provider.dart';
@@ -26,6 +29,7 @@ import '../dialogs/transcription_confirmation_dialog.dart';
 import '../services/llm_provider_factory.dart';
 import '../repositories/model_repository.dart';
 import '../utils/constants.dart';
+import '../utils/audio_formats.dart';
 import '../utils/audio_utils.dart';
 import '../utils/error_messages.dart';
 import '../utils/screen_helpers.dart';
@@ -54,6 +58,7 @@ class SessionScreen extends StatefulWidget {
 
 class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
   final IAudioService _audioService = AudioService();
+  final IFileService _fileService = FileService();
 
   AudioFile? _selectedFile;
   TranscriptionResult? _transcriptionResult;
@@ -172,16 +177,8 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
     // Load audio file if path exists
     if (history.audioPath != null) {
       try {
-        final file = File(history.audioPath!);
-        if (await file.exists()) {
-          final audioFile = AudioFile(
-            path: file.path,
-            name: history.audioFileName,
-            base64Data: null,
-            mimeType: 'audio/mp4',
-            size: await file.length(),
-          );
-
+        final audioFile = await _audioFileFromHistory(history);
+        if (audioFile != null) {
           setState(() {
             _selectedFile = audioFile;
             _audioDuration = history.duration;
@@ -253,25 +250,14 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
         final history = historyProvider.getHistoryById(_currentHistoryId!);
         if (history != null) {
           if (_selectedFile == null && history.audioPath != null) {
-             try {
-               final file = File(history.audioPath!);
-               if (await file.exists()) {
-                 final audioFile = AudioFile(
-                   path: file.path,
-                   name: history.audioFileName,
-                   base64Data: null,
-                   mimeType: 'audio/mp4', // Assume mp4/m4a for now
-                   size: await file.length(),
-                 );
-                 setState(() {
-                   _selectedFile = audioFile;
-                   _audioDuration = history.duration;
-                 });
-                 await _audioService.loadAudio(audioFile.path);
-               }
-             } catch (e) {
-               debugPrint('Error loading file from history: $e');
-             }
+            final audioFile = await _audioFileFromHistory(history);
+            if (audioFile != null && mounted) {
+              setState(() {
+                _selectedFile = audioFile;
+                _audioDuration = history.duration;
+              });
+              await _audioService.loadAudio(audioFile.path);
+            }
           }
 
           setState(() {
@@ -288,6 +274,53 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
         // New file picked - save initial history entry with duration
         await _saveToHistory();
       }
+    }
+  }
+
+  /// Liest die in der Historie hinterlegte Audiodatei, sofern sie noch existiert.
+  Future<AudioFile?> _audioFileFromHistory(TranscriptionHistory history) async {
+    final path = history.audioPath;
+    if (path == null) return null;
+
+    try {
+      final file = File(path);
+      if (!await file.exists()) return null;
+
+      return AudioFile(
+        path: file.path,
+        name: history.audioFileName,
+        base64Data: null,
+        mimeType: AudioFormats.mimeTypeForPath(file.path),
+        size: await file.length(),
+      );
+    } catch (e) {
+      debugPrint('Error loading file from history: $e');
+      return null;
+    }
+  }
+
+  /// Verknüpft eine fehlende Audiodatei neu, ohne die Ergebnisse zu verlieren.
+  Future<void> _relinkAudioFile() async {
+    try {
+      final audioFile = await _fileService.pickAudioFile(context);
+      if (audioFile == null || !mounted) return;
+
+      await _audioService.loadAudio(audioFile.path);
+      final duration = await AudioUtils.getAudioDuration(audioFile.path);
+      if (!mounted) return;
+
+      setState(() {
+        _selectedFile = audioFile;
+        _audioFileNotFound = false;
+        _audioDuration = duration;
+      });
+
+      await _saveToHistory();
+      if (!mounted) return;
+      SnackBarService().showSuccess(context, context.l10n.audioFileRelinked);
+    } catch (e) {
+      if (!mounted) return;
+      SnackBarService().showError(context, ErrorMessages.forError(context, e));
     }
   }
 
@@ -806,19 +839,33 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
               color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.3),
               child: Padding(
                 padding: const EdgeInsets.all(AppConstants.defaultPadding),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(
-                      Icons.warning_amber_rounded,
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                    const SizedBox(width: AppSpacing.m),
-                    Expanded(
-                      child: Text(
-                        context.l10n.audioFileNotFoundWarning,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onErrorContainer,
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.warning_amber_rounded,
+                          color: Theme.of(context).colorScheme.error,
                         ),
+                        const SizedBox(width: AppSpacing.m),
+                        Expanded(
+                          child: Text(
+                            context.l10n.audioFileNotFoundWarning,
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Theme.of(context).colorScheme.onErrorContainer,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.s),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: FilledButton.tonalIcon(
+                        onPressed: _relinkAudioFile,
+                        icon: const Icon(Icons.folder_open),
+                        label: Text(context.l10n.relinkAudioFile),
                       ),
                     ),
                   ],
@@ -900,7 +947,6 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
                 onChunk: (chunk) {},
               ),
           ] else if (_audioFileNotFound && !hasResults) ...[
-            // Audio file not found and no results - show info message
             Center(
               child: Padding(
                 padding: const EdgeInsets.all(AppConstants.defaultPadding * 2),
@@ -909,8 +955,11 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
                   children: [
                     Icon(
                       Icons.folder_off_outlined,
-                      size: 64,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                      size: AppIconSize.emptyState,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurfaceVariant
+                          .withValues(alpha: AppOpacity.tertiary),
                     ),
                     const SizedBox(height: AppSpacing.m),
                     Text(
@@ -920,12 +969,17 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
                       ),
                       textAlign: TextAlign.center,
                     ),
+                    const SizedBox(height: AppSpacing.l),
+                    FilledButton.icon(
+                      onPressed: _relinkAudioFile,
+                      icon: const Icon(Icons.folder_open),
+                      label: Text(context.l10n.relinkAudioFile),
+                    ),
                   ],
                 ),
               ),
             ),
           ] else if (!_audioFileNotFound) ...[
-            // Audio file exists, show transcribe button
             Center(
               child: TranscriptionButton(
                 onPressed: _transcribe,

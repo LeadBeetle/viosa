@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/audio_service.dart';
+import '../services/i_audio_service.dart';
 import '../utils/constants.dart';
 import '../services/snackbar_service.dart';
 import 'waveform_display_widget.dart';

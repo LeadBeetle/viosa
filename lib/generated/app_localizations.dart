@@ -1681,6 +1681,126 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Neu generieren'**
   String get regenerate;
+
+  /// No description provided for @selectAudioFileTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Audio-Datei auswählen'**
+  String get selectAudioFileTitle;
+
+  /// No description provided for @searchFilesHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Suchen...'**
+  String get searchFilesHint;
+
+  /// No description provided for @loadingAudioFiles.
+  ///
+  /// In de, this message translates to:
+  /// **'Lade Audio-Dateien...'**
+  String get loadingAudioFiles;
+
+  /// No description provided for @browseAllFiles.
+  ///
+  /// In de, this message translates to:
+  /// **'Andere Datei öffnen'**
+  String get browseAllFiles;
+
+  /// No description provided for @browseAllFilesHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Datei aus einem beliebigen Ordner oder Cloud-Speicher öffnen'**
+  String get browseAllFilesHint;
+
+  /// No description provided for @importingFile.
+  ///
+  /// In de, this message translates to:
+  /// **'Datei wird übernommen...'**
+  String get importingFile;
+
+  /// No description provided for @unsupportedAudioFormat.
+  ///
+  /// In de, this message translates to:
+  /// **'Dieses Dateiformat wird nicht unterstützt.'**
+  String get unsupportedAudioFormat;
+
+  /// No description provided for @storageAccessOptionalHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Ohne Speicherzugriff werden nur Aufnahmen der App angezeigt. Andere Dateien lassen sich weiterhin über \"Andere Datei öffnen\" laden.'**
+  String get storageAccessOptionalHint;
+
+  /// No description provided for @scanResultsTruncated.
+  ///
+  /// In de, this message translates to:
+  /// **'Es werden nicht alle Dateien angezeigt. Suche eingrenzen oder \"Andere Datei öffnen\" nutzen.'**
+  String get scanResultsTruncated;
+
+  /// No description provided for @sortNewestShort.
+  ///
+  /// In de, this message translates to:
+  /// **'Neueste'**
+  String get sortNewestShort;
+
+  /// No description provided for @sortOldestShort.
+  ///
+  /// In de, this message translates to:
+  /// **'Älteste'**
+  String get sortOldestShort;
+
+  /// No description provided for @sortNameAZShort.
+  ///
+  /// In de, this message translates to:
+  /// **'Name A-Z'**
+  String get sortNameAZShort;
+
+  /// No description provided for @sortNameZAShort.
+  ///
+  /// In de, this message translates to:
+  /// **'Name Z-A'**
+  String get sortNameZAShort;
+
+  /// No description provided for @sortSizeDescShort.
+  ///
+  /// In de, this message translates to:
+  /// **'Größe ↓'**
+  String get sortSizeDescShort;
+
+  /// No description provided for @sortSizeAscShort.
+  ///
+  /// In de, this message translates to:
+  /// **'Größe ↑'**
+  String get sortSizeAscShort;
+
+  /// No description provided for @fileTypeAll.
+  ///
+  /// In de, this message translates to:
+  /// **'Alle'**
+  String get fileTypeAll;
+
+  /// No description provided for @fileTypeOther.
+  ///
+  /// In de, this message translates to:
+  /// **'Andere'**
+  String get fileTypeOther;
+
+  /// No description provided for @relinkAudioFile.
+  ///
+  /// In de, this message translates to:
+  /// **'Datei erneut auswählen'**
+  String get relinkAudioFile;
+
+  /// No description provided for @audioFileRelinked.
+  ///
+  /// In de, this message translates to:
+  /// **'Audiodatei neu verknüpft'**
+  String get audioFileRelinked;
+
+  /// No description provided for @errorImportingFile.
+  ///
+  /// In de, this message translates to:
+  /// **'Datei konnte nicht übernommen werden: {error}'**
+  String errorImportingFile(String error);
 }
 
 class _AppLocalizationsDelegate

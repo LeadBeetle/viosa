@@ -965,4 +965,70 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get regenerate => 'Neu generieren';
+
+  @override
+  String get selectAudioFileTitle => 'Audio-Datei auswählen';
+
+  @override
+  String get searchFilesHint => 'Suchen...';
+
+  @override
+  String get loadingAudioFiles => 'Lade Audio-Dateien...';
+
+  @override
+  String get browseAllFiles => 'Andere Datei öffnen';
+
+  @override
+  String get browseAllFilesHint =>
+      'Datei aus einem beliebigen Ordner oder Cloud-Speicher öffnen';
+
+  @override
+  String get importingFile => 'Datei wird übernommen...';
+
+  @override
+  String get unsupportedAudioFormat =>
+      'Dieses Dateiformat wird nicht unterstützt.';
+
+  @override
+  String get storageAccessOptionalHint =>
+      'Ohne Speicherzugriff werden nur Aufnahmen der App angezeigt. Andere Dateien lassen sich weiterhin über \"Andere Datei öffnen\" laden.';
+
+  @override
+  String get scanResultsTruncated =>
+      'Es werden nicht alle Dateien angezeigt. Suche eingrenzen oder \"Andere Datei öffnen\" nutzen.';
+
+  @override
+  String get sortNewestShort => 'Neueste';
+
+  @override
+  String get sortOldestShort => 'Älteste';
+
+  @override
+  String get sortNameAZShort => 'Name A-Z';
+
+  @override
+  String get sortNameZAShort => 'Name Z-A';
+
+  @override
+  String get sortSizeDescShort => 'Größe ↓';
+
+  @override
+  String get sortSizeAscShort => 'Größe ↑';
+
+  @override
+  String get fileTypeAll => 'Alle';
+
+  @override
+  String get fileTypeOther => 'Andere';
+
+  @override
+  String get relinkAudioFile => 'Datei erneut auswählen';
+
+  @override
+  String get audioFileRelinked => 'Audiodatei neu verknüpft';
+
+  @override
+  String errorImportingFile(String error) {
+    return 'Datei konnte nicht übernommen werden: $error';
+  }
 }

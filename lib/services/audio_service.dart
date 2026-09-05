@@ -1,23 +1,9 @@
 import 'dart:io';
 import 'package:just_audio/just_audio.dart';
 
-/// Interface for audio playback operations
-/// Following Interface Segregation Principle (ISP)
-abstract class IAudioService {
-  Future<void> loadAudio(String filePath);
-  Future<void> play();
-  Future<void> pause();
-  Future<void> seek(Duration position);
-  Stream<Duration> get positionStream;
-  Stream<Duration?> get durationStream;
-  Stream<PlayerState> get playerStateStream;
-  Stream<bool> get playingStream;
-  String? get currentFilePath;
-  void dispose();
-}
+import 'i_audio_service.dart';
 
-/// Service for handling audio playback
-/// Single Responsibility Principle (SRP): Only handles audio playback
+/// Audiowiedergabe über just_audio.
 class AudioService implements IAudioService {
   final AudioPlayer _player;
   String? _currentFilePath;

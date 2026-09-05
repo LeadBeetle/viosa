@@ -2,6 +2,9 @@ import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 import 'dart:io';
 
+import 'audio_formats.dart';
+import 'file_size_formatter.dart';
+
 /// Utility class for audio file operations
 /// Following Single Responsibility Principle (SRP)
 class AudioUtils {
@@ -114,79 +117,14 @@ class AudioUtils {
     }
   }
 
-  /// Formats file size in human-readable format
-  static String formatFileSize(int bytes) {
-    if (bytes < 1024) {
-      return '$bytes B';
-    } else if (bytes < 1024 * 1024) {
-      return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    } else if (bytes < 1024 * 1024 * 1024) {
-      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
-    } else {
-      return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
-    }
-  }
+  /// Formatiert eine Dateigröße menschenlesbar
+  static String formatFileSize(int bytes) => FileSizeFormatter.format(bytes);
 
-  /// Validates if a file is a supported audio format
-  static bool isSupportedAudioFormat(String filePath) {
-    final supportedExtensions = [
-      '.mp3',
-      '.wav',
-      '.m4a',
-      '.mp4',
-      '.aac',
-      '.ogg',
-      '.flac',
-      '.opus',
-      '.wma',
-      '.3gp',
-      '.amr',
-      '.webm',
-      '.oga',
-      '.spx',
-      '.mid',
-      '.midi',
-      '.mka',
-      '.ape',
-      '.wv',
-      '.tta',
-      '.ac3',
-      '.dts',
-      '.alac',
-      '.aiff',
-      '.caf',
-      '.pcm',
-    ];
+  /// Prüft, ob eine Datei ein unterstütztes Audioformat besitzt
+  static bool isSupportedAudioFormat(String filePath) =>
+      AudioFormats.isSupportedPath(filePath);
 
-    final extension = filePath.toLowerCase().substring(filePath.lastIndexOf('.'));
-    return supportedExtensions.contains(extension);
-  }
-
-  /// Gets MIME type from file extension
-  static String getMimeType(String filePath) {
-    final extension = filePath.toLowerCase().substring(filePath.lastIndexOf('.'));
-
-    switch (extension) {
-      case '.mp3':
-        return 'audio/mpeg';
-      case '.wav':
-        return 'audio/wav';
-      case '.m4a':
-      case '.mp4':
-        return 'audio/mpeg'; // OpenRouter expects audio/mpeg for M4A
-      case '.aac':
-        return 'audio/aac';
-      case '.ogg':
-      case '.oga':
-        return 'audio/ogg';
-      case '.flac':
-        return 'audio/flac';
-      case '.opus':
-        return 'audio/opus';
-      case '.webm':
-        return 'audio/webm';
-      default:
-        return 'audio/mpeg'; // Default fallback
-    }
-  }
+  /// Liefert den MIME-Typ zu einer Dateiendung
+  static String getMimeType(String filePath) =>
+      AudioFormats.mimeTypeForPath(filePath);
 }

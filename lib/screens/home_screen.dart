@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../models/audio_file.dart';
 import '../models/transcription_history.dart';
 import '../providers/history_provider.dart' show HistoryProvider, SortOption;
 import '../widgets/recording_card.dart';
@@ -9,7 +11,11 @@ import '../widgets/app_bar_title_with_logo.dart';
 import '../services/export/export_service.dart';
 import '../utils/constants.dart';
 import '../services/audio_service.dart';
+import '../services/i_audio_service.dart';
 import '../services/file_service.dart';
+import '../services/i_file_service.dart';
+import '../services/i_shared_audio_service.dart';
+import '../services/shared_audio_service.dart';
 import '../providers/settings_provider.dart';
 import '../l10n/l10n.dart';
 import 'package:just_audio/just_audio.dart';
@@ -25,6 +31,11 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final IFileService _fileService = FileService();
+  final ISharedAudioService _sharedAudioService = SharedAudioService();
+
+  StreamSubscription<String>? _sharedFilesSubscription;
+
   String? _currentlyPlayingId;
   bool _isFabExpanded = false;
 
@@ -70,12 +81,14 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    // Ensure history is loaded
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<HistoryProvider>().initialize();
+      _openInitialSharedFile();
     });
 
-    // Listen for playback completion to reset playing state
+    _sharedFilesSubscription =
+        _sharedAudioService.sharedFiles.listen(_openSharedFile);
+
     _audioService.playerStateStream.listen((state) {
       if (state.processingState == ProcessingState.completed) {
         if (mounted) {
@@ -114,8 +127,17 @@ class _HomeScreenState extends State<HomeScreen> {
       _isFabExpanded = false;
     });
 
-    final fileService = FileService();
-    final selectedFile = await fileService.pickAudioFile(context);
+    final AudioFile? selectedFile;
+    try {
+      selectedFile = await _fileService.pickAudioFile(context);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.errorImportingFile(e.toString()))),
+        );
+      }
+      return;
+    }
 
     if (selectedFile != null && mounted) {
       await _stopPlayback();
@@ -162,8 +184,52 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    _sharedFilesSubscription?.cancel();
+    _sharedAudioService.dispose();
     _audioService.dispose();
     super.dispose();
+  }
+
+  /// Öffnet eine Datei, mit der die App gestartet wurde.
+  Future<void> _openInitialSharedFile() async {
+    final path = await _sharedAudioService.consumeInitialSharedFile();
+    if (path != null && path.isNotEmpty) {
+      await _openSharedFile(path);
+    }
+  }
+
+  /// Übernimmt eine aus einer anderen App geteilte Datei in eine neue Sitzung.
+  Future<void> _openSharedFile(String path) async {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(context.l10n.importingFile)),
+    );
+
+    try {
+      final audioFile = await _fileService.importFile(path);
+      if (!mounted) return;
+
+      await _stopPlayback();
+      if (!mounted) return;
+
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => SessionScreen(initialFile: audioFile),
+        ),
+      );
+
+      if (mounted) {
+        await context.read<HistoryProvider>().refresh();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.errorImportingFile(e.toString()))),
+        );
+      }
+    }
   }
 
   /// Stops list playback so it never overlaps another screen's player
@@ -190,14 +256,19 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
-    // Check if file exists
     final file = File(history.audioPath!);
     final exists = await file.exists();
 
     if (!exists) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.audioFileNotFound)),
+          SnackBar(
+            content: Text(context.l10n.audioFileNotFound),
+            action: SnackBarAction(
+              label: context.l10n.relinkAudioFile,
+              onPressed: () => _openSession(history),
+            ),
+          ),
         );
       }
       return;

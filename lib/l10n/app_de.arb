@@ -1,6 +1,5 @@
 {
   "@@locale": "de",
-
   "settings": "Einstellungen",
   "cancel": "Abbrechen",
   "delete": "Löschen",
@@ -11,14 +10,15 @@
   "start": "Starten",
   "choose": "Wählen",
   "example": "Beispiel",
-
   "noRecordings": "Keine Aufnahmen",
   "noRecordingsSubtitle": "Starten Sie eine neue Aufnahme mit dem + Button",
   "deleteRecording": "Aufnahme löschen",
   "deleteConfirmation": "Möchten Sie \"{name}\" wirklich löschen?",
   "@deleteConfirmation": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "recordingRenamed": "Aufnahme umbenannt",
@@ -31,7 +31,6 @@
   "newName": "Neuer Name",
   "noAudioPath": "Kein Audiopfad verfügbar",
   "audioFileNotFound": "Audiodatei nicht gefunden",
-
   "apiConfiguration": "API-Konfiguration",
   "apiKeyLabel": "OpenRouter API-Key",
   "apiKeyHint": "sk-or-v1-...",
@@ -40,12 +39,10 @@
   "hideApiKey": "API-Key verbergen",
   "pleaseEnterApiKey": "Bitte geben Sie einen API-Key ein",
   "configureApiKey": "Bitte API-Key konfigurieren",
-
   "modelsSectionTitle": "Modelle",
   "speechToTextModelLabel": "Spracherkennung",
   "languageModelLabel": "Sprachmodell",
   "aiModel": "KI-Modell",
-
   "audioTranscription": "Audio & Transkription",
   "storageLocation": "Speicherort für Aufnahmen",
   "defaultStorageLocation": "Standard-Speicherort",
@@ -56,44 +53,45 @@
   "transcriptionLanguageEnglish": "Englisch",
   "speakerDiarization": "Sprechererkennung",
   "speakerDiarizationDescription": "Identifiziert verschiedene Sprecher in der Aufnahme",
-
   "uiLanguage": "App-Sprache",
   "uiLanguageDescription": "Wählen Sie die Sprache der Benutzeroberfläche",
   "languageGerman": "Deutsch",
   "languageEnglish": "Englisch",
-
   "appearance": "Darstellung",
   "theme": "Theme",
   "themeSystem": "System",
   "themeLight": "Hell",
   "themeDark": "Dunkel",
   "themeDescription": "Wählen Sie das Farbschema der App",
-
   "promptsManage": "Prompts verwalten",
   "promptsDescription": "Erstellen und bearbeiten Sie Ihre KI-Prompts",
-
   "aboutViosa": "Über VIOSA",
   "aboutDescription": "VIOSA (Voice Intelligent Output and Speech Analyzer) nutzt die OpenRouter API für Audio-Transkription mit modernsten KI-Modellen.",
   "apiKeySecurityNote": "Ihr API-Key wird sicher auf Ihrem Gerät gespeichert und niemals an Dritte weitergegeben.",
   "version": "Version {version}",
   "@version": {
     "placeholders": {
-      "version": {"type": "String"}
+      "version": {
+        "type": "String"
+      }
     }
   },
-
   "prompts": "Prompts",
   "customPrompts": "Eigene",
   "customPromptsCount": "Eigene ({count})",
   "@customPromptsCount": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "standardPromptsCount": "Standard ({count})",
   "@standardPromptsCount": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "noCustomPrompts": "Noch keine eigenen Prompts",
@@ -119,40 +117,44 @@
   "transcriptionPlaceholderFound": "''{transcription}'' gefunden",
   "transcriptionPlacementHintAdvanced": "Verwenden Sie ''{transcription}'', wo der Text eingefügt werden soll",
   "transcriptionPlacementHintSimple": "Die Transkription wird automatisch an Ihren Prompt angehängt",
-
   "sessionDiscardTitle": "Aktuelle Session verwerfen?",
   "sessionDiscardMessage": "Sie haben bereits eine Audiodatei ausgewählt oder transkribiert. Möchten Sie diese Session verwerfen und eine neue starten?",
   "startNewSession": "Neue Session starten",
-
   "longAudioDetected": "Lange Audiodatei erkannt",
   "startTranscription": "Transkription starten",
   "warningExistingData": "Achtung: Bestehende Transkription und Prompt-Ergebnisse werden gelöscht.",
   "longAudioDescription": "Diese Audiodatei ist {duration} lang und wird in {splitCount} Segmente aufgeteilt (je ~10 Minuten).\n\nDie Transkription läuft im Hintergrund und kann einige Minuten dauern.",
   "@longAudioDescription": {
     "placeholders": {
-      "duration": {"type": "String"},
-      "splitCount": {"type": "int"}
+      "duration": {
+        "type": "String"
+      },
+      "splitCount": {
+        "type": "int"
+      }
     }
   },
   "shortAudioDescription": "Diese Audiodatei ist {duration} lang.",
   "@shortAudioDescription": {
     "placeholders": {
-      "duration": {"type": "String"}
+      "duration": {
+        "type": "String"
+      }
     }
   },
   "modelLabel": "Modell: {modelName}",
   "@modelLabel": {
     "placeholders": {
-      "modelName": {"type": "String"}
+      "modelName": {
+        "type": "String"
+      }
     }
   },
-
   "newRecording": "Neue Aufnahme",
   "splittingAudio": "Audio wird aufgeteilt...",
   "preparingAudio": "Audio wird vorbereitet...",
   "transcriptionFailed": "Transkription fehlgeschlagen",
   "startChat": "Chat starten",
-
   "chat": "Chat",
   "clearChat": "Chat löschen",
   "clearChatConfirmTitle": "Chat löschen?",
@@ -161,74 +163,90 @@
   "startChatDescription": "Stellen Sie Fragen zum Transkript oder nutzen Sie @Transkript um darauf zu verweisen.",
   "apiKeyNotConfigured": "API-Schlüssel nicht konfiguriert",
   "recordingNotFound": "Aufnahme nicht gefunden",
-
   "errorPlaying": "Fehler beim Abspielen: {error}",
   "@errorPlaying": {
     "placeholders": {
-      "error": {"type": "String"}
+      "error": {
+        "type": "String"
+      }
     }
   },
   "errorRenaming": "Fehler beim Umbenennen: {error}",
   "@errorRenaming": {
     "placeholders": {
-      "error": {"type": "String"}
+      "error": {
+        "type": "String"
+      }
     }
   },
   "errorDeleting": "Fehler beim Löschen: {error}",
   "@errorDeleting": {
     "placeholders": {
-      "error": {"type": "String"}
+      "error": {
+        "type": "String"
+      }
     }
   },
   "errorSavingLanguage": "Fehler beim Speichern der Sprache: {error}",
   "@errorSavingLanguage": {
     "placeholders": {
-      "error": {"type": "String"}
+      "error": {
+        "type": "String"
+      }
     }
   },
   "errorSavingTheme": "Fehler beim Speichern des Themes: {error}",
   "@errorSavingTheme": {
     "placeholders": {
-      "error": {"type": "String"}
+      "error": {
+        "type": "String"
+      }
     }
   },
   "errorSavingPrompt": "Fehler beim Speichern des Prompts: {error}",
   "@errorSavingPrompt": {
     "placeholders": {
-      "error": {"type": "String"}
+      "error": {
+        "type": "String"
+      }
     }
   },
   "errorDeletingPrompt": "Fehler beim Löschen des Prompts: {error}",
   "@errorDeletingPrompt": {
     "placeholders": {
-      "error": {"type": "String"}
+      "error": {
+        "type": "String"
+      }
     }
   },
   "errorSelectingFolder": "Fehler beim Auswählen des Ordners: {error}",
   "@errorSelectingFolder": {
     "placeholders": {
-      "error": {"type": "String"}
+      "error": {
+        "type": "String"
+      }
     }
   },
   "errorOpeningUrl": "URL konnte nicht geöffnet werden: {url}",
   "@errorOpeningUrl": {
     "placeholders": {
-      "url": {"type": "String"}
+      "url": {
+        "type": "String"
+      }
     }
   },
   "errorGeneric": "Fehler: {error}",
   "@errorGeneric": {
     "placeholders": {
-      "error": {"type": "String"}
+      "error": {
+        "type": "String"
+      }
     }
   },
-
   "storagePermissionRequired": "Speicherberechtigung erforderlich. Bitte erlauben Sie den Zugriff in den App-Einstellungen.",
   "storageSavedSuccess": "Speicherort erfolgreich gespeichert",
-
   "examplePromptAdvanced": "Fasse den folgenden Text zusammen:\n\n''{transcription}''\n\nAchte dabei auf die Hauptpunkte.",
   "examplePromptSimple": "Fasse den Text zusammen und liste die wichtigsten Punkte auf.",
-
   "transcriptionSuccess": "Erfolgreich!",
   "transcribing": "Wird transkribiert...",
   "transcribe": "Transkribieren",
@@ -237,19 +255,25 @@
   "languageLabel": "Sprache: {language}",
   "@languageLabel": {
     "placeholders": {
-      "language": {"type": "String"}
+      "language": {
+        "type": "String"
+      }
     }
   },
   "wordCount": "{count} Wörter",
   "@wordCount": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "characterCount": "{count} Zeichen",
   "@characterCount": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "speakers": "Sprecher: ",
@@ -257,99 +281,97 @@
   "generating": "Wird generiert...",
   "applyAnotherPrompt": "Weiteres Prompt anwenden",
   "applyPrompt": "Prompt anwenden",
-
   "messageCount": "{count} {count, plural, =1{Nachricht} other{Nachrichten}}",
   "@messageCount": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "transcribed": "Transkribiert",
   "oldRecordingNoAudio": "Alte Aufnahme ohne Audiodatei",
   "oldRecordingAudioUnavailable": "Alte Aufnahme: Audiodatei nicht mehr verfügbar",
-
-
   "timeAgoSeconds": "vor {count} Sek.",
   "@timeAgoSeconds": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "timeAgoMinutes": "vor {count} Min.",
   "@timeAgoMinutes": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "timeAgoHours": "vor {count} Std.",
   "@timeAgoHours": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "timeAgoDays": "vor {count} {count, plural, =1{Tag} other{Tagen}}",
   "@timeAgoDays": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "timeAgoYears": "vor {count} {count, plural, =1{Jahr} other{Jahren}}",
   "@timeAgoYears": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
-
   "menuRename": "Umbenennen",
   "menuExport": "Exportieren",
   "promptCount": "{count} Prompt{count, plural, =1{} other{s}}",
   "@promptCount": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
-
   "paused": "Pausiert",
   "resume": "Fortsetzen",
   "pause": "Pause",
   "done": "Fertig",
   "no": "Nein",
-
   "storagePermissionRequiredTitle": "Speicherberechtigung erforderlich",
   "storagePermissionRequiredContent": "Um Aufnahmen in Ihrem ausgewählten Ordner zu speichern, benötigt VIOSA Zugriff auf den Speicher.\n\nBitte erlauben Sie den Zugriff.",
   "grantPermission": "Berechtigung erteilen",
   "permissionDeniedTitle": "Berechtigung verweigert",
   "permissionDeniedContent": "Um in Ihrem gewählten Ordner zu speichern, muss die Speicherberechtigung aktiviert werden.\n\nMöchten Sie die Einstellungen öffnen?",
   "openSettings": "Einstellungen öffnen",
-
   "recordingInProgress": "Aufnahme läuft",
   "readyToRecord": "Bereit zur Aufnahme",
   "savingRecording": "Aufnahme wird gespeichert...",
-
   "predefinedPromptQuestionsName": "Fragen generieren",
   "predefinedPromptQuestionsTemplate": "Generiere 5-7 Verständnisfragen zum folgenden Text. Die Fragen sollen:\n- Verschiedene Schwierigkeitsgrade abdecken (einfach bis anspruchsvoll)\n- Sowohl Fakten als auch Zusammenhänge abfragen\n- Klar und präzise formuliert sein\n\nText:\n[[transcription]]",
-
   "predefinedPromptActionItemsName": "Action Items",
   "predefinedPromptActionItemsTemplate": "Extrahiere alle Aufgaben und To-Dos aus dem folgenden Text.\n\nFormatiere die Ausgabe als strukturierte Liste:\n- Gruppiere nach Thema oder Verantwortlichkeit (falls erkennbar)\n- Markiere Deadlines oder Fristen (falls erwähnt)\n- Priorisiere nach Dringlichkeit (falls ableitbar)\n\nFalls keine konkreten Aufgaben erkennbar sind, gib dies an.\n\nText:\n[[transcription]]",
-
   "predefinedPromptSummaryName": "Zusammenfassen",
   "predefinedPromptSummaryTemplate": "Erstelle eine ausführliche und detaillierte Zusammenfassung des folgenden Textes.\n\nDie Zusammenfassung soll:\n- Strukturiert in thematische Abschnitte gegliedert sein\n- Alle wesentlichen Inhalte, Argumente und Erkenntnisse erfassen\n- Den Kontext, Zweck und die Schlussfolgerungen des Gesprächs/Textes verdeutlichen\n- Wichtige Details und Nuancen beibehalten\n\nVerwende Überschriften und Absätze für bessere Lesbarkeit.\n\nText:\n[[transcription]]",
-
   "predefinedPromptKeyPointsName": "Wichtige Punkte",
   "predefinedPromptKeyPointsTemplate": "Liste die wichtigsten Punkte aus dem folgenden Text auf.\n\nFür jeden Punkt:\n- Formuliere eine klare Hauptaussage\n- Ergänze relevante Details, Begründungen oder Kontext\n- Erkläre die Bedeutung oder Implikation des Punktes\n\nAchte auf:\n- Maximal 5-10 Punkte\n- Priorisierung nach Relevanz\n\nText:\n[[transcription]]",
-
   "predefinedPromptDecisionsName": "Entscheidungen",
   "predefinedPromptDecisionsTemplate": "Extrahiere alle Entscheidungen aus dem folgenden Text.\n\nFür jede Entscheidung:\n- Was wurde entschieden?\n- Warum wurde so entschieden? (Begründung/Argumente)\n- Wer ist verantwortlich? (falls erkennbar)\n- Bis wann? (falls erwähnt)\n\nFalls keine klaren Entscheidungen getroffen wurden, liste die offenen Diskussionspunkte und ausstehenden Klärungen auf.\n\nText:\n[[transcription]]",
-
   "predefinedPromptProContraName": "Pro & Contra",
   "predefinedPromptProContraTemplate": "Analysiere den folgenden Text und erstelle eine Pro & Contra Analyse.\n\nStruktur:\n- Thema oder Fragestellung identifizieren\n- Pro-Argumente mit Begründungen auflisten\n- Contra-Argumente mit Begründungen auflisten\n- Fazit oder Tendenz zusammenfassen (falls aus dem Gespräch erkennbar)\n\nText:\n[[transcription]]",
-
   "predefinedPromptReportName": "Bericht erstellen",
   "predefinedPromptReportTemplate": "Erstelle einen formellen Bericht basierend auf dem folgenden Text.\n\nStruktur:\n- Titel und Datum/Anlass (falls erkennbar)\n- Einleitung: Kontext und Zweck\n- Hauptteil: Besprochene Themen mit Kernaussagen und Details\n- Ergebnisse: Getroffene Entscheidungen und Vereinbarungen\n- Ausblick: Nächste Schritte und offene Punkte\n\nVerwende einen sachlichen, professionellen Stil.\n\nText:\n[[transcription]]",
-
   "predefinedPromptControversyName": "Kontroversen vertiefen",
   "predefinedPromptControversyTemplate": "Identifiziere kontroverse oder strittige Punkte aus dem folgenden Text und analysiere diese tiefgehend.\n\nFür jeden kontroversen Punkt:\n- Beschreibe den Streitpunkt und die verschiedenen Standpunkte\n- Analysiere die vorgebrachten Argumente jeder Seite\n- Ergänze wichtige Aspekte, die in der Diskussion zu kurz kamen oder fehlten\n- Liefere zusätzliche Fakten, Perspektiven oder Gegenargumente zur Vertiefung\n- Gib eine ausgewogene Einschätzung\n\nZiel ist es, eine fundierte Grundlage für die weitere Meinungsbildung zu schaffen.\n\nText:\n[[transcription]]",
-
   "selectPrompt": "Prompt auswählen",
   "apply": "Anwenden",
   "noPromptsAvailable": "Keine Prompts verfügbar. Erstellen Sie einen im Prompts-Bereich.",
@@ -357,7 +379,9 @@
   "errorLoadingPrompts": "Fehler beim Laden der Prompts: {error}",
   "@errorLoadingPrompts": {
     "placeholders": {
-      "error": {"type": "String"}
+      "error": {
+        "type": "String"
+      }
     }
   },
   "noPredefinedPromptsAvailable": "Keine vordefinierten Prompts verfügbar.",
@@ -365,70 +389,83 @@
   "generatingResponse": "Antwort wird generiert...",
   "applying": "Wende an...",
   "cancelled": "Abgebrochen",
-
   "promptResultsCount": "Prompt-Ergebnisse ({count})",
   "@promptResultsCount": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "deletePromptResult": "Prompt-Ergebnis löschen?",
   "deletePromptResultConfirmation": "Möchten Sie das Ergebnis \"{name}\" wirklich löschen?",
   "@deletePromptResultConfirmation": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "promptResultDeleted": "{name} gelöscht",
   "@promptResultDeleted": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "undo": "Rückgängig",
   "promptLabel": "Prompt: {name}",
   "@promptLabel": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "modelUsedLabel": "Modell: {model}",
   "@modelUsedLabel": {
     "placeholders": {
-      "model": {"type": "String"}
+      "model": {
+        "type": "String"
+      }
     }
   },
   "wordsLabel": "{count} Wörter",
   "@wordsLabel": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "charactersLabel": "{count} Zeichen",
   "@charactersLabel": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
-
   "showMore": "Mehr anzeigen",
   "showLess": "Weniger anzeigen",
   "copy": "Kopieren",
   "collapse": "Einklappen",
-
   "audioFileNotFoundWarning": "Die Audiodatei wurde nicht gefunden. Sie können die vorhandenen Ergebnisse ansehen, aber keine neue Transkription starten.",
   "noResultsAvailable": "Keine Ergebnisse verfügbar",
-
   "chatContext": "Chat-Kontext",
   "chatContextDescription": "Wählen Sie, welche Inhalte der KI zur Verfügung stehen sollen.",
   "chatContextEnabledCount": "{count} von {total} aktiv",
   "@chatContextEnabledCount": {
     "placeholders": {
-      "count": {"type": "int"},
-      "total": {"type": "int"}
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
-
   "sort": "Sortieren",
   "sortDateNewest": "Datum (neueste zuerst)",
   "sortDateOldest": "Datum (älteste zuerst)",
@@ -446,7 +483,9 @@
   "discardRecordingContent": "Die Aufnahme ({duration}) wird gelöscht und kann nicht wiederhergestellt werden.",
   "@discardRecordingContent": {
     "placeholders": {
-      "duration": {"type": "String"}
+      "duration": {
+        "type": "String"
+      }
     }
   },
   "discard": "Verwerfen",
@@ -457,32 +496,42 @@
   "errorStartingRecording": "Aufnahme konnte nicht gestartet werden: {error}",
   "@errorStartingRecording": {
     "placeholders": {
-      "error": {"type": "String"}
+      "error": {
+        "type": "String"
+      }
     }
   },
   "errorStoppingRecording": "Aufnahme konnte nicht beendet werden: {error}",
   "@errorStoppingRecording": {
     "placeholders": {
-      "error": {"type": "String"}
+      "error": {
+        "type": "String"
+      }
     }
   },
   "errorSavingRecording": "Aufnahme konnte nicht gespeichert werden",
   "errorPausingRecording": "Aufnahme konnte nicht pausiert werden: {error}",
   "@errorPausingRecording": {
     "placeholders": {
-      "error": {"type": "String"}
+      "error": {
+        "type": "String"
+      }
     }
   },
   "errorResumingRecording": "Aufnahme konnte nicht fortgesetzt werden: {error}",
   "@errorResumingRecording": {
     "placeholders": {
-      "error": {"type": "String"}
+      "error": {
+        "type": "String"
+      }
     }
   },
   "errorCancellingRecording": "Aufnahme konnte nicht verworfen werden: {error}",
   "@errorCancellingRecording": {
     "placeholders": {
-      "error": {"type": "String"}
+      "error": {
+        "type": "String"
+      }
     }
   },
   "storagePermissionDeniedDefaultFolder": "Speicherberechtigung verweigert. Die Aufnahme wird im Standard-Ordner gespeichert.",
@@ -500,7 +549,9 @@
   "errorLoadingFiles": "Dateien konnten nicht geladen werden: {error}",
   "@errorLoadingFiles": {
     "placeholders": {
-      "error": {"type": "String"}
+      "error": {
+        "type": "String"
+      }
     }
   },
   "processing": "Wird verarbeitet",
@@ -509,10 +560,11 @@
   "errorRetrying": "Erneuter Versuch fehlgeschlagen: {error}",
   "@errorRetrying": {
     "placeholders": {
-      "error": {"type": "String"}
+      "error": {
+        "type": "String"
+      }
     }
   },
-  "transcribed": "Transkribiert",
   "errorAuth": "API-Schlüssel ungültig. Bitte in den Einstellungen prüfen.",
   "errorRateLimit": "Zu viele Anfragen. Bitte kurz warten und erneut versuchen.",
   "errorNetwork": "Keine Verbindung. Bitte Internetverbindung prüfen.",
@@ -525,5 +577,32 @@
   "tapToStop": "Tippen zum Stoppen",
   "tapToSpeak": "Tippen zum Sprechen",
   "copiedToClipboard": "In Zwischenablage kopiert",
-  "regenerate": "Neu generieren"
+  "regenerate": "Neu generieren",
+  "selectAudioFileTitle": "Audio-Datei auswählen",
+  "searchFilesHint": "Suchen...",
+  "loadingAudioFiles": "Lade Audio-Dateien...",
+  "browseAllFiles": "Andere Datei öffnen",
+  "browseAllFilesHint": "Datei aus einem beliebigen Ordner oder Cloud-Speicher öffnen",
+  "importingFile": "Datei wird übernommen...",
+  "unsupportedAudioFormat": "Dieses Dateiformat wird nicht unterstützt.",
+  "storageAccessOptionalHint": "Ohne Speicherzugriff werden nur Aufnahmen der App angezeigt. Andere Dateien lassen sich weiterhin über \"Andere Datei öffnen\" laden.",
+  "scanResultsTruncated": "Es werden nicht alle Dateien angezeigt. Suche eingrenzen oder \"Andere Datei öffnen\" nutzen.",
+  "sortNewestShort": "Neueste",
+  "sortOldestShort": "Älteste",
+  "sortNameAZShort": "Name A-Z",
+  "sortNameZAShort": "Name Z-A",
+  "sortSizeDescShort": "Größe ↓",
+  "sortSizeAscShort": "Größe ↑",
+  "fileTypeAll": "Alle",
+  "fileTypeOther": "Andere",
+  "relinkAudioFile": "Datei erneut auswählen",
+  "audioFileRelinked": "Audiodatei neu verknüpft",
+  "errorImportingFile": "Datei konnte nicht übernommen werden: {error}",
+  "@errorImportingFile": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  }
 }

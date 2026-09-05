@@ -1,153 +1,128 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
+
 import '../models/audio_file.dart';
 import '../models/audio_file_info.dart';
+import '../utils/audio_formats.dart';
+import '../utils/path_utils.dart';
 import '../widgets/custom_audio_file_picker.dart';
+import 'i_file_service.dart';
+import 'settings_service.dart';
 
-/// Interface for file operations
-/// Following Interface Segregation Principle (ISP)
-abstract class IFileService {
-  Future<AudioFile?> pickAudioFile(BuildContext context);
-  Future<AudioFile?> reloadAudioFile(AudioFile audioFile);
-  Future<AudioFile> renameAudioFile(AudioFile audioFile, String newName);
+/// Fehler beim Übernehmen oder Laden einer Audiodatei.
+class AudioFileException implements Exception {
+  final String message;
+
+  const AudioFileException(this.message);
+
+  @override
+  String toString() => message;
 }
 
-/// Service for handling file operations
-/// Single Responsibility Principle (SRP): Only handles file picking
+/// Dateioperationen für Audiodateien.
 class FileService implements IFileService {
+  static const String _importDirectoryName = 'imports';
+
+  final ISettingsService _settingsService;
+
+  FileService({ISettingsService? settingsService})
+      : _settingsService = settingsService ?? SettingsService();
 
   @override
   Future<AudioFile?> pickAudioFile(BuildContext context) async {
-    try {
-      // Show custom audio file picker
-      final AudioFileInfo? selectedFileInfo = await Navigator.of(context).push<AudioFileInfo>(
-        MaterialPageRoute(
-          builder: (context) => const CustomAudioFilePicker(),
-          fullscreenDialog: true,
-        ),
-      );
+    final AudioFileInfo? selectedFileInfo =
+        await Navigator.of(context).push<AudioFileInfo>(
+      MaterialPageRoute(
+        builder: (context) => const CustomAudioFilePicker(),
+        fullscreenDialog: true,
+      ),
+    );
 
-      if (selectedFileInfo == null) {
-        return null;
-      }
-
-      // Convert AudioFileInfo to AudioFile
-      final file = File(selectedFileInfo.path);
-
-      // Validate file exists
-      if (!await file.exists()) {
-        throw Exception('Datei existiert nicht');
-      }
-
-      final fileSize = await file.length();
-      final mimeType = _getMimeType(selectedFileInfo.extension);
-
-      return AudioFile(
-        path: file.path,
-        name: selectedFileInfo.name,
-        base64Data: null, // Lazy-loaded when needed for transcription
-        mimeType: mimeType,
-        size: fileSize,
-      );
-    } catch (e) {
-      rethrow;
+    if (selectedFileInfo == null) {
+      return null;
     }
+
+    return importFile(selectedFileInfo.path, displayName: selectedFileInfo.name);
   }
 
-  /// Reloads an audio file from disk to validate it still exists
-  /// Base64Data is no longer pre-loaded to save memory
   @override
-  Future<AudioFile?> reloadAudioFile(AudioFile audioFile) async {
-    try {
-      final file = File(audioFile.path);
-
-      // Validate file exists
-      if (!await file.exists()) {
-        throw Exception('Datei existiert nicht: ${audioFile.path}');
-      }
-
-      // Just verify and return same AudioFile (no need to reload)
-      return audioFile;
-    } catch (e) {
-      rethrow;
+  Future<AudioFile> importFile(String sourcePath, {String? displayName}) async {
+    final source = File(sourcePath);
+    if (!await source.exists()) {
+      throw const AudioFileException('Datei existiert nicht');
     }
-  }
 
-  /// Renames an audio file on disk and returns updated AudioFile
-  @override
-  Future<AudioFile> renameAudioFile(AudioFile audioFile, String newName) async {
-    // Rename the actual file on disk
-    final oldFile = File(audioFile.path);
-    final directory = oldFile.parent.path;
-    final newPath = '$directory/$newName.m4a';
-    await oldFile.rename(newPath);
+    final name = displayName ?? PathUtils.fileNameOf(sourcePath);
+    final file = await _keepInAppStorage(source, name);
 
-    // Create updated AudioFile with new name and path
     return AudioFile(
-      path: newPath,
-      name: '$newName.m4a',
-      base64Data: null, // Lazy-loaded when needed
-      mimeType: audioFile.mimeType,
-      size: audioFile.size,
+      path: file.path,
+      name: PathUtils.fileNameOf(file.path),
+      base64Data: null,
+      mimeType: AudioFormats.mimeTypeForPath(file.path),
+      size: await file.length(),
     );
   }
 
-  String _getMimeType(String extension) {
-    switch (extension.toLowerCase()) {
-      case 'mp3':
-        return 'audio/mpeg';
-      case 'wav':
-        return 'audio/wav';
-      case 'mp4':
-      case 'm4a':
-        return 'audio/mp4';
-      case 'aac':
-        return 'audio/aac';
-      case 'ogg':
-      case 'oga':
-        return 'audio/ogg';
-      case 'flac':
-        return 'audio/flac';
-      case 'opus':
-        return 'audio/opus';
-      case 'wma':
-        return 'audio/x-ms-wma';
-      case '3gp':
-        return 'audio/3gpp';
-      case 'amr':
-        return 'audio/amr';
-      case 'webm':
-        return 'audio/webm';
-      case 'spx':
-        return 'audio/speex';
-      case 'mid':
-      case 'midi':
-        return 'audio/midi';
-      case 'mka':
-        return 'audio/x-matroska';
-      case 'ape':
-        return 'audio/ape';
-      case 'wv':
-        return 'audio/wavpack';
-      case 'tta':
-        return 'audio/x-tta';
-      case 'ac3':
-        return 'audio/ac3';
-      case 'dts':
-        return 'audio/vnd.dts';
-      case 'alac':
-        return 'audio/alac';
-      case 'aiff':
-      case 'aif':
-      case 'aifc':
-        return 'audio/aiff';
-      case 'caf':
-        return 'audio/x-caf';
-      case 'pcm':
-      case 'raw':
-        return 'audio/pcm';
-      default:
-        return 'audio/mpeg';
+  @override
+  Future<AudioFile?> reloadAudioFile(AudioFile audioFile) async {
+    final file = File(audioFile.path);
+    if (!await file.exists()) {
+      throw AudioFileException('Datei existiert nicht: ${audioFile.path}');
     }
+    return audioFile;
+  }
+
+  Future<File> _keepInAppStorage(File source, String displayName) async {
+    if (await _isInStableLocation(source.path)) {
+      return source;
+    }
+
+    final targetDirectory = Directory(
+      '${(await getApplicationDocumentsDirectory()).path}/$_importDirectoryName',
+    );
+    if (!await targetDirectory.exists()) {
+      await targetDirectory.create(recursive: true);
+    }
+
+    final target = _uniqueTarget(targetDirectory, displayName);
+    return source.copy(target.path);
+  }
+
+  Future<bool> _isInStableLocation(String path) async {
+    final normalizedPath = PathUtils.normalize(path);
+
+    final appDocumentsPath =
+        PathUtils.normalize((await getApplicationDocumentsDirectory()).path);
+    if (normalizedPath.startsWith('$appDocumentsPath/')) {
+      return true;
+    }
+
+    final customPath = await _settingsService.getAudioSavePath();
+    if (customPath != null && customPath.isNotEmpty) {
+      final normalizedCustomPath = PathUtils.normalize(customPath);
+      if (normalizedPath.startsWith('$normalizedCustomPath/')) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  File _uniqueTarget(Directory directory, String displayName) {
+    final sanitized = PathUtils.sanitizeFileName(displayName);
+    final dotIndex = sanitized.lastIndexOf('.');
+    final baseName = dotIndex > 0 ? sanitized.substring(0, dotIndex) : sanitized;
+    final extension = dotIndex > 0 ? sanitized.substring(dotIndex) : '';
+
+    File candidate = File('${directory.path}/$sanitized');
+    int counter = 1;
+    while (candidate.existsSync()) {
+      candidate = File('${directory.path}/$baseName ($counter)$extension');
+      counter++;
+    }
+    return candidate;
   }
 }

@@ -1,5 +1,8 @@
 import 'package:hive/hive.dart';
 
+import '../utils/audio_formats.dart';
+import '../utils/file_size_formatter.dart';
+
 part 'audio_file.g.dart';
 
 /// Data model representing an audio file
@@ -29,28 +32,11 @@ class AudioFile {
     required this.size,
   });
 
-  /// Returns file size in megabytes formatted to 2 decimal places
-  String get sizeInMB => (size / (1024 * 1024)).toStringAsFixed(2);
+  /// Menschenlesbare Dateigröße
+  String get formattedSize => FileSizeFormatter.format(size);
 
-  /// Returns file size in kilobytes formatted to 2 decimal places
-  String get sizeInKB => (size / 1024).toStringAsFixed(2);
-
-  /// Returns human-readable file size
-  String get formattedSize {
-    if (size < 1024) {
-      return '$size B';
-    } else if (size < 1024 * 1024) {
-      return '$sizeInKB KB';
-    } else {
-      return '$sizeInMB MB';
-    }
-  }
-
-  /// Returns file extension from the name
-  String get extension {
-    final parts = name.split('.');
-    return parts.length > 1 ? parts.last : '';
-  }
+  /// Dateiendung ohne führenden Punkt
+  String get extension => AudioFormats.extensionOf(name);
 
   /// Converts the audio file to a JSON map
   /// Note: base64Data is excluded from JSON to prevent Out of Memory errors
@@ -59,7 +45,6 @@ class AudioFile {
     return {
       'path': path,
       'name': name,
-      // 'base64Data': base64Data,  // Excluded to prevent OOM
       'mimeType': mimeType,
       'size': size,
     };
@@ -71,7 +56,7 @@ class AudioFile {
     return AudioFile(
       path: json['path'] as String,
       name: json['name'] as String,
-      base64Data: json['base64Data'] as String?,  // Null if not present
+      base64Data: json['base64Data'] as String?,
       mimeType: json['mimeType'] as String,
       size: json['size'] as int,
     );

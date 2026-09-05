@@ -956,4 +956,69 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get regenerate => 'Regenerate';
+
+  @override
+  String get selectAudioFileTitle => 'Select audio file';
+
+  @override
+  String get searchFilesHint => 'Search...';
+
+  @override
+  String get loadingAudioFiles => 'Loading audio files...';
+
+  @override
+  String get browseAllFiles => 'Open another file';
+
+  @override
+  String get browseAllFilesHint =>
+      'Open a file from any folder or cloud storage';
+
+  @override
+  String get importingFile => 'Importing file...';
+
+  @override
+  String get unsupportedAudioFormat => 'This file format is not supported.';
+
+  @override
+  String get storageAccessOptionalHint =>
+      'Without storage access only the app\'s own recordings are listed. Other files can still be opened via \"Open another file\".';
+
+  @override
+  String get scanResultsTruncated =>
+      'Not all files are shown. Narrow the search or use \"Open another file\".';
+
+  @override
+  String get sortNewestShort => 'Newest';
+
+  @override
+  String get sortOldestShort => 'Oldest';
+
+  @override
+  String get sortNameAZShort => 'Name A-Z';
+
+  @override
+  String get sortNameZAShort => 'Name Z-A';
+
+  @override
+  String get sortSizeDescShort => 'Size ↓';
+
+  @override
+  String get sortSizeAscShort => 'Size ↑';
+
+  @override
+  String get fileTypeAll => 'All';
+
+  @override
+  String get fileTypeOther => 'Other';
+
+  @override
+  String get relinkAudioFile => 'Select file again';
+
+  @override
+  String get audioFileRelinked => 'Audio file relinked';
+
+  @override
+  String errorImportingFile(String error) {
+    return 'Could not import file: $error';
+  }
 }
