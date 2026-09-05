@@ -922,6 +922,20 @@ class AppLocalizationsDe extends AppLocalizations {
       'Etwas ist schiefgelaufen. Bitte erneut versuchen.';
 
   @override
+  String get errorApiKeyMissing =>
+      'Kein API-Schlüssel hinterlegt. Bitte in den Einstellungen eintragen.';
+
+  @override
+  String errorUnknownWithDetails(String details) {
+    return 'Etwas ist schiefgelaufen: $details';
+  }
+
+  @override
+  String errorServiceWithDetails(String details) {
+    return 'Transkription fehlgeschlagen: $details';
+  }
+
+  @override
   String get errorAudioFileMissing =>
       'Die Audiodatei ist nicht mehr vorhanden. Bitte die Datei erneut verknüpfen.';
 

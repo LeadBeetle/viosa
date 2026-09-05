@@ -554,6 +554,23 @@
   "errorTimeout": "Zeitüberschreitung. Bitte erneut versuchen.",
   "errorServer": "Der Dienst ist gerade nicht erreichbar. Bitte später erneut versuchen.",
   "errorUnknown": "Etwas ist schiefgelaufen. Bitte erneut versuchen.",
+  "errorApiKeyMissing": "Kein API-Schlüssel hinterlegt. Bitte in den Einstellungen eintragen.",
+  "errorUnknownWithDetails": "Etwas ist schiefgelaufen: {details}",
+  "@errorUnknownWithDetails": {
+    "placeholders": {
+      "details": {
+        "type": "String"
+      }
+    }
+  },
+  "errorServiceWithDetails": "Transkription fehlgeschlagen: {details}",
+  "@errorServiceWithDetails": {
+    "placeholders": {
+      "details": {
+        "type": "String"
+      }
+    }
+  },
   "errorAudioFileMissing": "Die Audiodatei ist nicht mehr vorhanden. Bitte die Datei erneut verknüpfen.",
   "speechUnavailable": "Spracherkennung nicht verfügbar",
   "speechInitError": "Spracherkennung konnte nicht gestartet werden",

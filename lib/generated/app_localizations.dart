@@ -1598,6 +1598,24 @@ abstract class AppLocalizations {
   /// **'Etwas ist schiefgelaufen. Bitte erneut versuchen.'**
   String get errorUnknown;
 
+  /// No description provided for @errorApiKeyMissing.
+  ///
+  /// In de, this message translates to:
+  /// **'Kein API-Schlüssel hinterlegt. Bitte in den Einstellungen eintragen.'**
+  String get errorApiKeyMissing;
+
+  /// No description provided for @errorUnknownWithDetails.
+  ///
+  /// In de, this message translates to:
+  /// **'Etwas ist schiefgelaufen: {details}'**
+  String errorUnknownWithDetails(String details);
+
+  /// No description provided for @errorServiceWithDetails.
+  ///
+  /// In de, this message translates to:
+  /// **'Transkription fehlgeschlagen: {details}'**
+  String errorServiceWithDetails(String details);
+
   /// No description provided for @errorAudioFileMissing.
   ///
   /// In de, this message translates to:

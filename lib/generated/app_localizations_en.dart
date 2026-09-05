@@ -913,6 +913,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorUnknown => 'Something went wrong. Please try again.';
 
   @override
+  String get errorApiKeyMissing =>
+      'No API key stored. Please add one in the settings.';
+
+  @override
+  String errorUnknownWithDetails(String details) {
+    return 'Something went wrong: $details';
+  }
+
+  @override
+  String errorServiceWithDetails(String details) {
+    return 'Transcription failed: $details';
+  }
+
+  @override
   String get errorAudioFileMissing =>
       'The audio file is gone. Please link the file again.';
 
