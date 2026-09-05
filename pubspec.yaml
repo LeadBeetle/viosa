@@ -36,26 +36,26 @@ dependencies:
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.8
+  cupertino_icons: ^1.0.9
 
   # Audio
-  just_audio: ^0.10.5
-  record: ^6.1.2  # Audio recording
-  ffmpeg_kit_flutter_new: 4.1.0  # Audio splitting and processing
-  audio_session: ^0.2.2  # Audio session for background recording
-  wakelock_plus: ^1.4.0  # Prevent device sleep during recording
-  flutter_foreground_task: ^9.1.0  # Foreground service for recording indicator
-  speech_to_text: ^7.3.0
+  just_audio: ^0.10.6
+  record: ^6.2.1  # Audio recording
+  ffmpeg_kit_flutter_new: ^4.6.2  # Audio splitting and processing
+  audio_session: ^0.2.4  # Audio session for background recording
+  wakelock_plus: ^1.6.1  # Prevent device sleep during recording
+  flutter_foreground_task: ^10.0.0  # Foreground service for recording indicator
+  speech_to_text: ^7.4.0
 
   # Dateiauswahl
-  file_picker: ^10.3.6
-  permission_handler: ^12.0.1
+  file_picker: ^12.2.0
+  permission_handler: ^12.0.3  # 13.x pulls permission_handler_android 14, which needs AGP 9 / compileSdk 37
 
   # HTTP
-  dio: ^5.9.0
+  dio: ^5.11.1
 
   # Sichere Speicherung
-  flutter_secure_storage: ^9.2.4
+  flutter_secure_storage: ^11.0.0
 
   # Database
   hive: ^2.2.3
@@ -68,18 +68,18 @@ dependencies:
   flutter_spinkit: ^5.2.2  # Ladeanimationen
 
   # Utilities
-  path_provider: ^2.1.5
+  path_provider: ^2.1.6
   path: ^1.9.1
-  mime: ^2.0.0
+  mime: ^2.1.0
 
   # Markdown rendering
-  flutter_markdown: ^0.7.7+1
+  flutter_markdown_plus: ^1.0.12
 
   # URL launcher for clickable links
   url_launcher: ^6.3.2
 
   # Sharing
-  share_plus: ^12.0.1
+  share_plus: ^13.3.0
 
 dev_dependencies:
   flutter_test:

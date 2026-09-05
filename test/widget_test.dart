@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:viosa/generated/app_localizations.dart';
 import 'package:hive/hive.dart';
 import 'package:provider/provider.dart';
 import 'package:viosa/providers/settings_provider.dart';
@@ -60,6 +62,13 @@ void main() {
         ],
         child: const MaterialApp(
           title: AppConstants.appName,
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
           home: HomeScreen(),
         ),
       ),

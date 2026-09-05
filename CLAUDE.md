@@ -10,6 +10,11 @@ VIOSA (Voice Intelligent Output and Speech Analyzer) is an Android application f
 - Prompt-based text processing
 - History management
 
+## Git Workflow
+
+- **Work exclusively from `main`.** Start every change from an up-to-date `main` and commit there; do not open long-lived feature branches.
+- Pull `main` before starting work and push `main` when the change is done.
+
 ## Quick Commands
 
 ```bash

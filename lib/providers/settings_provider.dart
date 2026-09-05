@@ -15,7 +15,6 @@ class SettingsProvider with ChangeNotifier {
   String _uiLanguage = 'de';
   String? _audioSavePath;
   double _textSize = 16.0;
-  String _selectedModel = ModelRepository.defaultModelId;
   String _themeMode = 'system';
   bool _speakerDiarization = false;
   bool _isInitialized = false;
@@ -31,7 +30,8 @@ class SettingsProvider with ChangeNotifier {
   Locale get locale => Locale(_uiLanguage);
   String? get audioSavePath => _audioSavePath;
   double get textSize => _textSize;
-  String get selectedModel => _selectedModel;
+  String get selectedModel => ModelRepository.defaultModelId;
+  String get transcriptionModel => ModelRepository.transcriptionModelId;
   String get themeModeString => _themeMode;
   bool get speakerDiarization => _speakerDiarization;
   bool get isInitialized => _isInitialized;
@@ -63,7 +63,6 @@ class SettingsProvider with ChangeNotifier {
       _uiLanguage = await _localeService.getUiLanguage();
       _audioSavePath = await _settingsService.getAudioSavePath();
       _textSize = await _settingsService.getTextSize();
-      _selectedModel = await _settingsService.getModel();
       _themeMode = await _settingsService.getThemeMode();
       _speakerDiarization = await _settingsService.getSpeakerDiarization();
       _isInitialized = true;
@@ -103,13 +102,6 @@ class SettingsProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  /// Save selected model and update state
-  Future<void> saveModel(String model) async {
-    await _settingsService.saveModel(model);
-    _selectedModel = model;
-    notifyListeners();
-  }
-
   /// Save theme mode and update state
   Future<void> saveThemeMode(String themeMode) async {
     await _settingsService.saveThemeMode(themeMode);
@@ -138,7 +130,6 @@ class SettingsProvider with ChangeNotifier {
     _language = 'auto';
     _audioSavePath = null;
     _textSize = 16.0;
-    _selectedModel = ModelRepository.defaultModelId;
     _themeMode = 'system';
     _speakerDiarization = false;
     notifyListeners();

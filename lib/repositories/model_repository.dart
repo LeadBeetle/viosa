@@ -3,38 +3,44 @@ import '../models/model_config.dart';
 /// Repository for model configuration
 /// Single source of truth for all model metadata
 class ModelRepository {
-  static const String defaultModelId = 'google/gemini-2.5-flash';
+  /// Model used for every LLM use case (prompts, chat, speaker context,
+  /// transcription post-processing)
+  static const String defaultModelId = 'google/gemini-3.8-flash';
+
+  /// Model used for speech-to-text via the OpenRouter transcription endpoint
+  static const String transcriptionModelId = 'microsoft/mai-transcribe-2';
 
   /// Tier identifiers (used for comparison, not displayed)
   static const String tierFast = 'fast';
   static const String tierPremium = 'premium';
 
-  /// All supported models with their configurations
+  /// Configuration of the speech-to-text model
+  static const ModelConfig transcriptionModel = ModelConfig(
+    id: transcriptionModelId,
+    name: 'MAI-Transcribe 2',
+    provider: 'Microsoft',
+    tier: tierFast,
+    description: 'fast',
+    temperature: 0.0,
+    capabilities: {
+      'audio_transcription': true,
+      'streaming': false,
+      'multimodal': false,
+    },
+  );
+
+  /// All supported LLM models with their configurations
   static const List<ModelConfig> supportedModels = [
     ModelConfig(
-      id: 'google/gemini-2.5-flash',
-      name: 'Gemini 2.5 Flash',
+      id: defaultModelId,
+      name: 'Gemini 3.8 Flash',
       provider: 'Google',
       tier: tierFast,
       description: 'fast',
       maxTokens: 10000,
       temperature: 0.3,
       capabilities: {
-        'audio_transcription': true,
-        'streaming': true,
-        'multimodal': true,
-      },
-    ),
-    ModelConfig(
-      id: 'google/gemini-2.5-pro',
-      name: 'Gemini 2.5 Pro',
-      provider: 'Google',
-      tier: tierPremium,
-      description: 'premium',
-      maxTokens: 10000,
-      temperature: 0.3,
-      capabilities: {
-        'audio_transcription': true,
+        'audio_transcription': false,
         'streaming': true,
         'multimodal': true,
       },
@@ -51,6 +57,7 @@ class ModelRepository {
 
   /// Get model by ID
   static ModelConfig? getModelById(String id) {
+    if (id == transcriptionModelId) return transcriptionModel;
     try {
       return supportedModels.firstWhere((m) => m.id == id);
     } catch (e) {
@@ -65,7 +72,7 @@ class ModelRepository {
 
   /// Check if a model ID is valid
   static bool isValidModel(String id) {
-    return supportedModels.any((m) => m.id == id);
+    return id == transcriptionModelId || supportedModels.any((m) => m.id == id);
   }
 
   /// Get all model IDs

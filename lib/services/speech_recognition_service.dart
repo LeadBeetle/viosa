@@ -71,10 +71,10 @@ class SpeechRecognitionService implements ISpeechRecognitionService {
 
     await _speechToText.listen(
       onResult: _handleResult,
-      localeId: locale,
-      listenFor: const Duration(seconds: 30),
-      pauseFor: const Duration(seconds: 3),
       listenOptions: SpeechListenOptions(
+        localeId: locale,
+        listenFor: const Duration(seconds: 30),
+        pauseFor: const Duration(seconds: 3),
         partialResults: true,
         listenMode: ListenMode.dictation,
       ),
