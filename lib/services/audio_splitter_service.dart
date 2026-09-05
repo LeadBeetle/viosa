@@ -53,7 +53,7 @@ class AudioSplitterService implements IAudioSplitterService {
         onProgress?.call(SplitProgress(
           currentSplit: i,
           totalSplits: splitCount,
-          currentStatus: 'Teile Audio: ${i + 1}/$splitCount',
+          phase: SplitPhase.splitting,
         ));
 
         // Calculate start time (each segment starts where the previous one started + segmentDuration - overlap)
@@ -115,7 +115,7 @@ class AudioSplitterService implements IAudioSplitterService {
       onProgress?.call(SplitProgress(
         currentSplit: splitCount,
         totalSplits: splitCount,
-        currentStatus: 'Audio aufgeteilt',
+        phase: SplitPhase.finished,
       ));
 
       return splits;

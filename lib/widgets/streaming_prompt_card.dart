@@ -14,6 +14,7 @@ class StreamingPromptCard extends StatelessWidget {
   final VoidCallback onStreamComplete;
   final Function(String) onStreamError;
   final Function(String) onChunk;
+  final VoidCallback? onStop;
 
   const StreamingPromptCard({
     super.key,
@@ -22,12 +23,23 @@ class StreamingPromptCard extends StatelessWidget {
     required this.onStreamComplete,
     required this.onStreamError,
     required this.onChunk,
+    this.onStop,
   });
 
   @override
   Widget build(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (onStop != null)
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: onStop,
+              icon: const Icon(Icons.stop_circle_outlined),
+              label: Text(context.l10n.stopGeneration),
+            ),
+          ),
         Consumer<SettingsProvider>(
           builder: (context, settings, _) => StreamingTextDisplay(
             title: 'Prompt: $promptName',

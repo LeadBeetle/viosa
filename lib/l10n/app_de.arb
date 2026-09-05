@@ -52,7 +52,7 @@
   "transcriptionLanguageGerman": "Deutsch",
   "transcriptionLanguageEnglish": "Englisch",
   "speakerDiarization": "Sprechererkennung",
-  "speakerDiarizationDescription": "Identifiziert verschiedene Sprecher in der Aufnahme",
+  "speakerDiarizationDescription": "Das Modell kennzeichnet verschiedene Sprecher direkt im Transkript",
   "uiLanguage": "App-Sprache",
   "uiLanguageDescription": "Wählen Sie die Sprache der Benutzeroberfläche",
   "languageGerman": "Deutsch",
@@ -122,7 +122,7 @@
   "startNewSession": "Neue Session starten",
   "longAudioDetected": "Lange Audiodatei erkannt",
   "startTranscription": "Transkription starten",
-  "warningExistingData": "Achtung: Bestehende Transkription und Prompt-Ergebnisse werden gelöscht.",
+  "warningExistingData": "Achtung: Bestehende Transkription, Prompt-Ergebnisse und der Chat-Verlauf werden gelöscht.",
   "longAudioDescription": "Diese Audiodatei ist {duration} lang und wird in {splitCount} Segmente aufgeteilt (je ~10 Minuten).\n\nDie Transkription läuft im Hintergrund und kann einige Minuten dauern.",
   "@longAudioDescription": {
     "placeholders": {
@@ -541,7 +541,7 @@
   "checkAgain": "Erneut prüfen",
   "enterMessage": "Nachricht eingeben ...",
   "speakNow": "Sprechen ...",
-  "stopGeneration": "Antwort stoppen",
+  "stopGeneration": "Generierung stoppen",
   "noAudioFilesFound": "Keine Audio-Dateien gefunden",
   "reload": "Erneut laden",
   "noSearchResults": "Keine Ergebnisse",
@@ -602,6 +602,104 @@
     "placeholders": {
       "error": {
         "type": "String"
+      }
+    }
+  },
+  "failedSegmentMarker": "[Abschnitt {number} ({timeRange}) – Transkription fehlgeschlagen]",
+  "@failedSegmentMarker": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      },
+      "timeRange": {
+        "type": "String"
+      }
+    }
+  },
+  "transcriptionPartialTitle": "Transkription unvollständig",
+  "transcriptionPartialWarning": "{count, plural, =1{1 Abschnitt konnte nicht transkribiert werden.} other{{count} Abschnitte konnten nicht transkribiert werden.}}",
+  "@transcriptionPartialWarning": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "retryFailedSegments": "Fehlgeschlagene Abschnitte wiederholen",
+  "retryingFailedSegments": "Abschnitte werden erneut transkribiert …",
+  "transcriptionContinuesInBackground": "Transkription läuft im Hintergrund weiter",
+  "continueInBackground": "Im Hintergrund weiterlaufen",
+  "transcriptionRunningBannerTitle": "Transkription läuft",
+  "transcriptionRunningBannerSubtitle": "{fileName} · {percent}%",
+  "@transcriptionRunningBannerSubtitle": {
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      },
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "openRunningTranscription": "Öffnen",
+  "promptGenerationRunningTitle": "Prompt läuft noch",
+  "promptGenerationRunningContent": "Wenn du die Sitzung verlässt, geht das laufende Ergebnis verloren.",
+  "promptCancelled": "Generierung abgebrochen",
+  "errorSavingHistory": "Ergebnis konnte nicht gespeichert werden: {error}",
+  "@errorSavingHistory": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "errorSharingResult": "Teilen fehlgeschlagen: {error}",
+  "@errorSharingResult": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "searchRecordings": "Aufnahmen durchsuchen",
+  "searchRecordingsHint": "Name oder Transkript durchsuchen",
+  "noRecordingsMatchSearch": "Keine Aufnahme passt zur Suche",
+  "textSize": "Textgröße",
+  "textSizeDescription": "Schriftgröße von Transkripten und Prompt-Ergebnissen",
+  "clearAllHistory": "Alle Aufnahmen löschen",
+  "clearAllHistoryConfirm": "Alle Aufnahmen, Transkripte und Chats werden dauerhaft gelöscht.",
+  "allHistoryCleared": "Alle Aufnahmen gelöscht",
+  "transcribeStyle": "Transkriptionsstil",
+  "transcribeStyleClean": "Bereinigt",
+  "transcribeStyleVerbatim": "Wortgetreu",
+  "transcribeStyleDescription": "Bereinigt entfernt Füllwörter, wortgetreu behält jedes gesprochene Wort",
+  "keywords": "Fachbegriffe",
+  "keywordsDescription": "Namen und Fachbegriffe, die das Modell bevorzugt erkennen soll",
+  "keywordsHint": "Begriff eingeben und bestätigen",
+  "keywordsEmpty": "Noch keine Begriffe hinterlegt",
+  "autoTranscribe": "Nach Aufnahme transkribieren",
+  "autoTranscribeDescription": "Startet die Transkription direkt nach dem Ende einer Aufnahme",
+  "timestamps": "Zeitmarken",
+  "jumpToPosition": "Zu dieser Stelle springen",
+  "exportAsText": "Als Text teilen",
+  "exportAsSubtitles": "Als Untertitel (SRT) teilen",
+  "exportNoTimestamps": "Für diese Aufnahme liegen keine Zeitmarken vor",
+  "detectedLanguageLabel": "Erkannt: {language}",
+  "@detectedLanguageLabel": {
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "splittingAudioProgress": "Audio wird geteilt: {current}/{total}",
+  "@splittingAudioProgress": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
       }
     }
   }

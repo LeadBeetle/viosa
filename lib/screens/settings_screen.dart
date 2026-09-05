@@ -4,7 +4,9 @@ import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../providers/history_provider.dart';
 import '../providers/settings_provider.dart';
+import '../services/transcription/i_speech_to_text_service.dart';
 import '../utils/constants.dart';
 import '../models/model_config.dart';
 import '../repositories/model_repository.dart';
@@ -24,6 +26,7 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   final TextEditingController _apiKeyController = TextEditingController();
+  final TextEditingController _keywordController = TextEditingController();
 
   String _selectedLanguage = 'auto';
   String? _audioSavePath;
@@ -41,6 +44,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void dispose() {
     _apiKeyController.dispose();
+    _keywordController.dispose();
     super.dispose();
   }
 
@@ -231,6 +235,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _buildLanguageCard(context),
                   const SizedBox(height: AppConstants.defaultPadding),
                   _buildAppearanceCard(context),
+                  const SizedBox(height: AppConstants.defaultPadding),
+                  _buildDataCard(context),
                   const SizedBox(height: AppConstants.defaultPadding),
                   _buildPromptsCard(context),
                   const SizedBox(height: AppConstants.defaultPadding),
@@ -587,10 +593,286 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const Divider(),
             const SizedBox(height: 8),
             _buildSpeakerDiarizationToggle(context),
+            const SizedBox(height: 16),
+            const Divider(),
+            const SizedBox(height: 8),
+            _buildTranscribeStyleSelector(context),
+            const SizedBox(height: 16),
+            const Divider(),
+            const SizedBox(height: 8),
+            _buildKeywordsEditor(context),
+            const SizedBox(height: 16),
+            const Divider(),
+            const SizedBox(height: 8),
+            _buildAutoTranscribeToggle(context),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildSettingHeader(BuildContext context, IconData icon, String title) {
+    return Row(
+      children: [
+        Icon(
+          icon,
+          size: AppIconSize.medium,
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
+        ),
+        const SizedBox(width: AppSpacing.s),
+        Expanded(
+          child: Text(
+            title,
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSettingDescription(BuildContext context, String description) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 28),
+      child: Text(
+        description,
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTranscribeStyleSelector(BuildContext context) {
+    final settingsProvider = context.watch<SettingsProvider>();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSettingHeader(context, Icons.tune, context.l10n.transcribeStyle),
+        const SizedBox(height: AppSpacing.s),
+        Padding(
+          padding: const EdgeInsets.only(left: 28),
+          child: SegmentedButton<String>(
+            segments: [
+              ButtonSegment(
+                value: TranscribeStyle.clean,
+                label: Text(context.l10n.transcribeStyleClean),
+              ),
+              ButtonSegment(
+                value: TranscribeStyle.verbatim,
+                label: Text(context.l10n.transcribeStyleVerbatim),
+              ),
+            ],
+            selected: {settingsProvider.transcribeStyle},
+            onSelectionChanged: (selection) {
+              settingsProvider.saveTranscribeStyle(selection.first);
+            },
+          ),
+        ),
+        const SizedBox(height: AppSpacing.s),
+        _buildSettingDescription(context, context.l10n.transcribeStyleDescription),
+      ],
+    );
+  }
+
+  Widget _buildKeywordsEditor(BuildContext context) {
+    final settingsProvider = context.watch<SettingsProvider>();
+    final keywords = settingsProvider.keywords;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSettingHeader(context, Icons.sell_outlined, context.l10n.keywords),
+        const SizedBox(height: AppSpacing.s),
+        Padding(
+          padding: const EdgeInsets.only(left: 28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: _keywordController,
+                decoration: InputDecoration(
+                  hintText: context.l10n.keywordsHint,
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.add),
+                    onPressed: () => _addKeyword(settingsProvider),
+                  ),
+                ),
+                onSubmitted: (_) => _addKeyword(settingsProvider),
+              ),
+              const SizedBox(height: AppSpacing.s),
+              if (keywords.isEmpty)
+                Text(
+                  context.l10n.keywordsEmpty,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.6),
+                  ),
+                )
+              else
+                Wrap(
+                  spacing: AppSpacing.s,
+                  runSpacing: AppSpacing.xs,
+                  children: keywords
+                      .map(
+                        (keyword) => InputChip(
+                          label: Text(keyword),
+                          onDeleted: () {
+                            final remaining = List<String>.from(keywords)
+                              ..remove(keyword);
+                            settingsProvider.saveKeywords(remaining);
+                          },
+                        ),
+                      )
+                      .toList(),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.s),
+        _buildSettingDescription(context, context.l10n.keywordsDescription),
+      ],
+    );
+  }
+
+  Future<void> _addKeyword(SettingsProvider settingsProvider) async {
+    final keyword = _keywordController.text.trim();
+    if (keyword.isEmpty) return;
+
+    final keywords = List<String>.from(settingsProvider.keywords);
+    if (!keywords.contains(keyword)) {
+      keywords.add(keyword);
+      await settingsProvider.saveKeywords(keywords);
+    }
+
+    _keywordController.clear();
+  }
+
+  Widget _buildAutoTranscribeToggle(BuildContext context) {
+    final settingsProvider = context.watch<SettingsProvider>();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _buildSettingHeader(
+                context,
+                Icons.play_circle_outline,
+                context.l10n.autoTranscribe,
+              ),
+            ),
+            Switch(
+              value: settingsProvider.autoTranscribe,
+              onChanged: settingsProvider.saveAutoTranscribe,
+            ),
+          ],
+        ),
+        _buildSettingDescription(context, context.l10n.autoTranscribeDescription),
+      ],
+    );
+  }
+
+  Widget _buildDataCard(BuildContext context) {
+    final settingsProvider = context.watch<SettingsProvider>();
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AppConstants.defaultPadding),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.format_size,
+                  size: AppIconSize.medium,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: AppSpacing.s),
+                Text(
+                  context.l10n.textSize,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.m),
+            Row(
+              children: [
+                Expanded(
+                  child: Slider(
+                    value: settingsProvider.textSize,
+                    min: 12,
+                    max: 24,
+                    divisions: 12,
+                    label: settingsProvider.textSize.round().toString(),
+                    onChanged: (value) => settingsProvider.saveTextSize(value),
+                  ),
+                ),
+                Text(
+                  settingsProvider.textSize.round().toString(),
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            ),
+            _buildSettingDescription(context, context.l10n.textSizeDescription),
+            const SizedBox(height: AppSpacing.m),
+            const Divider(),
+            const SizedBox(height: AppSpacing.s),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: _confirmClearHistory,
+                icon: Icon(
+                  Icons.delete_forever,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+                label: Text(
+                  context.l10n.clearAllHistory,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmClearHistory() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(ctx.l10n.clearAllHistory),
+        content: Text(ctx.l10n.clearAllHistoryConfirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(ctx.l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(ctx).colorScheme.error,
+            ),
+            child: Text(ctx.l10n.delete),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    await context.read<HistoryProvider>().clearAllHistory();
+    if (!mounted) return;
+    SnackBarService().showSuccess(context, context.l10n.allHistoryCleared);
   }
 
   Widget _buildSpeakerDiarizationToggle(BuildContext context) {

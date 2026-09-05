@@ -5,7 +5,7 @@
 VIOSA (Voice Intelligent Output and Speech Analyzer) is a Flutter app for audio transcription via the OpenRouter API. Android is the primary target; iOS, macOS, Windows, Linux and web build directories exist (see `docs/DEPLOYMENT_MACOS_IOS.md`).
 
 **Key Features:**
-- Audio file transcription (MP3, WAV, MP4, M4A)
+- Audio file transcription (MP3, WAV, MP4, M4A) with segment timestamps, speaker diarization, language identification and keyword biasing
 - Voice recording with live transcription
 - Prompt-based text processing
 - History management
@@ -45,6 +45,8 @@ flutter build apk --release
 ## Models
 
 `ModelRepository` is the only place model IDs live. LLM (prompts, chat, speaker context, post-processing): `google/gemini-3.8-flash`. Speech-to-text: `microsoft/mai-transcribe-2`. Never hardcode a model ID elsewhere.
+
+The transcription request asks MAI-Transcribe 2 for `response_format: verbose_json` with segment timestamps, and passes the Azure provider options for diarization, keyword biasing (`phraseList`) and transcript style. Provider-side speaker labels replace the LLM diarization pass; the LLM clean-up only runs for the `clean` style without labels.
 
 ## Architecture Principles
 
@@ -132,7 +134,7 @@ class ExampleService implements IExampleService {
 
 ## Gotchas
 
-- **Hive typeIds in use: 0–8, 10, 11. Next free: 9.** Reusing an id corrupts stored data silently.
+- **Hive typeIds in use: 0–11. Next free: 12.** Reusing an id corrupts stored data silently.
 - `permission_handler` pinned to ^12: 13.x pulls permission_handler_android 14, which needs AGP 9 / compileSdk 37.
 - UI design tokens (`AppSpacing`, `AppOpacity`, `AppIconSize`) documented in `docs/UI_GUIDELINES.md` — use them, don't invent values.
 

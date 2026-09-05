@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/settings_service.dart';
+import '../services/transcription/i_speech_to_text_service.dart';
 import '../services/i_locale_service.dart';
 import '../services/locale_service.dart';
 import '../repositories/model_repository.dart';
@@ -17,6 +18,9 @@ class SettingsProvider with ChangeNotifier {
   double _textSize = 16.0;
   String _themeMode = 'system';
   bool _speakerDiarization = false;
+  String _transcribeStyle = TranscribeStyle.clean;
+  List<String> _keywords = const [];
+  bool _autoTranscribe = true;
   bool _isInitialized = false;
   bool _isLoading = false;
 
@@ -34,6 +38,9 @@ class SettingsProvider with ChangeNotifier {
   String get transcriptionModelId => ModelRepository.transcriptionModelId;
   String get themeModeString => _themeMode;
   bool get speakerDiarization => _speakerDiarization;
+  String get transcribeStyle => _transcribeStyle;
+  List<String> get keywords => List.unmodifiable(_keywords);
+  bool get autoTranscribe => _autoTranscribe;
   bool get isInitialized => _isInitialized;
   bool get isLoading => _isLoading;
   bool get hasApiKey => _apiKey != null && _apiKey!.isNotEmpty;
@@ -65,6 +72,9 @@ class SettingsProvider with ChangeNotifier {
       _textSize = await _settingsService.getTextSize();
       _themeMode = await _settingsService.getThemeMode();
       _speakerDiarization = await _settingsService.getSpeakerDiarization();
+      _transcribeStyle = await _settingsService.getTranscribeStyle();
+      _keywords = await _settingsService.getKeywords();
+      _autoTranscribe = await _settingsService.getAutoTranscribe();
       await _settingsService.removeLegacySettings();
       _isInitialized = true;
     } catch (e) {
@@ -124,6 +134,27 @@ class SettingsProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  /// Save the transcript style requested from the speech-to-text model
+  Future<void> saveTranscribeStyle(String style) async {
+    await _settingsService.saveTranscribeStyle(style);
+    _transcribeStyle = style;
+    notifyListeners();
+  }
+
+  /// Save the keywords used to bias recognition towards domain terms
+  Future<void> saveKeywords(List<String> keywords) async {
+    await _settingsService.saveKeywords(keywords);
+    _keywords = await _settingsService.getKeywords();
+    notifyListeners();
+  }
+
+  /// Save whether a finished recording starts transcription on its own
+  Future<void> saveAutoTranscribe(bool enabled) async {
+    await _settingsService.saveAutoTranscribe(enabled);
+    _autoTranscribe = enabled;
+    notifyListeners();
+  }
+
   /// Clear all settings
   Future<void> clearSettings() async {
     await _settingsService.clearAllSettings();
@@ -133,6 +164,9 @@ class SettingsProvider with ChangeNotifier {
     _textSize = 16.0;
     _themeMode = 'system';
     _speakerDiarization = false;
+    _transcribeStyle = TranscribeStyle.clean;
+    _keywords = const [];
+    _autoTranscribe = true;
     notifyListeners();
   }
 }

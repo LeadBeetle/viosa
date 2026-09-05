@@ -1,5 +1,7 @@
 import 'package:hive/hive.dart';
 
+import 'transcript_segment.dart';
+
 part 'audio_split.g.dart';
 
 /// Status of an audio split transcription
@@ -58,6 +60,12 @@ class AudioSplit {
   @HiveField(11)
   DateTime? completedAt;
 
+  @HiveField(12)
+  List<TranscriptSegment> segments;
+
+  @HiveField(13)
+  String? detectedLanguage;
+
   AudioSplit({
     required this.id,
     required this.index,
@@ -71,7 +79,13 @@ class AudioSplit {
     this.transcriptionText,
     this.errorMessage,
     this.completedAt,
-  });
+    List<TranscriptSegment>? segments,
+    this.detectedLanguage,
+  }) : segments = segments ?? [];
+
+  /// Segments of this split shifted into the timeline of the original audio
+  List<TranscriptSegment> get globalSegments =>
+      segments.map((segment) => segment.shiftedBy(startTime)).toList();
 
   /// Returns start time as Duration
   Duration get startTime => Duration(milliseconds: startTimeMs);
@@ -139,6 +153,8 @@ class AudioSplit {
       'transcriptionText': transcriptionText,
       'errorMessage': errorMessage,
       'completedAt': completedAt?.toIso8601String(),
+      'segments': segments.map((s) => s.toJson()).toList(),
+      'detectedLanguage': detectedLanguage,
     };
   }
 
@@ -162,6 +178,11 @@ class AudioSplit {
       completedAt: json['completedAt'] != null
           ? DateTime.parse(json['completedAt'] as String)
           : null,
+      segments: (json['segments'] as List<dynamic>?)
+              ?.map((s) => TranscriptSegment.fromJson(s as Map<String, dynamic>))
+              .toList() ??
+          [],
+      detectedLanguage: json['detectedLanguage'] as String?,
     );
   }
 
@@ -179,6 +200,8 @@ class AudioSplit {
     String? transcriptionText,
     String? errorMessage,
     DateTime? completedAt,
+    List<TranscriptSegment>? segments,
+    String? detectedLanguage,
   }) {
     return AudioSplit(
       id: id ?? this.id,
@@ -193,6 +216,8 @@ class AudioSplit {
       transcriptionText: transcriptionText ?? this.transcriptionText,
       errorMessage: errorMessage ?? this.errorMessage,
       completedAt: completedAt ?? this.completedAt,
+      segments: segments ?? this.segments,
+      detectedLanguage: detectedLanguage ?? this.detectedLanguage,
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../models/split_transcription_job.dart';
+import '../models/transcription_result.dart';
 import '../services/i_audio_splitter_service.dart';
 import '../services/split_transcription_service.dart';
 
@@ -10,9 +11,16 @@ class SplitTranscriptionProvider extends ChangeNotifier {
   final StreamController<SplitTranscriptionJob> _jobUpdateController;
 
   SplitTranscriptionJob? _currentJob;
+  String? _activeHistoryId;
+  String? _activeFileName;
+  String Function(int segmentNumber, String timeRange)? _failedSegmentLabel;
+  Future<void> Function(String historyId, TranscriptionResult result)? _onResult;
+  Object? _lastError;
   String? _apiKey;
   String? _model;
   bool _speakerDiarization = false;
+  List<String> _keywords = const [];
+  String? _transcribeStyle;
   SplitProgress? _splitProgress;
 
   SplitTranscriptionProvider({
@@ -26,6 +34,22 @@ class SplitTranscriptionProvider extends ChangeNotifier {
 
   Stream<SplitTranscriptionJob> get jobUpdates => _jobUpdateController.stream;
 
+  /// Id of the history entry the running job belongs to
+  String? get activeHistoryId => _activeHistoryId;
+
+  /// Name of the file the running job transcribes
+  String? get activeFileName => _activeFileName;
+
+  /// Last error of a job that could not be processed
+  Object? get lastError => _lastError;
+
+  /// Returns true while a job is still being processed
+  bool get isRunning {
+    final job = _currentJob;
+    if (job == null) return _splitProgress != null;
+    return job.status == JobStatus.queued || job.status == JobStatus.processing;
+  }
+
   void setApiKey(String apiKey) {
     _apiKey = apiKey;
   }
@@ -36,15 +60,27 @@ class SplitTranscriptionProvider extends ChangeNotifier {
     required String fileName,
     required String language,
     required String apiKey,
+    required String historyId,
     String? model,
     bool speakerDiarization = false,
+    List<String> keywords = const [],
+    String? transcribeStyle,
+    String Function(int segmentNumber, String timeRange)? failedSegmentLabel,
+    Future<void> Function(String historyId, TranscriptionResult result)? onResult,
     Duration maxDuration = const Duration(minutes: 10),
     Duration overlap = const Duration(seconds: 5),
   }) async {
     _apiKey = apiKey;
+    _activeHistoryId = historyId;
+    _activeFileName = fileName;
+    _failedSegmentLabel = failedSegmentLabel;
+    _onResult = onResult;
+    _lastError = null;
     _model = model;
     _speakerDiarization = speakerDiarization;
-    _splitProgress = const SplitProgress(currentSplit: 0, totalSplits: 0, currentStatus: 'Vorbereiten...');
+    _keywords = keywords;
+    _transcribeStyle = transcribeStyle;
+    _splitProgress = const SplitProgress(currentSplit: 0, totalSplits: 0);
     notifyListeners();
 
     final job = await _service.createJob(
@@ -80,28 +116,49 @@ class SplitTranscriptionProvider extends ChangeNotifier {
         _apiKey!,
         model: _model,
         speakerDiarization: _speakerDiarization,
+        keywords: _keywords,
+        transcribeStyle: _transcribeStyle,
         onProgress: (updatedJob) {
           _currentJob = updatedJob;
           _jobUpdateController.add(updatedJob);
           notifyListeners();
         },
       );
+
+      await _persistResult(job);
     } catch (e) {
+      _lastError = e;
       _jobUpdateController.add(job);
       notifyListeners();
     }
   }
 
-  Stream<SplitTranscriptionJob> watchJob(String jobId) async* {
-    if (_currentJob != null && _currentJob!.id == jobId) {
-      yield _currentJob!;
-    }
+  /// Saves the result of a finished job, independent of any open screen, so a
+  /// transcription survives when the user leaves the session
+  Future<void> _persistResult(SplitTranscriptionJob job) async {
+    if (job.status == JobStatus.cancelled) return;
 
-    await for (final update in _jobUpdateController.stream) {
-      if (update.id == jobId) {
-        yield update;
+    final result = _service.buildTranscriptionResult(
+      job,
+      failedSegmentLabel: _failedSegmentLabel,
+    );
+    final historyId = _activeHistoryId;
+    final onResult = _onResult;
+
+    if (result != null && historyId != null && onResult != null) {
+      try {
+        await onResult(historyId, result);
+      } catch (e) {
+        _lastError = e;
       }
     }
+
+    if (!job.hasFailures) {
+      await cleanupJob(job);
+    }
+
+    _jobUpdateController.add(job);
+    notifyListeners();
   }
 
   Future<void> retryFailedSplit(String jobId, String splitId) async {
@@ -118,12 +175,37 @@ class SplitTranscriptionProvider extends ChangeNotifier {
       splitId,
       _apiKey!,
       speakerDiarization: _speakerDiarization,
+      keywords: _keywords,
+      transcribeStyle: _transcribeStyle,
       onProgress: (updatedJob) {
         _currentJob = updatedJob;
         _jobUpdateController.add(updatedJob);
         notifyListeners();
       },
     );
+  }
+
+  /// Builds the transcription result of a finished job
+  TranscriptionResult? buildTranscriptionResult(
+    SplitTranscriptionJob job, {
+    String Function(int segmentNumber, String timeRange)? failedSegmentLabel,
+  }) {
+    return _service.buildTranscriptionResult(
+      job,
+      failedSegmentLabel: failedSegmentLabel,
+    );
+  }
+
+  /// Retries every split that failed in [jobId]
+  Future<void> retryAllFailedSplits(String jobId) async {
+    final job = _currentJob;
+    if (job == null || job.id != jobId) {
+      throw Exception('Job not found');
+    }
+
+    for (final split in job.failedSplits) {
+      await retryFailedSplit(jobId, split.id);
+    }
   }
 
   Future<void> cancelJob(String jobId) async {

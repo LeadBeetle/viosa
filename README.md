@@ -8,12 +8,14 @@ Models are defined in one place, `lib/repositories/model_repository.dart`: `goog
 
 - Audio file selection (MP3, WAV, MP4, M4A)
 - Audio playback
-- Audio transcription via OpenRouter API
+- Audio transcription via OpenRouter API (segment timestamps, automatic language identification, keyword biasing, verbatim or clean style)
 - Voice recording with live transcription (foreground service, survives screen off)
 - Long-recording splitting and per-chunk transcription
 - Prompt-based text processing and chat over a transcript
-- Speaker extraction and speaker context
-- History management and export/sharing
+- Speaker diarization from the transcription model, speaker extraction and speaker context
+- Transcription keeps running in the background when the session screen is closed
+- Timestamp list with jump-to-position playback
+- History search, management and export/sharing (Markdown or SRT subtitles)
 - Secure API key storage
 - Language selection (German, English, Auto-detect)
 - Localized UI (German, English)

@@ -1,7 +1,9 @@
 import 'package:flutter/foundation.dart';
+import '../models/transcript_segment.dart';
 import '../models/transcription_result.dart';
 import '../repositories/model_repository.dart';
 import 'completion/i_completion_service.dart';
+import 'diarized_transcript_builder.dart';
 import 'speaker_context_service.dart';
 import 'speaker_extraction_service.dart';
 import 'transcription/i_speech_to_text_service.dart';
@@ -17,8 +19,9 @@ abstract class ITranscriptionService {
     required String language,
     TranscriptionContext? speakerContext,
     bool speakerDiarization = false,
+    List<String> keywords = const [],
+    String? transcribeStyle,
   });
-
 }
 
 /// Service for audio transcription
@@ -29,19 +32,23 @@ class TranscriptionService implements ITranscriptionService {
   final ISpeechToTextService _speechToTextService;
   final ISpeakerExtractionService _speakerExtractionService;
   final ITranscriptionFormatterService _formatterService;
+  final IDiarizedTranscriptBuilder _diarizedTranscriptBuilder;
 
   TranscriptionService({
     required ICompletionService completionService,
     ISpeechToTextService? speechToTextService,
     ISpeakerExtractionService? speakerExtractionService,
     ITranscriptionFormatterService? formatterService,
+    IDiarizedTranscriptBuilder? diarizedTranscriptBuilder,
   })  : _completionService = completionService,
         _speechToTextService =
             speechToTextService ?? OpenRouterSpeechToTextService(),
         _speakerExtractionService =
             speakerExtractionService ?? SpeakerExtractionService(),
         _formatterService =
-            formatterService ?? TranscriptionFormatterService();
+            formatterService ?? TranscriptionFormatterService(),
+        _diarizedTranscriptBuilder =
+            diarizedTranscriptBuilder ?? DiarizedTranscriptBuilder();
 
   @override
   Future<TranscriptionResult> transcribe({
@@ -51,19 +58,37 @@ class TranscriptionService implements ITranscriptionService {
     required String language,
     TranscriptionContext? speakerContext,
     bool speakerDiarization = false,
+    List<String> keywords = const [],
+    String? transcribeStyle,
   }) async {
     final speechToTextResult = await _speechToTextService.transcribe(
       apiKey: apiKey,
       base64Audio: base64Audio,
       format: _getAudioFormat(mimeType),
       language: language,
+      diarization: speakerDiarization,
+      phrases: keywords,
+      transcribeStyle: transcribeStyle,
     );
-    final rawTranscript = speechToTextResult.text;
+
+    final resultLanguage = speechToTextResult.detectedLanguage ?? language;
+
+    if (speakerDiarization && speechToTextResult.hasSpeakerLabels) {
+      return _resultFromProviderDiarization(speechToTextResult, resultLanguage);
+    }
+
+    if (transcribeStyle == TranscribeStyle.verbatim) {
+      return _buildResult(
+        text: _formatterService.formatTranscription(speechToTextResult.text),
+        language: resultLanguage,
+        segments: speechToTextResult.segments,
+      );
+    }
 
     final rawText = await _completionService.complete(
       apiKey: apiKey,
       messages: _buildMessages(
-        rawTranscript,
+        speechToTextResult.text,
         language,
         speakerContext,
         speakerDiarization,
@@ -71,15 +96,47 @@ class TranscriptionService implements ITranscriptionService {
       config: _getConfig(),
     );
 
-    final formattedText = _formatterService.formatTranscription(rawText);
-    final speakers = _speakerExtractionService.extractSpeakers(formattedText);
+    return _buildResult(
+      text: _formatterService.formatTranscription(rawText),
+      language: resultLanguage,
+      segments: speechToTextResult.segments,
+    );
+  }
 
+  /// Builds the result from the speaker labels the model itself returned,
+  /// which avoids a second LLM pass and keeps labels stable
+  TranscriptionResult _resultFromProviderDiarization(
+    SpeechToTextResult speechToTextResult,
+    String language,
+  ) {
+    final segments = _diarizedTranscriptBuilder.withDisplayLabels(
+      speechToTextResult.segments,
+      language,
+    );
+    final text = _diarizedTranscriptBuilder.build(
+      speechToTextResult.segments,
+      language,
+    );
+
+    return _buildResult(
+      text: _formatterService.formatTranscription(text),
+      language: language,
+      segments: segments,
+    );
+  }
+
+  TranscriptionResult _buildResult({
+    required String text,
+    required String language,
+    required List<TranscriptSegment> segments,
+  }) {
     return TranscriptionResult(
-      text: formattedText,
+      text: text,
       language: language,
       modelUsed: _speechToTextService.model,
       timestamp: DateTime.now(),
-      speakers: speakers,
+      speakers: _speakerExtractionService.extractSpeakers(text),
+      segments: segments,
     );
   }
 

@@ -148,7 +148,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get speakerDiarizationDescription =>
-      'Identifies different speakers in the recording';
+      'The model labels different speakers directly in the transcript';
 
   @override
   String get uiLanguage => 'App Language';
@@ -315,7 +315,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get warningExistingData =>
-      'Warning: Existing transcription and prompt results will be deleted.';
+      'Warning: Existing transcription, prompt results and chat history will be deleted.';
 
   @override
   String longAudioDescription(String duration, int splitCount) {
@@ -882,7 +882,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get speakNow => 'Listening ...';
 
   @override
-  String get stopGeneration => 'Stop generating';
+  String get stopGeneration => 'Stop generation';
 
   @override
   String get noAudioFilesFound => 'No audio files found';
@@ -1020,5 +1020,152 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String errorImportingFile(String error) {
     return 'Could not import file: $error';
+  }
+
+  @override
+  String failedSegmentMarker(int number, String timeRange) {
+    return '[Section $number ($timeRange) – transcription failed]';
+  }
+
+  @override
+  String get transcriptionPartialTitle => 'Transcription incomplete';
+
+  @override
+  String transcriptionPartialWarning(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sections could not be transcribed.',
+      one: '1 section could not be transcribed.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get retryFailedSegments => 'Retry failed sections';
+
+  @override
+  String get retryingFailedSegments => 'Retrying failed sections …';
+
+  @override
+  String get transcriptionContinuesInBackground =>
+      'Transcription keeps running in the background';
+
+  @override
+  String get continueInBackground => 'Keep running in background';
+
+  @override
+  String get transcriptionRunningBannerTitle => 'Transcription running';
+
+  @override
+  String transcriptionRunningBannerSubtitle(String fileName, int percent) {
+    return '$fileName · $percent%';
+  }
+
+  @override
+  String get openRunningTranscription => 'Open';
+
+  @override
+  String get promptGenerationRunningTitle => 'Prompt still running';
+
+  @override
+  String get promptGenerationRunningContent =>
+      'Leaving the session discards the result being generated.';
+
+  @override
+  String get promptCancelled => 'Generation stopped';
+
+  @override
+  String errorSavingHistory(String error) {
+    return 'Could not save the result: $error';
+  }
+
+  @override
+  String errorSharingResult(String error) {
+    return 'Sharing failed: $error';
+  }
+
+  @override
+  String get searchRecordings => 'Search recordings';
+
+  @override
+  String get searchRecordingsHint => 'Search name or transcript';
+
+  @override
+  String get noRecordingsMatchSearch => 'No recording matches the search';
+
+  @override
+  String get textSize => 'Text size';
+
+  @override
+  String get textSizeDescription =>
+      'Font size of transcripts and prompt results';
+
+  @override
+  String get clearAllHistory => 'Delete all recordings';
+
+  @override
+  String get clearAllHistoryConfirm =>
+      'All recordings, transcripts and chats are deleted permanently.';
+
+  @override
+  String get allHistoryCleared => 'All recordings deleted';
+
+  @override
+  String get transcribeStyle => 'Transcription style';
+
+  @override
+  String get transcribeStyleClean => 'Clean';
+
+  @override
+  String get transcribeStyleVerbatim => 'Verbatim';
+
+  @override
+  String get transcribeStyleDescription =>
+      'Clean removes fillers, verbatim keeps every spoken word';
+
+  @override
+  String get keywords => 'Domain terms';
+
+  @override
+  String get keywordsDescription =>
+      'Names and technical terms the model should prefer';
+
+  @override
+  String get keywordsHint => 'Enter a term and confirm';
+
+  @override
+  String get keywordsEmpty => 'No terms added yet';
+
+  @override
+  String get autoTranscribe => 'Transcribe after recording';
+
+  @override
+  String get autoTranscribeDescription =>
+      'Starts transcription right after a recording ends';
+
+  @override
+  String get timestamps => 'Timestamps';
+
+  @override
+  String get jumpToPosition => 'Jump to this position';
+
+  @override
+  String get exportAsText => 'Share as text';
+
+  @override
+  String get exportAsSubtitles => 'Share as subtitles (SRT)';
+
+  @override
+  String get exportNoTimestamps => 'This recording has no timestamps';
+
+  @override
+  String detectedLanguageLabel(String language) {
+    return 'Detected: $language';
+  }
+
+  @override
+  String splittingAudioProgress(int current, int total) {
+    return 'Splitting audio: $current/$total';
   }
 }

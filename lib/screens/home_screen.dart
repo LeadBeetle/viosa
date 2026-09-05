@@ -6,6 +6,7 @@ import '../models/audio_file.dart';
 import '../models/transcription_history.dart';
 import '../providers/history_provider.dart' show HistoryProvider, SortOption;
 import '../widgets/recording_card.dart';
+import '../widgets/active_transcription_banner.dart';
 import '../widgets/empty_state_widget.dart';
 import '../widgets/app_bar_title_with_logo.dart';
 import '../services/export/export_service.dart';
@@ -38,6 +39,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   String? _currentlyPlayingId;
   bool _isFabExpanded = false;
+  bool _isSearching = false;
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
 
   PopupMenuItem<SortOption> _buildSortMenuItem(
     BuildContext context,
@@ -159,6 +163,13 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  /// Opens the session of a history entry, e.g. a running background job
+  void _openSessionById(String historyId) {
+    final history = context.read<HistoryProvider>().getHistoryById(historyId);
+    if (history == null) return;
+    _openSession(history);
+  }
+
   void _openSession(TranscriptionHistory history, {bool autoStartTranscription = false}) async {
     await _stopPlayback();
     if (!mounted) return;
@@ -184,6 +195,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    _searchController.dispose();
     _sharedFilesSubscription?.cancel();
     _sharedAudioService.dispose();
     _audioService.dispose();
@@ -371,8 +383,44 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _exportRecording(TranscriptionHistory history) async {
-    final exportService = ExportService();
-    await exportService.share(history);
+    final hasTimestamps = history.transcription?.hasTimestamps ?? false;
+    var format = ExportFormat.markdown;
+
+    if (hasTimestamps) {
+      final selected = await showModalBottomSheet<ExportFormat>(
+        context: context,
+        builder: (ctx) => SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.description_outlined),
+                title: Text(ctx.l10n.exportAsText),
+                onTap: () => Navigator.pop(ctx, ExportFormat.markdown),
+              ),
+              ListTile(
+                leading: const Icon(Icons.subtitles_outlined),
+                title: Text(ctx.l10n.exportAsSubtitles),
+                onTap: () => Navigator.pop(ctx, ExportFormat.subtitles),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      if (selected == null || !mounted) return;
+      format = selected;
+    }
+
+    try {
+      await ExportService().share(history, format: format);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.errorSharingResult(e.toString()))),
+        );
+      }
+    }
   }
 
   Future<void> _openChat(TranscriptionHistory history) async {
@@ -468,8 +516,31 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildScaffold(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const AppBarTitleWithLogo(),
+        title: _isSearching
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                decoration: InputDecoration(
+                  border: InputBorder.none,
+                  hintText: context.l10n.searchRecordingsHint,
+                ),
+                onChanged: (value) => setState(() => _searchQuery = value),
+              )
+            : const AppBarTitleWithLogo(),
         actions: [
+          IconButton(
+            icon: Icon(_isSearching ? Icons.close : Icons.search),
+            tooltip: context.l10n.searchRecordings,
+            onPressed: () {
+              setState(() {
+                _isSearching = !_isSearching;
+                if (!_isSearching) {
+                  _searchController.clear();
+                  _searchQuery = '';
+                }
+              });
+            },
+          ),
           Consumer<HistoryProvider>(
             builder: (context, provider, _) => PopupMenuButton<SortOption>(
               icon: const Icon(Icons.sort),
@@ -515,6 +586,7 @@ class _HomeScreenState extends State<HomeScreen> {
             return Column(
               children: [
                 if (!hasApiKey) _buildApiKeyBanner(context),
+                ActiveTranscriptionBanner(onOpen: _openSessionById),
                 Expanded(
                   child: EmptyStateWidget(
                     icon: Icons.mic,
@@ -531,16 +603,35 @@ class _HomeScreenState extends State<HomeScreen> {
             );
           }
 
+          final visibleHistory = historyProvider.search(_searchQuery);
+
+          if (visibleHistory.isEmpty) {
+            return Column(
+              children: [
+                if (!hasApiKey) _buildApiKeyBanner(context),
+                ActiveTranscriptionBanner(onOpen: _openSessionById),
+                Expanded(
+                  child: EmptyStateWidget(
+                    icon: Icons.search_off,
+                    title: context.l10n.noRecordingsMatchSearch,
+                    subtitle: _searchQuery,
+                  ),
+                ),
+              ],
+            );
+          }
+
           return Column(
             children: [
               if (!hasApiKey) _buildApiKeyBanner(context),
+              ActiveTranscriptionBanner(onOpen: _openSessionById),
               Expanded(
                 child: ListView.builder(
                   padding: const EdgeInsets.all(AppConstants.defaultPadding),
                   cacheExtent: 500,
-                  itemCount: historyProvider.history.length,
+                  itemCount: visibleHistory.length,
                   itemBuilder: (context, index) {
-                    final history = historyProvider.history[index];
+                    final history = visibleHistory[index];
                     return RecordingCard(
                       key: ValueKey(history.id),
                       history: history,

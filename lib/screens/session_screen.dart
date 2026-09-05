@@ -11,10 +11,10 @@ import '../services/audio_service.dart';
 import '../services/file_service.dart';
 import '../services/i_file_service.dart';
 import '../services/i_audio_service.dart';
-import '../services/speaker_extraction_service.dart';
 import '../providers/settings_provider.dart';
 import '../providers/history_provider.dart';
 import '../providers/split_transcription_provider.dart';
+import '../services/i_audio_splitter_service.dart';
 import '../providers/prompts_provider.dart';
 import '../widgets/audio_player_widget.dart';
 import '../widgets/mini_audio_player_widget.dart';
@@ -24,7 +24,9 @@ import '../widgets/split_transcription_progress_card.dart';
 import '../widgets/transcription_button.dart';
 import '../widgets/prompt_results_list.dart';
 import '../widgets/completed_transcription_card.dart';
+import '../widgets/partial_transcription_card.dart';
 import '../widgets/streaming_prompt_card.dart';
+import '../widgets/transcript_timestamps_section.dart';
 import '../dialogs/transcription_confirmation_dialog.dart';
 import '../services/llm_provider_factory.dart';
 import '../repositories/model_repository.dart';
@@ -84,13 +86,17 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
 
   // Streaming state
   Stream<String>? _promptStream;
+  StreamSubscription<String>? _promptSubscription;
   final StringBuffer _promptBuffer = StringBuffer();
   String? _currentPromptName;
+  String? _currentPromptTemplate;
 
   // Split transcription state
   SplitTranscriptionJob? _activeSplitJob;
   StreamSubscription<SplitTranscriptionJob>? _jobSubscription;
   bool _transcriptionJustCompleted = false;
+  int _failedSegmentCount = 0;
+  bool _isRetryingSegments = false;
 
 
   // Audio file missing state
@@ -101,6 +107,7 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
     super.initState();
     _currentHistoryId = widget.historyId;
     _setupAudioListeners();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _attachToRunningJob());
 
     if (widget.initialFile != null) {
       _loadInitialFile();
@@ -109,10 +116,24 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
       _loadFromHistory();
     } else if (widget.autoStartRecording) {
       _showRecorder = true;
-    } else {
-      // Restore session if available and no specific file requested
-      _restoreSessionState();
     }
+  }
+
+  /// Re-attaches to a transcription that kept running in the background
+  void _attachToRunningJob() {
+    if (!mounted) return;
+
+    final splitProvider = context.read<SplitTranscriptionProvider>();
+    final job = splitProvider.currentJob;
+
+    if (job == null || !splitProvider.isRunning) return;
+    if (splitProvider.activeHistoryId != _currentHistoryId) return;
+
+    setState(() {
+      _isTranscribing = true;
+      _activeSplitJob = job;
+    });
+    _listenToSplitJobUpdates(job.id);
   }
 
   void _setupAudioListeners() {
@@ -156,6 +177,14 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
         scheduleUpdate();
       }),
     );
+  }
+
+  /// Jumps to [position] of the audio and starts playback
+  Future<void> _seekTo(Duration position) async {
+    await _audioService.seek(position);
+    if (!_isAudioPlaying) {
+      await _audioService.play();
+    }
   }
 
   Future<void> _togglePlayPause() async {
@@ -324,13 +353,9 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
     }
   }
 
-  Future<void> _restoreSessionState() async {
-    // Logic to restore session if needed, similar to HomeScreen
-    // For now, we might skip this if we want to enforce clean sessions or specific history items
-  }
-
   @override
   void dispose() {
+    _promptSubscription?.cancel();
     _jobSubscription?.cancel();
     for (final subscription in _audioSubscriptions) {
       subscription.cancel();
@@ -354,6 +379,11 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
 
     // Save initial history entry with audio and waveform
     await _saveToHistory();
+
+    if (!mounted) return;
+    if (context.read<SettingsProvider>().autoTranscribe) {
+      await _transcribe();
+    }
   }
   
   // Callback to receive waveform data from recorder
@@ -375,6 +405,11 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
         onAction: _openSettings,
       );
       return;
+    }
+
+    if (_currentHistoryId == null) {
+      await _saveToHistory();
+      if (!mounted) return;
     }
 
     final duration = await AudioUtils.getAudioDuration(_selectedFile!.path);
@@ -436,14 +471,20 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
     }
 
     final splitProvider = context.read<SplitTranscriptionProvider>();
+    final historyProvider = context.read<HistoryProvider>();
     final apiKey = settingsProvider.apiKey!;
     final language = settingsProvider.language;
+    final l10n = context.l10n;
+    final historyId = _currentHistoryId;
+
+    if (historyId == null) return;
 
     try {
       splitProvider.setApiKey(apiKey);
 
       setState(() {
         _isTranscribing = true;
+        _failedSegmentCount = 0;
       });
 
       final job = await splitProvider.startTranscription(
@@ -451,8 +492,15 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
         fileName: _selectedFile!.name,
         language: language,
         apiKey: apiKey,
+        historyId: historyId,
         model: completionModelId,
         speakerDiarization: settingsProvider.speakerDiarization,
+        keywords: settingsProvider.keywords,
+        transcribeStyle: settingsProvider.transcribeStyle,
+        failedSegmentLabel: (number, timeRange) =>
+            l10n.failedSegmentMarker(number, timeRange),
+        onResult: (id, result) =>
+            _persistTranscription(historyProvider, id, result),
       );
 
       if (mounted) {
@@ -470,6 +518,20 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
         SnackBarService().showError(context, ErrorMessages.forError(context, e));
       }
     }
+  }
+
+  /// Stores a finished transcription, also when the session screen is gone
+  Future<void> _persistTranscription(
+    HistoryProvider historyProvider,
+    String historyId,
+    TranscriptionResult result,
+  ) async {
+    final history = historyProvider.getHistoryById(historyId);
+    if (history == null) return;
+
+    await historyProvider.saveHistory(
+      history.copyWith(transcription: result),
+    );
   }
 
   /// Cancels the running transcription and clears the progress card
@@ -496,13 +558,13 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
     SnackBarService().showInfo(context, context.l10n.transcriptionCancelled);
   }
 
-  /// Asks before leaving while a transcription is still running
-  Future<bool> _confirmLeaveWhileTranscribing() async {
+  /// Asks before leaving while a prompt is still generating
+  Future<bool> _confirmLeaveWhilePromptRunning() async {
     final leave = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(ctx.l10n.transcriptionRunningTitle),
-        content: Text(ctx.l10n.transcriptionRunningContent),
+        title: Text(ctx.l10n.promptGenerationRunningTitle),
+        content: Text(ctx.l10n.promptGenerationRunningContent),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -510,10 +572,7 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(ctx).colorScheme.error,
-            ),
-            child: Text(ctx.l10n.leaveAndCancel),
+            child: Text(ctx.l10n.stopGeneration),
           ),
         ],
       ),
@@ -543,43 +602,52 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
   }
 
   Future<void> _onSplitTranscriptionComplete(SplitTranscriptionJob job) async {
+    if (!mounted) return;
+
+    final historyProvider = context.read<HistoryProvider>();
+    final historyId = _currentHistoryId;
+    final result = historyId == null
+        ? null
+        : historyProvider.getHistoryById(historyId)?.transcription;
+
     setState(() {
       _isTranscribing = false;
+      _isRetryingSegments = false;
+      _failedSegmentCount = job.failedCount;
+      _activeSplitJob = job.hasFailures ? job : null;
+      if (result != null) {
+        _transcriptionResult = result;
+        _transcriptionJustCompleted = true;
+      }
+    });
+
+    if (result == null && mounted) {
+      SnackBarService().showError(context, context.l10n.transcriptionFailed);
+    }
+  }
+
+  /// Transcribes the segments that failed and refreshes the result
+  Future<void> _retryFailedSegments() async {
+    final job = _activeSplitJob;
+    if (job == null) return;
+
+    setState(() {
+      _isRetryingSegments = true;
     });
 
     final splitProvider = context.read<SplitTranscriptionProvider>();
 
-    if (job.isFullySuccessful || (job.completedCount > 0 && job.failedCount < job.totalSplits)) {
-      final mergedText = job.mergedTranscription;
-
-      if (mergedText != null && mergedText.isNotEmpty) {
-        final speakerExtractor = SpeakerExtractionService();
-        final speakers = speakerExtractor.extractSpeakers(mergedText);
-        final result = TranscriptionResult(
-          text: mergedText,
-          language: job.language,
-          modelUsed: ModelRepository.transcriptionModelId,
-          timestamp: job.completedAt ?? DateTime.now(),
-          speakers: speakers,
-        );
-
-        setState(() {
-          _transcriptionResult = result;
-          _activeSplitJob = null;
-          _transcriptionJustCompleted = true;
-        });
-
-        await _saveToHistory();
-        await splitProvider.cleanupJob(job);
-
+    try {
+      await splitProvider.retryAllFailedSplits(job.id);
+    } catch (e) {
+      if (mounted) {
+        SnackBarService().showError(context, ErrorMessages.forError(context, e));
       }
-    } else {
-      await splitProvider.cleanupJob(job);
+    } finally {
       if (mounted) {
         setState(() {
-          _activeSplitJob = null;
+          _isRetryingSegments = false;
         });
-        SnackBarService().showError(context, context.l10n.transcriptionFailed);
       }
     }
   }
@@ -606,6 +674,12 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
       });
     } catch (e) {
       debugPrint('Error saving history: $e');
+      if (mounted) {
+        SnackBarService().showError(
+          context,
+          context.l10n.errorSavingHistory(e.toString()),
+        );
+      }
     }
   }
 
@@ -642,6 +716,7 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
 
     setState(() {
       _currentPromptName = promptName;
+      _currentPromptTemplate = promptTemplate;
       _promptBuffer.clear();
     });
 
@@ -660,7 +735,8 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
         _promptStream = stream.asBroadcastStream();
       });
 
-      _promptStream!.listen(
+      _promptSubscription?.cancel();
+      _promptSubscription = _promptStream!.listen(
         (chunk) {
           if (mounted) {
             _promptBuffer.write(chunk);
@@ -683,6 +759,30 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
     }
   }
 
+  /// Stops a running prompt and keeps whatever was generated so far
+  Future<void> _stopPromptStreaming() async {
+    if (_promptStream == null) return;
+
+    await _promptSubscription?.cancel();
+    _promptSubscription = null;
+
+    final name = _currentPromptName;
+    final template = _currentPromptTemplate;
+
+    if (name != null && template != null && _promptBuffer.isNotEmpty) {
+      _onPromptComplete(name, template);
+    } else {
+      setState(() {
+        _promptStream = null;
+        _promptBuffer.clear();
+      });
+    }
+
+    if (mounted) {
+      SnackBarService().showInfo(context, context.l10n.promptCancelled);
+    }
+  }
+
   void _onPromptComplete(String name, String template) async {
     final settingsProvider = context.read<SettingsProvider>();
     final result = PromptResult(
@@ -697,8 +797,10 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
     setState(() {
       _promptResults.add(result);
       _promptStream = null;
+      _currentPromptTemplate = null;
       _promptBuffer.clear();
     });
+    _promptSubscription = null;
 
     await _saveToHistory();
   }
@@ -731,14 +833,22 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
         _currentHistoryId != null;
 
     return PopScope(
-      canPop: !_isTranscribing,
+      canPop: _promptStream == null,
       onPopInvokedWithResult: (didPop, result) async {
-        if (didPop) return;
+        if (didPop) {
+          if (_isTranscribing && mounted) {
+            SnackBarService().showInfo(
+              context,
+              context.l10n.transcriptionContinuesInBackground,
+            );
+          }
+          return;
+        }
 
-        final shouldLeave = await _confirmLeaveWhileTranscribing();
+        final shouldLeave = await _confirmLeaveWhilePromptRunning();
         if (!shouldLeave || !mounted) return;
 
-        await _cancelTranscription();
+        await _stopPromptStreaming();
         if (!context.mounted) return;
         Navigator.of(context).pop();
       },
@@ -825,6 +935,20 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
     );
   }
 
+  String _splitPhaseText(BuildContext context, SplitProgress progress) {
+    switch (progress.phase) {
+      case SplitPhase.splitting:
+        return context.l10n.splittingAudioProgress(
+          progress.currentSplit + 1,
+          progress.totalSplits,
+        );
+      case SplitPhase.finished:
+        return context.l10n.splittingAudio;
+      case SplitPhase.preparing:
+        return context.l10n.preparingAudio;
+    }
+  }
+
   Widget _buildScrollableContent(BuildContext context) {
     final hasResults = _transcriptionResult != null || _promptResults.isNotEmpty;
 
@@ -893,7 +1017,7 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
                                     value: progress.progress,
                                   ),
                                   const SizedBox(height: AppSpacing.m),
-                                  Text(progress.currentStatus ?? context.l10n.splittingAudio),
+                                  Text(_splitPhaseText(context, progress)),
                                   const SizedBox(height: AppSpacing.xs),
                                   Text(
                                     '${progress.progressPercentage}%',
@@ -911,6 +1035,14 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
                       },
                     ),
           ] else if (_transcriptionResult != null) ...[
+            if (_failedSegmentCount > 0) ...[
+              PartialTranscriptionCard(
+                failedCount: _failedSegmentCount,
+                isRetrying: _isRetryingSegments,
+                onRetry: _isRetryingSegments ? null : _retryFailedSegments,
+              ),
+              const SizedBox(height: AppSpacing.m),
+            ],
             CompletedTranscriptionCard(
               transcriptionResult: _transcriptionResult!,
               initiallyExpanded: _transcriptionJustCompleted,
@@ -919,6 +1051,14 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
               promptResultCount: _promptResults.length,
               onRetranscribe: _audioFileNotFound ? null : _retranscribe,
             ),
+            if (_transcriptionResult!.hasTimestamps) ...[
+              const SizedBox(height: AppSpacing.m),
+              TranscriptTimestampsSection(
+                segments: _transcriptionResult!.segments,
+                position: _audioPosition,
+                onSeek: _audioFileNotFound ? null : _seekTo,
+              ),
+            ],
             const SizedBox(height: AppSpacing.m),
             PromptResultsList(
               results: List.from(_promptResults)
@@ -940,6 +1080,7 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
               StreamingPromptCard(
                 promptName: _currentPromptName ?? '',
                 textStream: _promptStream,
+                onStop: _stopPromptStreaming,
                 onStreamComplete: () {},
                 onStreamError: (error) {
                   SnackBarService().showError(context, ErrorMessages.forError(context, error));

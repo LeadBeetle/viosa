@@ -117,32 +117,16 @@ class HistoryProvider with ChangeNotifier {
     }
   }
 
-  /// Search history by text content
+  /// Search history by file name or transcript, keeping the selected order
   List<TranscriptionHistory> search(String query) {
-    if (query.isEmpty) return history;
+    if (query.trim().isEmpty) return history;
 
-    final lowerQuery = query.toLowerCase();
-    return _history.where((item) {
+    final lowerQuery = query.trim().toLowerCase();
+    return history.where((item) {
       final transcriptionText = item.transcription?.text.toLowerCase() ?? '';
       return item.audioFileName.toLowerCase().contains(lowerQuery) ||
              transcriptionText.contains(lowerQuery);
     }).toList();
-  }
-
-  /// Filter history by language
-  List<TranscriptionHistory> filterByLanguage(String? language) {
-    if (language == null || language.isEmpty || language == 'all') {
-      return history;
-    }
-
-    return _history.where((item) {
-      return item.transcription?.language.toLowerCase() == language.toLowerCase();
-    }).toList();
-  }
-
-  /// Filter history by date range
-  Future<List<TranscriptionHistory>> filterByDateRange(DateTime start, DateTime end) async {
-    return await _historyService.filterByDateRange(start, end);
   }
 
   /// Reload history from storage

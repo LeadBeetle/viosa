@@ -1,15 +1,22 @@
 import '../models/audio_split.dart';
 
+/// Phase of the splitting operation, translated by the UI
+enum SplitPhase {
+  preparing,
+  splitting,
+  finished,
+}
+
 /// Progress information for audio splitting operation
 class SplitProgress {
   final int currentSplit;
   final int totalSplits;
-  final String? currentStatus;
+  final SplitPhase phase;
 
   const SplitProgress({
     required this.currentSplit,
     required this.totalSplits,
-    this.currentStatus,
+    this.phase = SplitPhase.preparing,
   });
 
   double get progress => totalSplits > 0 ? currentSplit / totalSplits : 0.0;

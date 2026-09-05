@@ -149,7 +149,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get speakerDiarizationDescription =>
-      'Identifiziert verschiedene Sprecher in der Aufnahme';
+      'Das Modell kennzeichnet verschiedene Sprecher direkt im Transkript';
 
   @override
   String get uiLanguage => 'App-Sprache';
@@ -319,7 +319,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get warningExistingData =>
-      'Achtung: Bestehende Transkription und Prompt-Ergebnisse werden gelöscht.';
+      'Achtung: Bestehende Transkription, Prompt-Ergebnisse und der Chat-Verlauf werden gelöscht.';
 
   @override
   String longAudioDescription(String duration, int splitCount) {
@@ -889,7 +889,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get speakNow => 'Sprechen ...';
 
   @override
-  String get stopGeneration => 'Antwort stoppen';
+  String get stopGeneration => 'Generierung stoppen';
 
   @override
   String get noAudioFilesFound => 'Keine Audio-Dateien gefunden';
@@ -1030,5 +1030,154 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String errorImportingFile(String error) {
     return 'Datei konnte nicht übernommen werden: $error';
+  }
+
+  @override
+  String failedSegmentMarker(int number, String timeRange) {
+    return '[Abschnitt $number ($timeRange) – Transkription fehlgeschlagen]';
+  }
+
+  @override
+  String get transcriptionPartialTitle => 'Transkription unvollständig';
+
+  @override
+  String transcriptionPartialWarning(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Abschnitte konnten nicht transkribiert werden.',
+      one: '1 Abschnitt konnte nicht transkribiert werden.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get retryFailedSegments => 'Fehlgeschlagene Abschnitte wiederholen';
+
+  @override
+  String get retryingFailedSegments =>
+      'Abschnitte werden erneut transkribiert …';
+
+  @override
+  String get transcriptionContinuesInBackground =>
+      'Transkription läuft im Hintergrund weiter';
+
+  @override
+  String get continueInBackground => 'Im Hintergrund weiterlaufen';
+
+  @override
+  String get transcriptionRunningBannerTitle => 'Transkription läuft';
+
+  @override
+  String transcriptionRunningBannerSubtitle(String fileName, int percent) {
+    return '$fileName · $percent%';
+  }
+
+  @override
+  String get openRunningTranscription => 'Öffnen';
+
+  @override
+  String get promptGenerationRunningTitle => 'Prompt läuft noch';
+
+  @override
+  String get promptGenerationRunningContent =>
+      'Wenn du die Sitzung verlässt, geht das laufende Ergebnis verloren.';
+
+  @override
+  String get promptCancelled => 'Generierung abgebrochen';
+
+  @override
+  String errorSavingHistory(String error) {
+    return 'Ergebnis konnte nicht gespeichert werden: $error';
+  }
+
+  @override
+  String errorSharingResult(String error) {
+    return 'Teilen fehlgeschlagen: $error';
+  }
+
+  @override
+  String get searchRecordings => 'Aufnahmen durchsuchen';
+
+  @override
+  String get searchRecordingsHint => 'Name oder Transkript durchsuchen';
+
+  @override
+  String get noRecordingsMatchSearch => 'Keine Aufnahme passt zur Suche';
+
+  @override
+  String get textSize => 'Textgröße';
+
+  @override
+  String get textSizeDescription =>
+      'Schriftgröße von Transkripten und Prompt-Ergebnissen';
+
+  @override
+  String get clearAllHistory => 'Alle Aufnahmen löschen';
+
+  @override
+  String get clearAllHistoryConfirm =>
+      'Alle Aufnahmen, Transkripte und Chats werden dauerhaft gelöscht.';
+
+  @override
+  String get allHistoryCleared => 'Alle Aufnahmen gelöscht';
+
+  @override
+  String get transcribeStyle => 'Transkriptionsstil';
+
+  @override
+  String get transcribeStyleClean => 'Bereinigt';
+
+  @override
+  String get transcribeStyleVerbatim => 'Wortgetreu';
+
+  @override
+  String get transcribeStyleDescription =>
+      'Bereinigt entfernt Füllwörter, wortgetreu behält jedes gesprochene Wort';
+
+  @override
+  String get keywords => 'Fachbegriffe';
+
+  @override
+  String get keywordsDescription =>
+      'Namen und Fachbegriffe, die das Modell bevorzugt erkennen soll';
+
+  @override
+  String get keywordsHint => 'Begriff eingeben und bestätigen';
+
+  @override
+  String get keywordsEmpty => 'Noch keine Begriffe hinterlegt';
+
+  @override
+  String get autoTranscribe => 'Nach Aufnahme transkribieren';
+
+  @override
+  String get autoTranscribeDescription =>
+      'Startet die Transkription direkt nach dem Ende einer Aufnahme';
+
+  @override
+  String get timestamps => 'Zeitmarken';
+
+  @override
+  String get jumpToPosition => 'Zu dieser Stelle springen';
+
+  @override
+  String get exportAsText => 'Als Text teilen';
+
+  @override
+  String get exportAsSubtitles => 'Als Untertitel (SRT) teilen';
+
+  @override
+  String get exportNoTimestamps =>
+      'Für diese Aufnahme liegen keine Zeitmarken vor';
+
+  @override
+  String detectedLanguageLabel(String language) {
+    return 'Erkannt: $language';
+  }
+
+  @override
+  String splittingAudioProgress(int current, int total) {
+    return 'Audio wird geteilt: $current/$total';
   }
 }

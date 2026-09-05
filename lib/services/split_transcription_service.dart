@@ -4,14 +4,12 @@ import 'package:flutter/foundation.dart';
 import '../models/audio_split.dart';
 import '../models/split_transcription_job.dart';
 import '../models/transcription_result.dart';
-import '../models/transcription_history.dart';
 import '../repositories/model_repository.dart';
 import 'audio_splitter_service.dart';
 import 'i_audio_splitter_service.dart';
-import 'llm_provider.dart';
-import 'llm_provider_factory.dart';
 import 'speaker_context_service.dart';
 import 'speaker_extraction_service.dart';
+import 'transcription_service.dart';
 import 'completion/openrouter_completion_service.dart';
 
 /// Service for managing split transcription jobs
@@ -19,7 +17,7 @@ class SplitTranscriptionService {
   final AudioSplitterService _splitterService;
   final Map<String, SplitTranscriptionJob> _jobs = {};
   String _completionModel = ModelRepository.defaultModelId;
-  ILLMProvider? _provider;
+  ITranscriptionService? _transcriptionService;
   ISpeakerContextService? _speakerContextService;
 
   static const int maxRetries = 3;
@@ -29,9 +27,11 @@ class SplitTranscriptionService {
     AudioSplitterService? splitterService,
   })  : _splitterService = splitterService ?? AudioSplitterService();
 
-  ILLMProvider _getProvider() {
-    _provider ??= LLMProviderFactory.createForModel(_completionModel);
-    return _provider!;
+  ITranscriptionService _getTranscriptionService() {
+    _transcriptionService ??= TranscriptionService(
+      completionService: OpenRouterCompletionService(model: _completionModel),
+    );
+    return _transcriptionService!;
   }
 
   ISpeakerContextService _getSpeakerContextService() {
@@ -78,11 +78,13 @@ class SplitTranscriptionService {
     String apiKey, {
     String? model,
     bool speakerDiarization = false,
+    List<String> keywords = const [],
+    String? transcribeStyle,
     void Function(SplitTranscriptionJob)? onProgress,
   }) async {
     if (model != null) {
       _completionModel = model;
-      _provider = LLMProviderFactory.createForModel(_completionModel);
+      _transcriptionService = null;
       _speakerContextService = null;
     }
     job.status = JobStatus.processing;
@@ -106,6 +108,8 @@ class SplitTranscriptionService {
         apiKey,
         speakerContext: speakerDiarization ? currentContext : null,
         speakerDiarization: speakerDiarization,
+        keywords: keywords,
+        transcribeStyle: transcribeStyle,
         onProgress: onProgress,
       );
 
@@ -199,6 +203,8 @@ class SplitTranscriptionService {
     String apiKey, {
     TranscriptionContext? speakerContext,
     bool speakerDiarization = false,
+    List<String> keywords = const [],
+    String? transcribeStyle,
     void Function(SplitTranscriptionJob)? onProgress,
   }) async {
     for (int attempt = 1; attempt <= maxRetries; attempt++) {
@@ -212,16 +218,20 @@ class SplitTranscriptionService {
         final audioBytes = await audioFile.readAsBytes();
         final base64Audio = base64Encode(audioBytes);
 
-        final result = await _getProvider().transcribeAudio(
+        final result = await _getTranscriptionService().transcribe(
           apiKey: apiKey,
           base64Audio: base64Audio,
           mimeType: split.mimeType,
           language: job.language,
           speakerContext: speakerContext,
           speakerDiarization: speakerDiarization,
+          keywords: keywords,
+          transcribeStyle: transcribeStyle,
         );
 
         split.transcriptionText = result.text;
+        split.segments = result.segments;
+        split.detectedLanguage = result.language;
         split.status = SplitStatus.completed;
         split.completedAt = DateTime.now();
         onProgress?.call(job);
@@ -248,6 +258,8 @@ class SplitTranscriptionService {
     String splitId,
     String apiKey, {
     bool speakerDiarization = false,
+    List<String> keywords = const [],
+    String? transcribeStyle,
     void Function(SplitTranscriptionJob)? onProgress,
   }) async {
     final split = job.splits.firstWhere(
@@ -277,6 +289,8 @@ class SplitTranscriptionService {
       apiKey,
       speakerContext: speakerContext,
       speakerDiarization: speakerDiarization,
+      keywords: keywords,
+      transcribeStyle: transcribeStyle,
       onProgress: onProgress,
     );
 
@@ -327,38 +341,26 @@ class SplitTranscriptionService {
     job.lastUpdatedAt = DateTime.now();
   }
 
-  /// Gets a job by ID
-  SplitTranscriptionJob? getJob(String jobId) {
-    return _jobs[jobId];
-  }
+  /// Builds the transcription result of a finished job
+  /// [failedSegmentLabel] renders the marker for splits that could not be
+  /// transcribed, so the caller decides the language of that marker
+  TranscriptionResult? buildTranscriptionResult(
+    SplitTranscriptionJob job, {
+    String Function(int segmentNumber, String timeRange)? failedSegmentLabel,
+  }) {
+    final mergedText = job.mergedTranscription(
+      failedSegmentLabel: failedSegmentLabel,
+    );
 
-  /// Creates a TranscriptionHistory entry from a completed job
-  TranscriptionHistory? createHistoryFromJob(SplitTranscriptionJob job) {
-    if (job.status != JobStatus.completed &&
-        job.status != JobStatus.partialFailure) {
-      return null;
-    }
+    if (mergedText == null || mergedText.isEmpty) return null;
 
-    final mergedText = job.mergedTranscription;
-    if (mergedText == null || mergedText.isEmpty) {
-      return null;
-    }
-
-    final speakerExtractor = SpeakerExtractionService();
-    final speakers = speakerExtractor.extractSpeakers(mergedText);
-
-    return TranscriptionHistory(
-      audioFileName: job.originalFileName,
-      transcription: TranscriptionResult(
-        text: mergedText,
-        language: job.language,
-        modelUsed: ModelRepository.transcriptionModelId,
-        timestamp: job.completedAt ?? DateTime.now(),
-        speakers: speakers,
-      ),
-      createdAt: job.createdAt,
-      splitJobId: job.id,
-      isSplitTranscription: true,
+    return TranscriptionResult(
+      text: mergedText,
+      language: job.detectedLanguage ?? job.language,
+      modelUsed: ModelRepository.transcriptionModelId,
+      timestamp: job.completedAt ?? DateTime.now(),
+      speakers: SpeakerExtractionService().extractSpeakers(mergedText),
+      segments: job.mergedSegments,
     );
   }
 

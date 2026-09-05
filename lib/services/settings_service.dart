@@ -1,5 +1,7 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import 'transcription/i_speech_to_text_service.dart';
+
 /// Interface for settings storage operations
 /// Following Interface Segregation Principle (ISP)
 abstract class ISettingsService {
@@ -19,6 +21,12 @@ abstract class ISettingsService {
   Future<String> getThemeMode();
   Future<void> saveSpeakerDiarization(bool enabled);
   Future<bool> getSpeakerDiarization();
+  Future<void> saveTranscribeStyle(String style);
+  Future<String> getTranscribeStyle();
+  Future<void> saveKeywords(List<String> keywords);
+  Future<List<String>> getKeywords();
+  Future<void> saveAutoTranscribe(bool enabled);
+  Future<bool> getAutoTranscribe();
   Future<void> clearAllSettings();
 
   /// Remove settings written by older app versions that are no longer read
@@ -38,10 +46,16 @@ class SettingsService implements ISettingsService {
   static const String _legacyModelKey = 'selected_model';
   static const String _themeModeKey = 'theme_mode';
   static const String _speakerDiarizationKey = 'speaker_diarization';
+  static const String _transcribeStyleKey = 'transcribe_style';
+  static const String _keywordsKey = 'transcription_keywords';
+  static const String _autoTranscribeKey = 'auto_transcribe';
   static const String _defaultLanguage = 'auto';
   static const double _defaultTextSize = 16.0;
   static const String _defaultThemeMode = 'system';
   static const bool _defaultSpeakerDiarization = false;
+  static const String _defaultTranscribeStyle = TranscribeStyle.clean;
+  static const bool _defaultAutoTranscribe = true;
+  static const String _keywordSeparator = '\n';
 
   SettingsService({FlutterSecureStorage? storage})
       : _storage = storage ?? const FlutterSecureStorage();
@@ -149,6 +163,62 @@ class SettingsService implements ISettingsService {
   }
 
   @override
+  Future<void> saveTranscribeStyle(String style) async {
+    if (!TranscribeStyle.values.contains(style)) {
+      throw ArgumentError('Invalid transcribe style: $style');
+    }
+    await _storage.write(key: _transcribeStyleKey, value: style);
+  }
+
+  @override
+  Future<String> getTranscribeStyle() async {
+    final style = await _storage.read(key: _transcribeStyleKey);
+    if (style == null || !TranscribeStyle.values.contains(style)) {
+      return _defaultTranscribeStyle;
+    }
+    return style;
+  }
+
+  @override
+  Future<void> saveKeywords(List<String> keywords) async {
+    final cleaned = keywords
+        .map((keyword) => keyword.trim())
+        .where((keyword) => keyword.isNotEmpty)
+        .toList();
+
+    if (cleaned.isEmpty) {
+      await _storage.delete(key: _keywordsKey);
+      return;
+    }
+
+    await _storage.write(key: _keywordsKey, value: cleaned.join(_keywordSeparator));
+  }
+
+  @override
+  Future<List<String>> getKeywords() async {
+    final stored = await _storage.read(key: _keywordsKey);
+    if (stored == null || stored.isEmpty) return const [];
+
+    return stored
+        .split(_keywordSeparator)
+        .map((keyword) => keyword.trim())
+        .where((keyword) => keyword.isNotEmpty)
+        .toList();
+  }
+
+  @override
+  Future<void> saveAutoTranscribe(bool enabled) async {
+    await _storage.write(key: _autoTranscribeKey, value: enabled.toString());
+  }
+
+  @override
+  Future<bool> getAutoTranscribe() async {
+    final value = await _storage.read(key: _autoTranscribeKey);
+    if (value == null) return _defaultAutoTranscribe;
+    return value == 'true';
+  }
+
+  @override
   Future<void> clearAllSettings() async {
     await Future.wait([
       _storage.delete(key: _apiKeyKey),
@@ -158,6 +228,9 @@ class SettingsService implements ISettingsService {
       _storage.delete(key: _legacyModelKey),
       _storage.delete(key: _themeModeKey),
       _storage.delete(key: _speakerDiarizationKey),
+      _storage.delete(key: _transcribeStyleKey),
+      _storage.delete(key: _keywordsKey),
+      _storage.delete(key: _autoTranscribeKey),
     ]);
   }
 

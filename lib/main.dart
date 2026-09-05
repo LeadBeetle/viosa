@@ -11,7 +11,6 @@ import 'generated/app_localizations.dart';
 import 'providers/settings_provider.dart';
 import 'providers/history_provider.dart';
 import 'providers/prompts_provider.dart';
-import 'providers/session_state_provider.dart';
 import 'providers/split_transcription_provider.dart';
 import 'services/settings_service.dart';
 import 'services/history_service.dart';
@@ -26,6 +25,7 @@ import 'models/prompt.dart';
 import 'models/audio_split.dart';
 import 'models/split_transcription_job.dart';
 import 'models/speaker.dart';
+import 'models/transcript_segment.dart';
 import 'models/chat_message.dart';
 
 void main() async {
@@ -40,6 +40,7 @@ void main() async {
 
   // Register Hive adapters
   Hive.registerAdapter(SpeakerAdapter());
+  Hive.registerAdapter(TranscriptSegmentAdapter());
   Hive.registerAdapter(TranscriptionResultAdapter());
   Hive.registerAdapter(PromptResultAdapter());
   Hive.registerAdapter(TranscriptionHistoryAdapter());
@@ -55,7 +56,6 @@ void main() async {
   final settingsProvider = SettingsProvider(SettingsService());
   final historyProvider = HistoryProvider(HistoryService());
   final promptsProvider = PromptsProvider(PromptService());
-  final sessionStateProvider = SessionStateProvider();
   final splitTranscriptionProvider = SplitTranscriptionProvider();
 
   // Initialize notification service for recording indicator
@@ -67,7 +67,6 @@ void main() async {
     settingsProvider.initialize(),
     historyProvider.initialize(),
     promptsProvider.initialize(),
-    sessionStateProvider.initialize(),
   ]);
 
   // Cleanup orphaned split files from previous sessions
@@ -77,7 +76,6 @@ void main() async {
     settingsProvider: settingsProvider,
     historyProvider: historyProvider,
     promptsProvider: promptsProvider,
-    sessionStateProvider: sessionStateProvider,
     splitTranscriptionProvider: splitTranscriptionProvider,
   ));
 }
@@ -86,7 +84,6 @@ class VIOSAApp extends StatelessWidget {
   final SettingsProvider settingsProvider;
   final HistoryProvider historyProvider;
   final PromptsProvider promptsProvider;
-  final SessionStateProvider sessionStateProvider;
   final SplitTranscriptionProvider splitTranscriptionProvider;
 
   const VIOSAApp({
@@ -94,7 +91,6 @@ class VIOSAApp extends StatelessWidget {
     required this.settingsProvider,
     required this.historyProvider,
     required this.promptsProvider,
-    required this.sessionStateProvider,
     required this.splitTranscriptionProvider,
   });
 
@@ -105,7 +101,6 @@ class VIOSAApp extends StatelessWidget {
         ChangeNotifierProvider.value(value: settingsProvider),
         ChangeNotifierProvider.value(value: historyProvider),
         ChangeNotifierProvider.value(value: promptsProvider),
-        ChangeNotifierProvider.value(value: sessionStateProvider),
         ChangeNotifierProvider.value(value: splitTranscriptionProvider),
       ],
       child: Consumer<SettingsProvider>(

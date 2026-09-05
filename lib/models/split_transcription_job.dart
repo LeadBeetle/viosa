@@ -1,5 +1,6 @@
 import 'package:hive/hive.dart';
 import 'audio_split.dart';
+import 'transcript_segment.dart';
 import '../services/text_merger_service.dart';
 
 part 'split_transcription_job.g.dart';
@@ -27,6 +28,10 @@ enum JobStatus {
 /// Following Single Responsibility Principle (SRP)
 @HiveType(typeId: 8)
 class SplitTranscriptionJob {
+  /// Segments closer than this to the previous split's end are treated as
+  /// duplicates produced by the split overlap
+  static const int _overlapToleranceMs = 500;
+
   @HiveField(0)
   final String id;
 
@@ -121,35 +126,72 @@ class SplitTranscriptionJob {
 
   /// Returns merged transcription from all completed splits
   /// Uses TextMergerService to remove duplicate content from overlapping regions
-  String? get mergedTranscription {
+  /// [failedSegmentLabel] renders the marker for a failed split; callers pass a
+  /// localized builder so the transcript never contains untranslated text
+  String? mergedTranscription({
+    String Function(int segmentNumber, String timeRange)? failedSegmentLabel,
+  }) {
     if (completedCount == 0) return null;
 
     final sortedSplits = List<AudioSplit>.from(splits)
       ..sort((a, b) => a.index.compareTo(b.index));
 
     final successfulTexts = <String>[];
-    final failedSegments = <String>[];
+    final failedMarkers = <String>[];
 
     for (final split in sortedSplits) {
       if (split.status == SplitStatus.completed && split.transcriptionText != null) {
         successfulTexts.add(split.transcriptionText!);
-      } else if (split.status == SplitStatus.failed) {
-        failedSegments.add('[Segment ${split.index + 1} (${split.timeRange}) - Transkription fehlgeschlagen]');
+      } else if (split.status == SplitStatus.failed && failedSegmentLabel != null) {
+        failedMarkers.add(failedSegmentLabel(split.index + 1, split.timeRange));
       }
     }
 
-    if (successfulTexts.isEmpty && failedSegments.isEmpty) {
+    if (successfulTexts.isEmpty && failedMarkers.isEmpty) {
       return null;
     }
 
     final merger = TextMergerService();
     final mergedText = merger.mergeTexts(successfulTexts);
 
-    if (failedSegments.isEmpty) {
+    if (failedMarkers.isEmpty) {
       return mergedText;
     }
 
-    return '$mergedText\n\n${failedSegments.join('\n\n')}';
+    return '$mergedText\n\n${failedMarkers.join('\n\n')}';
+  }
+
+  /// Returns all segments of completed splits on the timeline of the original audio
+  /// Segments duplicated by the split overlap are dropped
+  List<TranscriptSegment> get mergedSegments {
+    final sortedSplits = List<AudioSplit>.from(splits)
+      ..sort((a, b) => a.index.compareTo(b.index));
+
+    final merged = <TranscriptSegment>[];
+    int lastEndMs = -1;
+
+    for (final split in sortedSplits) {
+      if (split.status != SplitStatus.completed) continue;
+
+      for (final segment in split.globalSegments) {
+        if (segment.text.trim().isEmpty) continue;
+        if (segment.startMs + _overlapToleranceMs < lastEndMs) continue;
+
+        merged.add(segment);
+        lastEndMs = segment.endMs;
+      }
+    }
+
+    return merged;
+  }
+
+  /// Returns the language the speech-to-text model detected, if it reported one
+  String? get detectedLanguage {
+    for (final split in splits) {
+      final language = split.detectedLanguage;
+      if (language != null && language.isNotEmpty) return language;
+    }
+    return null;
   }
 
   /// Returns list of failed splits

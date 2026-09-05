@@ -1,28 +1,16 @@
-import '../models/transcription_result.dart';
 import '../models/prompt_result.dart';
 import 'completion/i_completion_service.dart';
-import 'transcription_service.dart';
 import 'prompt_processing_service.dart';
-import 'speaker_context_service.dart';
 
 export 'llm_exceptions.dart';
 
 /// Facade that provides backward compatibility with the old ILLMProvider interface
-/// Internally delegates to TranscriptionService and PromptProcessingService
-/// @deprecated Use TranscriptionService and PromptProcessingService directly
+/// Internally delegates to PromptProcessingService
+/// @deprecated Use PromptProcessingService directly
 abstract class ILLMProvider {
   String get providerId;
   String get providerName;
   String get model;
-
-  Future<TranscriptionResult> transcribeAudio({
-    required String apiKey,
-    required String base64Audio,
-    required String mimeType,
-    required String language,
-    TranscriptionContext? speakerContext,
-    bool speakerDiarization = false,
-  });
 
   Future<PromptResult> applyPrompt({
     required String apiKey,
@@ -40,16 +28,14 @@ abstract class ILLMProvider {
 }
 
 /// Adapter that implements ILLMProvider using the new service architecture
-/// @deprecated Use TranscriptionService and PromptProcessingService directly
+/// @deprecated Use PromptProcessingService directly
 class LLMProviderAdapter implements ILLMProvider {
   final ICompletionService _completionService;
-  final TranscriptionService _transcriptionService;
   final PromptProcessingService _promptService;
 
   LLMProviderAdapter({
     required ICompletionService completionService,
   })  : _completionService = completionService,
-        _transcriptionService = TranscriptionService(completionService: completionService),
         _promptService = PromptProcessingService(completionService: completionService);
 
   @override
@@ -62,24 +48,6 @@ class LLMProviderAdapter implements ILLMProvider {
   String get model => _completionService.model;
 
   @override
-  Future<TranscriptionResult> transcribeAudio({
-    required String apiKey,
-    required String base64Audio,
-    required String mimeType,
-    required String language,
-    TranscriptionContext? speakerContext,
-    bool speakerDiarization = false,
-  }) {
-    return _transcriptionService.transcribe(
-      apiKey: apiKey,
-      base64Audio: base64Audio,
-      mimeType: mimeType,
-      language: language,
-      speakerContext: speakerContext,
-      speakerDiarization: speakerDiarization,
-    );
-  }
-
   @override
   Future<PromptResult> applyPrompt({
     required String apiKey,

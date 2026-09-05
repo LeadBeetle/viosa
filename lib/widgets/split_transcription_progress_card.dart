@@ -261,7 +261,7 @@ class SplitTranscriptionProgressCard extends StatelessWidget {
   /// Builds actions section
   Widget _buildActions(BuildContext context) {
     // Only show actions section if there's a "View Transcription" button to display
-    if (!(job.isFinished && job.mergedTranscription != null && onViewMerged != null)) {
+    if (!(job.isFinished && job.completedCount > 0 && onViewMerged != null)) {
       return const SizedBox.shrink();
     }
 
@@ -290,9 +290,9 @@ class SplitTranscriptionProgressCard extends StatelessWidget {
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Segment wird erneut transkribiert...'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text(context.l10n.retryingFailedSegments),
+            duration: const Duration(seconds: 2),
           ),
         );
       }

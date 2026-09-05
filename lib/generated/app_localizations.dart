@@ -371,7 +371,7 @@ abstract class AppLocalizations {
   /// No description provided for @speakerDiarizationDescription.
   ///
   /// In de, this message translates to:
-  /// **'Identifiziert verschiedene Sprecher in der Aufnahme'**
+  /// **'Das Modell kennzeichnet verschiedene Sprecher direkt im Transkript'**
   String get speakerDiarizationDescription;
 
   /// No description provided for @uiLanguage.
@@ -665,7 +665,7 @@ abstract class AppLocalizations {
   /// No description provided for @warningExistingData.
   ///
   /// In de, this message translates to:
-  /// **'Achtung: Bestehende Transkription und Prompt-Ergebnisse werden gelöscht.'**
+  /// **'Achtung: Bestehende Transkription, Prompt-Ergebnisse und der Chat-Verlauf werden gelöscht.'**
   String get warningExistingData;
 
   /// No description provided for @longAudioDescription.
@@ -1547,7 +1547,7 @@ abstract class AppLocalizations {
   /// No description provided for @stopGeneration.
   ///
   /// In de, this message translates to:
-  /// **'Antwort stoppen'**
+  /// **'Generierung stoppen'**
   String get stopGeneration;
 
   /// No description provided for @noAudioFilesFound.
@@ -1801,6 +1801,246 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Datei konnte nicht übernommen werden: {error}'**
   String errorImportingFile(String error);
+
+  /// No description provided for @failedSegmentMarker.
+  ///
+  /// In de, this message translates to:
+  /// **'[Abschnitt {number} ({timeRange}) – Transkription fehlgeschlagen]'**
+  String failedSegmentMarker(int number, String timeRange);
+
+  /// No description provided for @transcriptionPartialTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Transkription unvollständig'**
+  String get transcriptionPartialTitle;
+
+  /// No description provided for @transcriptionPartialWarning.
+  ///
+  /// In de, this message translates to:
+  /// **'{count, plural, =1{1 Abschnitt konnte nicht transkribiert werden.} other{{count} Abschnitte konnten nicht transkribiert werden.}}'**
+  String transcriptionPartialWarning(int count);
+
+  /// No description provided for @retryFailedSegments.
+  ///
+  /// In de, this message translates to:
+  /// **'Fehlgeschlagene Abschnitte wiederholen'**
+  String get retryFailedSegments;
+
+  /// No description provided for @retryingFailedSegments.
+  ///
+  /// In de, this message translates to:
+  /// **'Abschnitte werden erneut transkribiert …'**
+  String get retryingFailedSegments;
+
+  /// No description provided for @transcriptionContinuesInBackground.
+  ///
+  /// In de, this message translates to:
+  /// **'Transkription läuft im Hintergrund weiter'**
+  String get transcriptionContinuesInBackground;
+
+  /// No description provided for @continueInBackground.
+  ///
+  /// In de, this message translates to:
+  /// **'Im Hintergrund weiterlaufen'**
+  String get continueInBackground;
+
+  /// No description provided for @transcriptionRunningBannerTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Transkription läuft'**
+  String get transcriptionRunningBannerTitle;
+
+  /// No description provided for @transcriptionRunningBannerSubtitle.
+  ///
+  /// In de, this message translates to:
+  /// **'{fileName} · {percent}%'**
+  String transcriptionRunningBannerSubtitle(String fileName, int percent);
+
+  /// No description provided for @openRunningTranscription.
+  ///
+  /// In de, this message translates to:
+  /// **'Öffnen'**
+  String get openRunningTranscription;
+
+  /// No description provided for @promptGenerationRunningTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Prompt läuft noch'**
+  String get promptGenerationRunningTitle;
+
+  /// No description provided for @promptGenerationRunningContent.
+  ///
+  /// In de, this message translates to:
+  /// **'Wenn du die Sitzung verlässt, geht das laufende Ergebnis verloren.'**
+  String get promptGenerationRunningContent;
+
+  /// No description provided for @promptCancelled.
+  ///
+  /// In de, this message translates to:
+  /// **'Generierung abgebrochen'**
+  String get promptCancelled;
+
+  /// No description provided for @errorSavingHistory.
+  ///
+  /// In de, this message translates to:
+  /// **'Ergebnis konnte nicht gespeichert werden: {error}'**
+  String errorSavingHistory(String error);
+
+  /// No description provided for @errorSharingResult.
+  ///
+  /// In de, this message translates to:
+  /// **'Teilen fehlgeschlagen: {error}'**
+  String errorSharingResult(String error);
+
+  /// No description provided for @searchRecordings.
+  ///
+  /// In de, this message translates to:
+  /// **'Aufnahmen durchsuchen'**
+  String get searchRecordings;
+
+  /// No description provided for @searchRecordingsHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Name oder Transkript durchsuchen'**
+  String get searchRecordingsHint;
+
+  /// No description provided for @noRecordingsMatchSearch.
+  ///
+  /// In de, this message translates to:
+  /// **'Keine Aufnahme passt zur Suche'**
+  String get noRecordingsMatchSearch;
+
+  /// No description provided for @textSize.
+  ///
+  /// In de, this message translates to:
+  /// **'Textgröße'**
+  String get textSize;
+
+  /// No description provided for @textSizeDescription.
+  ///
+  /// In de, this message translates to:
+  /// **'Schriftgröße von Transkripten und Prompt-Ergebnissen'**
+  String get textSizeDescription;
+
+  /// No description provided for @clearAllHistory.
+  ///
+  /// In de, this message translates to:
+  /// **'Alle Aufnahmen löschen'**
+  String get clearAllHistory;
+
+  /// No description provided for @clearAllHistoryConfirm.
+  ///
+  /// In de, this message translates to:
+  /// **'Alle Aufnahmen, Transkripte und Chats werden dauerhaft gelöscht.'**
+  String get clearAllHistoryConfirm;
+
+  /// No description provided for @allHistoryCleared.
+  ///
+  /// In de, this message translates to:
+  /// **'Alle Aufnahmen gelöscht'**
+  String get allHistoryCleared;
+
+  /// No description provided for @transcribeStyle.
+  ///
+  /// In de, this message translates to:
+  /// **'Transkriptionsstil'**
+  String get transcribeStyle;
+
+  /// No description provided for @transcribeStyleClean.
+  ///
+  /// In de, this message translates to:
+  /// **'Bereinigt'**
+  String get transcribeStyleClean;
+
+  /// No description provided for @transcribeStyleVerbatim.
+  ///
+  /// In de, this message translates to:
+  /// **'Wortgetreu'**
+  String get transcribeStyleVerbatim;
+
+  /// No description provided for @transcribeStyleDescription.
+  ///
+  /// In de, this message translates to:
+  /// **'Bereinigt entfernt Füllwörter, wortgetreu behält jedes gesprochene Wort'**
+  String get transcribeStyleDescription;
+
+  /// No description provided for @keywords.
+  ///
+  /// In de, this message translates to:
+  /// **'Fachbegriffe'**
+  String get keywords;
+
+  /// No description provided for @keywordsDescription.
+  ///
+  /// In de, this message translates to:
+  /// **'Namen und Fachbegriffe, die das Modell bevorzugt erkennen soll'**
+  String get keywordsDescription;
+
+  /// No description provided for @keywordsHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Begriff eingeben und bestätigen'**
+  String get keywordsHint;
+
+  /// No description provided for @keywordsEmpty.
+  ///
+  /// In de, this message translates to:
+  /// **'Noch keine Begriffe hinterlegt'**
+  String get keywordsEmpty;
+
+  /// No description provided for @autoTranscribe.
+  ///
+  /// In de, this message translates to:
+  /// **'Nach Aufnahme transkribieren'**
+  String get autoTranscribe;
+
+  /// No description provided for @autoTranscribeDescription.
+  ///
+  /// In de, this message translates to:
+  /// **'Startet die Transkription direkt nach dem Ende einer Aufnahme'**
+  String get autoTranscribeDescription;
+
+  /// No description provided for @timestamps.
+  ///
+  /// In de, this message translates to:
+  /// **'Zeitmarken'**
+  String get timestamps;
+
+  /// No description provided for @jumpToPosition.
+  ///
+  /// In de, this message translates to:
+  /// **'Zu dieser Stelle springen'**
+  String get jumpToPosition;
+
+  /// No description provided for @exportAsText.
+  ///
+  /// In de, this message translates to:
+  /// **'Als Text teilen'**
+  String get exportAsText;
+
+  /// No description provided for @exportAsSubtitles.
+  ///
+  /// In de, this message translates to:
+  /// **'Als Untertitel (SRT) teilen'**
+  String get exportAsSubtitles;
+
+  /// No description provided for @exportNoTimestamps.
+  ///
+  /// In de, this message translates to:
+  /// **'Für diese Aufnahme liegen keine Zeitmarken vor'**
+  String get exportNoTimestamps;
+
+  /// No description provided for @detectedLanguageLabel.
+  ///
+  /// In de, this message translates to:
+  /// **'Erkannt: {language}'**
+  String detectedLanguageLabel(String language);
+
+  /// No description provided for @splittingAudioProgress.
+  ///
+  /// In de, this message translates to:
+  /// **'Audio wird geteilt: {current}/{total}'**
+  String splittingAudioProgress(int current, int total);
 }
 
 class _AppLocalizationsDelegate

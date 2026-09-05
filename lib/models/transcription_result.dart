@@ -1,5 +1,6 @@
 import 'package:hive/hive.dart';
 import 'speaker.dart';
+import 'transcript_segment.dart';
 
 part 'transcription_result.g.dart';
 
@@ -22,13 +23,21 @@ class TranscriptionResult {
   @HiveField(4)
   final List<Speaker> speakers;
 
+  @HiveField(5)
+  final List<TranscriptSegment> segments;
+
   TranscriptionResult({
     required this.text,
     required this.language,
     required this.modelUsed,
     required this.timestamp,
     List<Speaker>? speakers,
-  }) : speakers = speakers ?? [];
+    List<TranscriptSegment>? segments,
+  })  : speakers = speakers ?? [],
+        segments = segments ?? [];
+
+  /// Returns true if the transcript carries usable segment timestamps
+  bool get hasTimestamps => segments.isNotEmpty;
 
   /// Converts the transcription result to a JSON map
   Map<String, dynamic> toJson() {
@@ -38,6 +47,7 @@ class TranscriptionResult {
       'modelUsed': modelUsed,
       'timestamp': timestamp.toIso8601String(),
       'speakers': speakers.map((s) => s.toJson()).toList(),
+      'segments': segments.map((s) => s.toJson()).toList(),
     };
   }
 
@@ -50,6 +60,10 @@ class TranscriptionResult {
       timestamp: DateTime.parse(json['timestamp'] as String),
       speakers: (json['speakers'] as List<dynamic>?)
               ?.map((s) => Speaker.fromJson(s as Map<String, dynamic>))
+              .toList() ??
+          [],
+      segments: (json['segments'] as List<dynamic>?)
+              ?.map((s) => TranscriptSegment.fromJson(s as Map<String, dynamic>))
               .toList() ??
           [],
     );
