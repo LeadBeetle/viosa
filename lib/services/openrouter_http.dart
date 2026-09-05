@@ -57,12 +57,36 @@ class OpenRouterHttp {
   }
 
   /// Pull the provider error message out of an error response body
+  ///
+  /// OpenRouter reports an upstream rejection as "Provider returned 400" and
+  /// keeps the reason in `error.metadata`, so that detail is appended rather
+  /// than dropped
   static String? extractErrorMessage(dynamic data) {
-    if (data is Map && data['error'] is Map) {
-      final message = (data['error'] as Map)['message'];
-      if (message is String) return message;
+    if (data is! Map || data['error'] is! Map) return null;
+
+    final error = data['error'] as Map;
+    final message = error['message'];
+    final detail = _extractProviderDetail(error['metadata']);
+
+    if (message is! String) return detail;
+    return detail == null ? message : '$message ($detail)';
+  }
+
+  static String? _extractProviderDetail(dynamic metadata) {
+    if (metadata is! Map) return null;
+
+    final parts = <String>[];
+    final provider = metadata['provider_name'];
+    if (provider is String && provider.isNotEmpty) parts.add(provider);
+
+    final raw = metadata['raw'];
+    if (raw is String && raw.isNotEmpty) {
+      parts.add(raw);
+    } else if (raw != null) {
+      parts.add(raw.toString());
     }
-    return null;
+
+    return parts.isEmpty ? null : parts.join(': ');
   }
 
   /// Translate a [DioException] into the app's exception vocabulary

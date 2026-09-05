@@ -2,7 +2,7 @@
 
 VIOSA is a Flutter app for audio transcription using the OpenRouter API. Android is the primary target; iOS, macOS, Windows, Linux and web build directories exist (see [macOS/iOS deployment](docs/DEPLOYMENT_MACOS_IOS.md)).
 
-Models are defined in one place, `lib/repositories/model_repository.dart`: `google/gemini-3.8-flash` for LLM work (prompts, chat, speaker context, transcription post-processing) and `microsoft/mai-transcribe-2` for speech-to-text.
+Models are defined in one place, `lib/repositories/model_repository.dart`: `google/gemini-3.8-flash` for LLM work (prompts, chat, transcription post-processing) and `microsoft/mai-transcribe-2` for speech-to-text.
 
 ## Features
 
@@ -10,9 +10,8 @@ Models are defined in one place, `lib/repositories/model_repository.dart`: `goog
 - Audio playback
 - Audio transcription via OpenRouter API (segment timestamps, automatic language identification, keyword biasing, verbatim or clean style)
 - Voice recording with live transcription (foreground service, survives screen off)
-- Long-recording splitting and per-chunk transcription
 - Prompt-based text processing and chat over a transcript
-- Speaker diarization from the transcription model, speaker extraction and speaker context
+- Speaker diarization from the transcription model and speaker extraction
 - Transcription keeps running in the background when the session screen is closed
 - Timestamp list with jump-to-position playback
 - History search, management and export/sharing (Markdown or SRT subtitles)

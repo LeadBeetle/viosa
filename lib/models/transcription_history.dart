@@ -24,12 +24,6 @@ class TranscriptionHistory {
   @HiveField(4)
   final DateTime createdAt;
 
-  @HiveField(5)
-  final String? splitJobId;
-
-  @HiveField(6)
-  final bool isSplitTranscription;
-
   @HiveField(7)
   final int? durationMs;
 
@@ -53,8 +47,6 @@ class TranscriptionHistory {
     this.transcription,
     List<PromptResult>? promptResults,
     DateTime? createdAt,
-    this.splitJobId,
-    this.isSplitTranscription = false,
     Duration? duration,
     int? durationMs,
     this.waveform,
@@ -79,8 +71,6 @@ class TranscriptionHistory {
               .toList() ??
           [],
       createdAt: DateTime.parse(json['createdAt'] as String),
-      splitJobId: json['splitJobId'] as String?,
-      isSplitTranscription: json['isSplitTranscription'] as bool? ?? false,
       duration: Duration(milliseconds: json['duration'] as int? ?? 0),
       waveform: (json['waveform'] as List<dynamic>?)
           ?.map((e) => (e as num).toDouble())
@@ -100,8 +90,6 @@ class TranscriptionHistory {
       'transcription': transcription?.toJson(),
       'promptResults': promptResults.map((e) => e.toJson()).toList(),
       'createdAt': createdAt.toIso8601String(),
-      'splitJobId': splitJobId,
-      'isSplitTranscription': isSplitTranscription,
       'duration': duration?.inMilliseconds,
       'waveform': waveform,
       'audioPath': audioPath,
@@ -124,8 +112,6 @@ class TranscriptionHistory {
     TranscriptionResult? transcription,
     List<PromptResult>? promptResults,
     DateTime? createdAt,
-    String? splitJobId,
-    bool? isSplitTranscription,
     Duration? duration,
     List<double>? waveform,
     String? audioPath,
@@ -137,8 +123,6 @@ class TranscriptionHistory {
       transcription: transcription ?? this.transcription,
       promptResults: promptResults ?? this.promptResults,
       createdAt: createdAt ?? this.createdAt,
-      splitJobId: splitJobId ?? this.splitJobId,
-      isSplitTranscription: isSplitTranscription ?? this.isSplitTranscription,
       duration: duration ?? this.duration,
       waveform: waveform ?? this.waveform,
       audioPath: audioPath ?? this.audioPath,

@@ -38,6 +38,18 @@ class AudioFormats {
     'raw': 'audio/pcm',
   };
 
+  /// Formatnamen, die die Transkriptions-API erwartet, sofern sie von der
+  /// Erweiterung abweichen. Der MIME-Typ taugt dafür nicht, weil M4A und MP4
+  /// als `audio/mpeg` ausgeliefert werden und daraus `mp3` würde.
+  static const Map<String, String> _apiFormatAliases = {
+    'mp4': 'm4a',
+    'mpeg': 'mp3',
+    'mpga': 'mp3',
+    'oga': 'ogg',
+    'aif': 'aiff',
+    'aifc': 'aiff',
+  };
+
   /// Alle unterstützten Erweiterungen ohne führenden Punkt.
   static List<String> get supportedExtensions =>
       _mimeTypesByExtension.keys.toList(growable: false);
@@ -70,6 +82,19 @@ class AudioFormats {
   /// Liefert den MIME-Typ zum Pfad, sonst den Fallback `audio/mpeg`.
   static String mimeTypeForPath(String pathOrName) =>
       mimeTypeForExtension(extensionOf(pathOrName));
+
+  /// Liefert den Formatnamen, den die Transkriptions-API für diese Erweiterung
+  /// erwartet. Unbekannte Erweiterungen werden unverändert weitergereicht,
+  /// damit ein Fehler das echte Format benennt statt ein angenommenes.
+  static String apiFormatForExtension(String extension) {
+    final normalized = extension.toLowerCase();
+    if (normalized.isEmpty) return 'mp3';
+    return _apiFormatAliases[normalized] ?? normalized;
+  }
+
+  /// Liefert den Formatnamen der Transkriptions-API zum Pfad.
+  static String apiFormatForPath(String pathOrName) =>
+      apiFormatForExtension(extensionOf(pathOrName));
 
   AudioFormats._();
 }

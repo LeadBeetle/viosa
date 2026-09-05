@@ -312,9 +312,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get startNewSession => 'Neue Session starten';
 
   @override
-  String get longAudioDetected => 'Lange Audiodatei erkannt';
-
-  @override
   String get startTranscription => 'Transkription starten';
 
   @override
@@ -322,12 +319,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Achtung: Bestehende Transkription, Prompt-Ergebnisse und der Chat-Verlauf werden gelöscht.';
 
   @override
-  String longAudioDescription(String duration, int splitCount) {
-    return 'Diese Audiodatei ist $duration lang und wird in $splitCount Segmente aufgeteilt (je ~10 Minuten).\n\nDie Transkription läuft im Hintergrund und kann einige Minuten dauern.';
-  }
-
-  @override
-  String shortAudioDescription(String duration) {
+  String audioDurationDescription(String duration) {
     return 'Diese Audiodatei ist $duration lang.';
   }
 
@@ -338,12 +330,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get newRecording => 'Neue Aufnahme';
-
-  @override
-  String get splittingAudio => 'Audio wird aufgeteilt...';
-
-  @override
-  String get preparingAudio => 'Audio wird vorbereitet...';
 
   @override
   String get transcriptionFailed => 'Transkription fehlgeschlagen';
@@ -940,14 +926,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Die Audiodatei ist nicht mehr vorhanden. Bitte die Datei erneut verknüpfen.';
 
   @override
-  String get errorAudioDurationUnknown =>
-      'Die Länge der Audiodatei konnte nicht gelesen werden. Möglicherweise ist die Aufnahme beschädigt.';
-
-  @override
-  String get errorAudioSplitFailed =>
-      'Die Audiodatei konnte nicht in Abschnitte zerlegt werden.';
-
-  @override
   String get speechUnavailable => 'Spracherkennung nicht verfügbar';
 
   @override
@@ -1035,42 +1013,11 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String failedSegmentMarker(int number, String timeRange) {
-    return '[Abschnitt $number ($timeRange) – Transkription fehlgeschlagen]';
-  }
-
-  @override
-  String get transcriptionPartialTitle => 'Transkription unvollständig';
-
-  @override
-  String transcriptionPartialWarning(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count Abschnitte konnten nicht transkribiert werden.',
-      one: '1 Abschnitt konnte nicht transkribiert werden.',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get retryFailedSegments => 'Fehlgeschlagene Abschnitte wiederholen';
-
-  @override
-  String get retryingFailedSegments =>
-      'Abschnitte werden erneut transkribiert …';
-
-  @override
   String get transcriptionContinuesInBackground =>
       'Transkription läuft im Hintergrund weiter';
 
   @override
   String get transcriptionRunningBannerTitle => 'Transkription läuft';
-
-  @override
-  String transcriptionRunningBannerSubtitle(String fileName, int percent) {
-    return '$fileName · $percent%';
-  }
 
   @override
   String get openRunningTranscription => 'Öffnen';
@@ -1177,11 +1124,6 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String detectedLanguageLabel(String language) {
     return 'Erkannt: $language';
-  }
-
-  @override
-  String splittingAudioProgress(int current, int total) {
-    return 'Audio wird geteilt: $current/$total';
   }
 
   @override

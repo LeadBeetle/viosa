@@ -22,8 +22,6 @@ class TranscriptionHistoryAdapter extends TypeAdapter<TranscriptionHistory> {
       transcription: fields[2] as TranscriptionResult?,
       promptResults: (fields[3] as List?)?.cast<PromptResult>(),
       createdAt: fields[4] as DateTime?,
-      splitJobId: fields[5] as String?,
-      isSplitTranscription: fields[6] as bool,
       durationMs: fields[7] as int?,
       waveform: (fields[8] as List?)?.cast<double>(),
       audioPath: fields[9] as String?,
@@ -34,7 +32,7 @@ class TranscriptionHistoryAdapter extends TypeAdapter<TranscriptionHistory> {
   @override
   void write(BinaryWriter writer, TranscriptionHistory obj) {
     writer
-      ..writeByte(11)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -45,10 +43,6 @@ class TranscriptionHistoryAdapter extends TypeAdapter<TranscriptionHistory> {
       ..write(obj.promptResults)
       ..writeByte(4)
       ..write(obj.createdAt)
-      ..writeByte(5)
-      ..write(obj.splitJobId)
-      ..writeByte(6)
-      ..write(obj.isSplitTranscription)
       ..writeByte(7)
       ..write(obj.durationMs)
       ..writeByte(8)

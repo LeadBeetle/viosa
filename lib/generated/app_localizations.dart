@@ -650,12 +650,6 @@ abstract class AppLocalizations {
   /// **'Neue Session starten'**
   String get startNewSession;
 
-  /// No description provided for @longAudioDetected.
-  ///
-  /// In de, this message translates to:
-  /// **'Lange Audiodatei erkannt'**
-  String get longAudioDetected;
-
   /// No description provided for @startTranscription.
   ///
   /// In de, this message translates to:
@@ -668,17 +662,11 @@ abstract class AppLocalizations {
   /// **'Achtung: Bestehende Transkription, Prompt-Ergebnisse und der Chat-Verlauf werden gelöscht.'**
   String get warningExistingData;
 
-  /// No description provided for @longAudioDescription.
-  ///
-  /// In de, this message translates to:
-  /// **'Diese Audiodatei ist {duration} lang und wird in {splitCount} Segmente aufgeteilt (je ~10 Minuten).\n\nDie Transkription läuft im Hintergrund und kann einige Minuten dauern.'**
-  String longAudioDescription(String duration, int splitCount);
-
-  /// No description provided for @shortAudioDescription.
+  /// No description provided for @audioDurationDescription.
   ///
   /// In de, this message translates to:
   /// **'Diese Audiodatei ist {duration} lang.'**
-  String shortAudioDescription(String duration);
+  String audioDurationDescription(String duration);
 
   /// No description provided for @modelLabel.
   ///
@@ -691,18 +679,6 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Neue Aufnahme'**
   String get newRecording;
-
-  /// No description provided for @splittingAudio.
-  ///
-  /// In de, this message translates to:
-  /// **'Audio wird aufgeteilt...'**
-  String get splittingAudio;
-
-  /// No description provided for @preparingAudio.
-  ///
-  /// In de, this message translates to:
-  /// **'Audio wird vorbereitet...'**
-  String get preparingAudio;
 
   /// No description provided for @transcriptionFailed.
   ///
@@ -1628,18 +1604,6 @@ abstract class AppLocalizations {
   /// **'Die Audiodatei ist nicht mehr vorhanden. Bitte die Datei erneut verknüpfen.'**
   String get errorAudioFileMissing;
 
-  /// No description provided for @errorAudioDurationUnknown.
-  ///
-  /// In de, this message translates to:
-  /// **'Die Länge der Audiodatei konnte nicht gelesen werden. Möglicherweise ist die Aufnahme beschädigt.'**
-  String get errorAudioDurationUnknown;
-
-  /// No description provided for @errorAudioSplitFailed.
-  ///
-  /// In de, this message translates to:
-  /// **'Die Audiodatei konnte nicht in Abschnitte zerlegt werden.'**
-  String get errorAudioSplitFailed;
-
   /// No description provided for @speechUnavailable.
   ///
   /// In de, this message translates to:
@@ -1802,36 +1766,6 @@ abstract class AppLocalizations {
   /// **'Datei konnte nicht übernommen werden: {error}'**
   String errorImportingFile(String error);
 
-  /// No description provided for @failedSegmentMarker.
-  ///
-  /// In de, this message translates to:
-  /// **'[Abschnitt {number} ({timeRange}) – Transkription fehlgeschlagen]'**
-  String failedSegmentMarker(int number, String timeRange);
-
-  /// No description provided for @transcriptionPartialTitle.
-  ///
-  /// In de, this message translates to:
-  /// **'Transkription unvollständig'**
-  String get transcriptionPartialTitle;
-
-  /// No description provided for @transcriptionPartialWarning.
-  ///
-  /// In de, this message translates to:
-  /// **'{count, plural, =1{1 Abschnitt konnte nicht transkribiert werden.} other{{count} Abschnitte konnten nicht transkribiert werden.}}'**
-  String transcriptionPartialWarning(int count);
-
-  /// No description provided for @retryFailedSegments.
-  ///
-  /// In de, this message translates to:
-  /// **'Fehlgeschlagene Abschnitte wiederholen'**
-  String get retryFailedSegments;
-
-  /// No description provided for @retryingFailedSegments.
-  ///
-  /// In de, this message translates to:
-  /// **'Abschnitte werden erneut transkribiert …'**
-  String get retryingFailedSegments;
-
   /// No description provided for @transcriptionContinuesInBackground.
   ///
   /// In de, this message translates to:
@@ -1843,12 +1777,6 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Transkription läuft'**
   String get transcriptionRunningBannerTitle;
-
-  /// No description provided for @transcriptionRunningBannerSubtitle.
-  ///
-  /// In de, this message translates to:
-  /// **'{fileName} · {percent}%'**
-  String transcriptionRunningBannerSubtitle(String fileName, int percent);
 
   /// No description provided for @openRunningTranscription.
   ///
@@ -2035,12 +1963,6 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Erkannt: {language}'**
   String detectedLanguageLabel(String language);
-
-  /// No description provided for @splittingAudioProgress.
-  ///
-  /// In de, this message translates to:
-  /// **'Audio wird geteilt: {current}/{total}'**
-  String splittingAudioProgress(int current, int total);
 
   /// No description provided for @autoPrompt.
   ///

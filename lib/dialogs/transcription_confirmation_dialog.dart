@@ -4,19 +4,15 @@ import '../utils/audio_utils.dart';
 import '../l10n/l10n.dart';
 
 /// Dialog to confirm starting a transcription
-/// Shows file duration, split info, and selected model
+/// Shows file duration and selected model
 class TranscriptionConfirmationDialog extends StatelessWidget {
   final Duration duration;
-  final bool shouldSplit;
-  final int splitCount;
   final ModelConfig selectedModel;
   final bool hasExistingData;
 
   const TranscriptionConfirmationDialog({
     super.key,
     required this.duration,
-    required this.shouldSplit,
-    required this.splitCount,
     required this.selectedModel,
     this.hasExistingData = false,
   });
@@ -25,8 +21,6 @@ class TranscriptionConfirmationDialog extends StatelessWidget {
   static Future<bool> show(
     BuildContext context, {
     required Duration duration,
-    required bool shouldSplit,
-    required int splitCount,
     required ModelConfig selectedModel,
     bool hasExistingData = false,
   }) async {
@@ -34,8 +28,6 @@ class TranscriptionConfirmationDialog extends StatelessWidget {
       context: context,
       builder: (context) => TranscriptionConfirmationDialog(
         duration: duration,
-        shouldSplit: shouldSplit,
-        splitCount: splitCount,
         selectedModel: selectedModel,
         hasExistingData: hasExistingData,
       ),
@@ -46,7 +38,7 @@ class TranscriptionConfirmationDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(shouldSplit ? context.l10n.longAudioDetected : context.l10n.startTranscription),
+      title: Text(context.l10n.startTranscription),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -86,9 +78,9 @@ class TranscriptionConfirmationDialog extends StatelessWidget {
             const SizedBox(height: 16),
           ],
           Text(
-            shouldSplit
-                ? context.l10n.longAudioDescription(AudioUtils.formatDurationShort(duration), splitCount)
-                : context.l10n.shortAudioDescription(AudioUtils.formatDurationShort(duration)),
+            context.l10n.audioDurationDescription(
+              AudioUtils.formatDurationShort(duration),
+            ),
           ),
           const SizedBox(height: 16),
           Container(

@@ -120,22 +120,10 @@
   "sessionDiscardTitle": "Aktuelle Session verwerfen?",
   "sessionDiscardMessage": "Sie haben bereits eine Audiodatei ausgewählt oder transkribiert. Möchten Sie diese Session verwerfen und eine neue starten?",
   "startNewSession": "Neue Session starten",
-  "longAudioDetected": "Lange Audiodatei erkannt",
   "startTranscription": "Transkription starten",
   "warningExistingData": "Achtung: Bestehende Transkription, Prompt-Ergebnisse und der Chat-Verlauf werden gelöscht.",
-  "longAudioDescription": "Diese Audiodatei ist {duration} lang und wird in {splitCount} Segmente aufgeteilt (je ~10 Minuten).\n\nDie Transkription läuft im Hintergrund und kann einige Minuten dauern.",
-  "@longAudioDescription": {
-    "placeholders": {
-      "duration": {
-        "type": "String"
-      },
-      "splitCount": {
-        "type": "int"
-      }
-    }
-  },
-  "shortAudioDescription": "Diese Audiodatei ist {duration} lang.",
-  "@shortAudioDescription": {
+  "audioDurationDescription": "Diese Audiodatei ist {duration} lang.",
+  "@audioDurationDescription": {
     "placeholders": {
       "duration": {
         "type": "String"
@@ -151,8 +139,6 @@
     }
   },
   "newRecording": "Neue Aufnahme",
-  "splittingAudio": "Audio wird aufgeteilt...",
-  "preparingAudio": "Audio wird vorbereitet...",
   "transcriptionFailed": "Transkription fehlgeschlagen",
   "startChat": "Chat starten",
   "chat": "Chat",
@@ -569,8 +555,6 @@
   "errorServer": "Der Dienst ist gerade nicht erreichbar. Bitte später erneut versuchen.",
   "errorUnknown": "Etwas ist schiefgelaufen. Bitte erneut versuchen.",
   "errorAudioFileMissing": "Die Audiodatei ist nicht mehr vorhanden. Bitte die Datei erneut verknüpfen.",
-  "errorAudioDurationUnknown": "Die Länge der Audiodatei konnte nicht gelesen werden. Möglicherweise ist die Aufnahme beschädigt.",
-  "errorAudioSplitFailed": "Die Audiodatei konnte nicht in Abschnitte zerlegt werden.",
   "speechUnavailable": "Spracherkennung nicht verfügbar",
   "speechInitError": "Spracherkennung konnte nicht gestartet werden",
   "speechRecognitionError": "Spracherkennung fehlgeschlagen",
@@ -605,41 +589,8 @@
       }
     }
   },
-  "failedSegmentMarker": "[Abschnitt {number} ({timeRange}) – Transkription fehlgeschlagen]",
-  "@failedSegmentMarker": {
-    "placeholders": {
-      "number": {
-        "type": "int"
-      },
-      "timeRange": {
-        "type": "String"
-      }
-    }
-  },
-  "transcriptionPartialTitle": "Transkription unvollständig",
-  "transcriptionPartialWarning": "{count, plural, =1{1 Abschnitt konnte nicht transkribiert werden.} other{{count} Abschnitte konnten nicht transkribiert werden.}}",
-  "@transcriptionPartialWarning": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "retryFailedSegments": "Fehlgeschlagene Abschnitte wiederholen",
-  "retryingFailedSegments": "Abschnitte werden erneut transkribiert …",
   "transcriptionContinuesInBackground": "Transkription läuft im Hintergrund weiter",
   "transcriptionRunningBannerTitle": "Transkription läuft",
-  "transcriptionRunningBannerSubtitle": "{fileName} · {percent}%",
-  "@transcriptionRunningBannerSubtitle": {
-    "placeholders": {
-      "fileName": {
-        "type": "String"
-      },
-      "percent": {
-        "type": "int"
-      }
-    }
-  },
   "openRunningTranscription": "Öffnen",
   "promptGenerationRunningTitle": "Prompt läuft noch",
   "promptGenerationRunningContent": "Wenn du die Sitzung verlässt, geht das laufende Ergebnis verloren.",
@@ -696,17 +647,6 @@
     "placeholders": {
       "language": {
         "type": "String"
-      }
-    }
-  },
-  "splittingAudioProgress": "Audio wird geteilt: {current}/{total}",
-  "@splittingAudioProgress": {
-    "placeholders": {
-      "current": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
       }
     }
   },

@@ -43,36 +43,6 @@ class AudioUtils {
     }
   }
 
-  /// Checks if an audio file is longer than the specified duration
-  static Future<bool> isLongerThan(String filePath, Duration threshold) async {
-    final duration = await getAudioDuration(filePath);
-    return duration > threshold;
-  }
-
-  /// Checks if an audio file should be split based on max duration
-  /// Default max duration is 10 minutes
-  static Future<bool> shouldSplit(
-    String filePath, {
-    Duration maxDuration = const Duration(minutes: 10),
-  }) async {
-    return isLongerThan(filePath, maxDuration);
-  }
-
-  /// Calculates the number of splits needed for an audio file
-  /// Ensures splits are evenly distributed with no split exceeding maxDuration
-  static Future<int> calculateSplitCount(
-    String filePath, {
-    Duration maxDuration = const Duration(minutes: 10),
-    Duration overlap = const Duration(seconds: 5),
-  }) async {
-    final duration = await getAudioDuration(filePath);
-    if (duration == Duration.zero) return 1;
-    if (duration <= maxDuration) return 1;
-
-    final splitCount = (duration.inMilliseconds / maxDuration.inMilliseconds).ceil();
-    return splitCount.clamp(1, 999);
-  }
-
   /// Formats a duration as a human-readable string (HH:MM:SS or MM:SS)
   static String formatDuration(Duration duration) {
     final hours = duration.inHours;

@@ -1,11 +1,10 @@
-import 'package:flutter/foundation.dart';
 import '../models/transcript_segment.dart';
 import '../models/transcription_options.dart';
 import '../models/transcription_result.dart';
 import '../repositories/model_repository.dart';
+import '../utils/audio_formats.dart';
 import 'completion/i_completion_service.dart';
 import 'diarized_transcript_builder.dart';
-import 'speaker_context_service.dart';
 import 'speaker_extraction_service.dart';
 import 'transcription/i_speech_to_text_service.dart';
 import 'transcription/openrouter_speech_to_text_service.dart';
@@ -13,13 +12,14 @@ import 'transcription_formatter_service.dart';
 
 /// Interface for transcription services
 abstract class ITranscriptionService {
+  /// Transcribes [base64Audio]; [audioPath] names the file it came from, so
+  /// the format sent to the API follows the container instead of a MIME type
   Future<TranscriptionResult> transcribe({
     required String apiKey,
     required String base64Audio,
-    required String mimeType,
+    required String audioPath,
     required String language,
     required TranscriptionOptions options,
-    TranscriptionContext? speakerContext,
   });
 }
 
@@ -53,15 +53,14 @@ class TranscriptionService implements ITranscriptionService {
   Future<TranscriptionResult> transcribe({
     required String apiKey,
     required String base64Audio,
-    required String mimeType,
+    required String audioPath,
     required String language,
     required TranscriptionOptions options,
-    TranscriptionContext? speakerContext,
   }) async {
     final speechToTextResult = await _speechToTextService.transcribe(
       apiKey: apiKey,
       base64Audio: base64Audio,
-      format: _getAudioFormat(mimeType),
+      format: AudioFormats.apiFormatForPath(audioPath),
       language: language,
       diarization: options.speakerDiarization,
       phrases: options.keywords,
@@ -91,7 +90,6 @@ class TranscriptionService implements ITranscriptionService {
       messages: _buildMessages(
         speechToTextResult.text,
         language,
-        speakerContext,
         options.speakerDiarization,
       ),
       config: _getConfig(),
@@ -141,14 +139,9 @@ class TranscriptionService implements ITranscriptionService {
   List<CompletionMessage> _buildMessages(
     String rawTranscript,
     String language,
-    TranscriptionContext? speakerContext,
     bool speakerDiarization,
   ) {
-    final basePrompt = _getCleanupPrompt(language, speakerDiarization);
-    final contextPrompt = speakerContext?.toPromptString(language) ?? '';
-    final prompt = contextPrompt.isNotEmpty
-        ? '$contextPrompt\n$basePrompt'
-        : basePrompt;
+    final prompt = _getCleanupPrompt(language, speakerDiarization);
 
     return [
       CompletionMessage(
@@ -165,20 +158,6 @@ class TranscriptionService implements ITranscriptionService {
       maxTokens: modelConfig.maxTokens,
       temperature: modelConfig.temperature,
     );
-  }
-
-  String _getAudioFormat(String mimeType) {
-    if (mimeType.contains('mp3') || mimeType.contains('mpeg')) {
-      return 'mp3';
-    } else if (mimeType.contains('wav')) {
-      return 'wav';
-    } else if (mimeType.contains('m4a')) {
-      return 'm4a';
-    } else if (mimeType.contains('mp4')) {
-      return 'mp4';
-    }
-    debugPrint('WARNING: Unsupported audio format: $mimeType. Defaulting to mp3.');
-    return 'mp3';
   }
 
   String _getCleanupPrompt(String language, bool speakerDiarization) {

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../providers/split_transcription_provider.dart';
+import '../providers/transcription_job_provider.dart';
 import '../utils/constants.dart';
 import '../l10n/l10n.dart';
 
@@ -16,14 +16,12 @@ class ActiveTranscriptionBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<SplitTranscriptionProvider>(
+    return Consumer<TranscriptionJobProvider>(
       builder: (context, provider, _) {
         if (!provider.isRunning) return const SizedBox.shrink();
 
         final theme = Theme.of(context);
-        final job = provider.currentJob;
         final fileName = provider.activeFileName ?? '';
-        final percent = job?.progressPercentage ?? 0;
         final historyId = provider.activeHistoryId;
 
         return Card(
@@ -41,10 +39,7 @@ class ActiveTranscriptionBanner extends StatelessWidget {
                 SizedBox(
                   height: AppIconSize.medium,
                   width: AppIconSize.medium,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    value: job == null || job.totalSplits == 0 ? null : job.progress,
-                  ),
+                  child: const CircularProgressIndicator(strokeWidth: 2),
                 ),
                 const SizedBox(width: AppSpacing.m),
                 Expanded(
@@ -59,10 +54,7 @@ class ActiveTranscriptionBanner extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        context.l10n.transcriptionRunningBannerSubtitle(
-                          fileName,
-                          percent,
-                        ),
+                        fileName,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodySmall?.copyWith(

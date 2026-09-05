@@ -41,7 +41,6 @@ dependencies:
   # Audio
   just_audio: ^0.10.6
   record: ^6.2.1  # Audio recording
-  ffmpeg_kit_flutter_new: ^4.6.2  # Audio splitting and processing
   audio_session: ^0.2.4  # Audio session for background recording
   wakelock_plus: ^1.6.1  # Prevent device sleep during recording
   flutter_foreground_task: ^10.0.0  # Foreground service for recording indicator
