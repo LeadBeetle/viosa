@@ -15,16 +15,20 @@ void main() {
       const TranscriptSegment(startMs: 2000, endMs: 3000, text: 'Gut, danke.', speaker: 'speaker_1'),
     ];
 
-    test('fasst aufeinanderfolgende Segmente eines Sprechers zusammen', () {
-      final text = builder.build(segments, 'de');
+    String germanLabel(int position) => 'Sprecher $position';
+    String englishLabel(int position) => 'Speaker $position';
 
-      expect(text, '**Sprecher 1:** Hallo. Wie geht es?\n\n**Sprecher 2:** Gut, danke.');
+    test('fasst aufeinanderfolgende Segmente eines Sprechers zusammen', () {
+      final transcript = builder.build(segments, germanLabel);
+
+      expect(transcript.text,
+          '**Sprecher 1:** Hallo. Wie geht es?\n\n**Sprecher 2:** Gut, danke.');
     });
 
-    test('nutzt englische Label für andere Sprachen', () {
-      final text = builder.build(segments, 'en');
+    test('nutzt die übergebene Sprecherbezeichnung', () {
+      final transcript = builder.build(segments, englishLabel);
 
-      expect(text, startsWith('**Speaker 1:**'));
+      expect(transcript.text, startsWith('**Speaker 1:**'));
     });
 
     test('behält echte Namen als Label bei', () {
@@ -32,13 +36,13 @@ void main() {
         const TranscriptSegment(startMs: 0, endMs: 1000, text: 'Hallo.', speaker: 'Anna'),
       ];
 
-      expect(builder.build(named, 'de'), '**Anna:** Hallo.');
+      expect(builder.build(named, germanLabel).text, '**Anna:** Hallo.');
     });
 
     test('ersetzt Rohlabels in den Segmenten', () {
-      final labelled = builder.withDisplayLabels(segments, 'de');
+      final transcript = builder.build(segments, germanLabel);
 
-      expect(labelled.map((s) => s.speaker).toList(),
+      expect(transcript.segments.map((s) => s.speaker).toList(),
           ['Sprecher 1', 'Sprecher 1', 'Sprecher 2']);
     });
   });

@@ -27,5 +27,14 @@ class PathUtils {
     return separatorIndex >= 0 ? path.substring(separatorIndex + 1) : path;
   }
 
+  /// Entfernt die Dateiendung eines Dateinamens.
+  static String removeExtension(String fileName) {
+    final lastDot = fileName.lastIndexOf('.');
+    if (lastDot > 0) {
+      return fileName.substring(0, lastDot);
+    }
+    return fileName;
+  }
+
   PathUtils._();
 }

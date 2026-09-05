@@ -5,14 +5,14 @@ import 'package:provider/provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../providers/history_provider.dart';
-import '../providers/prompts_provider.dart';
 import '../providers/settings_provider.dart';
-import '../services/transcription/i_speech_to_text_service.dart';
 import '../utils/constants.dart';
 import '../models/model_config.dart';
 import '../repositories/model_repository.dart';
 import '../services/snackbar_service.dart';
 import '../widgets/info_chip.dart';
+import '../widgets/settings/setting_header.dart';
+import '../widgets/settings/transcription_options_section.dart';
 import '../l10n/l10n.dart';
 import 'prompts_screen.dart';
 
@@ -27,7 +27,6 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   final TextEditingController _apiKeyController = TextEditingController();
-  final TextEditingController _keywordController = TextEditingController();
 
   String _selectedLanguage = 'auto';
   String? _audioSavePath;
@@ -45,7 +44,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void dispose() {
     _apiKeyController.dispose();
-    _keywordController.dispose();
     super.dispose();
   }
 
@@ -237,6 +235,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(height: AppConstants.defaultPadding),
                   _buildAppearanceCard(context),
                   const SizedBox(height: AppConstants.defaultPadding),
+                  _buildTextSizeCard(context),
+                  const SizedBox(height: AppConstants.defaultPadding),
                   _buildDataCard(context),
                   const SizedBox(height: AppConstants.defaultPadding),
                   _buildPromptsCard(context),
@@ -274,7 +274,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.m),
             TextField(
               controller: _apiKeyController,
               decoration: InputDecoration(
@@ -319,7 +319,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 }
               },
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.s),
             InkWell(
               onTap: () => _launchURL('https://openrouter.ai/keys'),
               borderRadius: BorderRadius.circular(4),
@@ -463,7 +463,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.m),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -486,7 +486,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: AppSpacing.xs),
                       Text(
                         _audioSavePath ?? context.l10n.defaultStorageLocation,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -515,9 +515,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.m),
             const Divider(),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.m),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -542,9 +542,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.s),
                 Padding(
-                  padding: const EdgeInsets.only(left: 28),
+                  padding: const EdgeInsets.only(left: AppSpacing.indent),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -575,7 +575,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           }
                         },
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: AppSpacing.xs),
                       Text(
                         context.l10n.transcriptionLanguageDescription,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -590,243 +590,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            const Divider(),
-            const SizedBox(height: 8),
-            _buildSpeakerDiarizationToggle(context),
-            const SizedBox(height: 16),
-            const Divider(),
-            const SizedBox(height: 8),
-            _buildTranscribeStyleSelector(context),
-            const SizedBox(height: 16),
-            const Divider(),
-            const SizedBox(height: 8),
-            _buildKeywordsEditor(context),
-            const SizedBox(height: 16),
-            const Divider(),
-            const SizedBox(height: 8),
-            _buildAutoTranscribeToggle(context),
-            const SizedBox(height: 16),
-            const Divider(),
-            const SizedBox(height: 8),
-            _buildAutoPromptSelector(context),
+            const TranscriptionOptionsSection(),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildAutoPromptSelector(BuildContext context) {
-    final settingsProvider = context.watch<SettingsProvider>();
-    final promptsProvider = context.watch<PromptsProvider>();
-    final prompts = promptsProvider.getAllPrompts(context.l10n);
-    final selectedId = prompts.any((p) => p.id == settingsProvider.autoPromptId)
-        ? settingsProvider.autoPromptId
-        : null;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSettingHeader(
-          context,
-          Icons.auto_awesome,
-          context.l10n.autoPrompt,
-        ),
-        const SizedBox(height: AppSpacing.s),
-        Padding(
-          padding: const EdgeInsets.only(left: 28),
-          child: DropdownButtonFormField<String?>(
-            initialValue: selectedId,
-            isExpanded: true,
-            items: [
-              DropdownMenuItem<String?>(
-                value: null,
-                child: Text(context.l10n.autoPromptDisabled),
-              ),
-              ...prompts.map(
-                (prompt) => DropdownMenuItem<String?>(
-                  value: prompt.id,
-                  child: Text(prompt.name, overflow: TextOverflow.ellipsis),
-                ),
-              ),
-            ],
-            onChanged: (value) => settingsProvider.saveAutoPromptId(value),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.s),
-        _buildSettingDescription(context, context.l10n.autoPromptDescription),
-      ],
-    );
-  }
-
-  Widget _buildSettingHeader(BuildContext context, IconData icon, String title) {
-    return Row(
-      children: [
-        Icon(
-          icon,
-          size: AppIconSize.medium,
-          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
-        ),
-        const SizedBox(width: AppSpacing.s),
-        Expanded(
-          child: Text(
-            title,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSettingDescription(BuildContext context, String description) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 28),
-      child: Text(
-        description,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTranscribeStyleSelector(BuildContext context) {
-    final settingsProvider = context.watch<SettingsProvider>();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSettingHeader(context, Icons.tune, context.l10n.transcribeStyle),
-        const SizedBox(height: AppSpacing.s),
-        Padding(
-          padding: const EdgeInsets.only(left: 28),
-          child: SegmentedButton<String>(
-            segments: [
-              ButtonSegment(
-                value: TranscribeStyle.clean,
-                label: Text(context.l10n.transcribeStyleClean),
-              ),
-              ButtonSegment(
-                value: TranscribeStyle.verbatim,
-                label: Text(context.l10n.transcribeStyleVerbatim),
-              ),
-            ],
-            selected: {settingsProvider.transcribeStyle},
-            onSelectionChanged: (selection) {
-              settingsProvider.saveTranscribeStyle(selection.first);
-            },
-          ),
-        ),
-        const SizedBox(height: AppSpacing.s),
-        _buildSettingDescription(context, context.l10n.transcribeStyleDescription),
-      ],
-    );
-  }
-
-  Widget _buildKeywordsEditor(BuildContext context) {
-    final settingsProvider = context.watch<SettingsProvider>();
-    final keywords = settingsProvider.keywords;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSettingHeader(context, Icons.sell_outlined, context.l10n.keywords),
-        const SizedBox(height: AppSpacing.s),
-        Padding(
-          padding: const EdgeInsets.only(left: 28),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextField(
-                controller: _keywordController,
-                decoration: InputDecoration(
-                  hintText: context.l10n.keywordsHint,
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.add),
-                    onPressed: () => _addKeyword(settingsProvider),
-                  ),
-                ),
-                onSubmitted: (_) => _addKeyword(settingsProvider),
-              ),
-              const SizedBox(height: AppSpacing.s),
-              if (keywords.isEmpty)
-                Text(
-                  context.l10n.keywordsEmpty,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.6),
-                  ),
-                )
-              else
-                Wrap(
-                  spacing: AppSpacing.s,
-                  runSpacing: AppSpacing.xs,
-                  children: keywords
-                      .map(
-                        (keyword) => InputChip(
-                          label: Text(keyword),
-                          onDeleted: () {
-                            final remaining = List<String>.from(keywords)
-                              ..remove(keyword);
-                            settingsProvider.saveKeywords(remaining);
-                          },
-                        ),
-                      )
-                      .toList(),
-                ),
-            ],
-          ),
-        ),
-        const SizedBox(height: AppSpacing.s),
-        _buildSettingDescription(context, context.l10n.keywordsDescription),
-      ],
-    );
-  }
-
-  Future<void> _addKeyword(SettingsProvider settingsProvider) async {
-    final keyword = _keywordController.text.trim();
-    if (keyword.isEmpty) return;
-
-    final keywords = List<String>.from(settingsProvider.keywords);
-    if (!keywords.contains(keyword)) {
-      keywords.add(keyword);
-      await settingsProvider.saveKeywords(keywords);
-    }
-
-    _keywordController.clear();
-  }
-
-  Widget _buildAutoTranscribeToggle(BuildContext context) {
-    final settingsProvider = context.watch<SettingsProvider>();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: _buildSettingHeader(
-                context,
-                Icons.play_circle_outline,
-                context.l10n.autoTranscribe,
-              ),
-            ),
-            Switch(
-              value: settingsProvider.autoTranscribe,
-              onChanged: settingsProvider.saveAutoTranscribe,
-            ),
-          ],
-        ),
-        _buildSettingDescription(context, context.l10n.autoTranscribeDescription),
-      ],
-    );
-  }
-
-  Widget _buildDataCard(BuildContext context) {
+  Widget _buildTextSizeCard(BuildContext context) {
     final settingsProvider = context.watch<SettingsProvider>();
 
     return Card(
@@ -870,9 +641,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ],
             ),
-            _buildSettingDescription(context, context.l10n.textSizeDescription),
-            const SizedBox(height: AppSpacing.m),
-            const Divider(),
+            SettingDescription(context.l10n.textSizeDescription),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDataCard(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AppConstants.defaultPadding),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.storage,
+                  size: AppIconSize.medium,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: AppSpacing.s),
+                Text(
+                  context.l10n.storedData,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: AppSpacing.s),
             Align(
               alignment: Alignment.centerLeft,
@@ -923,52 +721,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     SnackBarService().showSuccess(context, context.l10n.allHistoryCleared);
   }
 
-  Widget _buildSpeakerDiarizationToggle(BuildContext context) {
-    final settingsProvider = context.watch<SettingsProvider>();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(
-              Icons.record_voice_over,
-              size: 20,
-              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                context.l10n.speakerDiarization,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-            Switch(
-              value: settingsProvider.speakerDiarization,
-              onChanged: (value) {
-                settingsProvider.saveSpeakerDiarization(value);
-              },
-            ),
-          ],
-        ),
-        Padding(
-          padding: const EdgeInsets.only(left: 28),
-          child: Text(
-            context.l10n.speakerDiarizationDescription,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context)
-                  .colorScheme
-                  .onSurface
-                  .withValues(alpha: 0.6),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildLanguageCard(BuildContext context) {
     final settingsProvider = context.watch<SettingsProvider>();
     final selectedUiLanguage = settingsProvider.uiLanguage;
@@ -995,7 +747,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.m),
             Row(
               children: [
                 Expanded(
@@ -1017,7 +769,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.s),
             Text(
               context.l10n.uiLanguageDescription,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -1096,7 +848,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.m),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1147,7 +899,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: AppSpacing.s),
                       Text(
                         context.l10n.themeDescription,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -1207,7 +959,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
               size: 24,
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: AppSpacing.xs),
             Text(
               label,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -1253,7 +1005,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: AppSpacing.xs),
                     Text(
                       context.l10n.promptsDescription,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -1323,7 +1075,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   context.l10n.aboutDescription,
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.s),
                 Text(
                   context.l10n.apiKeySecurityNote,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -1333,7 +1085,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         .withValues(alpha: 0.8),
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.s),
                 Text(
                   context.l10n.version('1.0.0'),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(

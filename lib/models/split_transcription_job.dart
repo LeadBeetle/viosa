@@ -22,6 +22,9 @@ enum JobStatus {
 
   @HiveField(4)
   cancelled,
+
+  @HiveField(5)
+  failed,
 }
 
 /// Data model representing a job that transcribes a split audio file
@@ -212,6 +215,8 @@ class SplitTranscriptionJob {
         return 'Partial Failure';
       case JobStatus.cancelled:
         return 'Cancelled';
+      case JobStatus.failed:
+        return 'Failed';
     }
   }
 

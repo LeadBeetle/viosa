@@ -475,9 +475,6 @@
   "sortDurationShortest": "Dauer (kürzeste zuerst)",
   "cancelTranscription": "Transkription abbrechen",
   "transcriptionCancelled": "Transkription abgebrochen",
-  "transcriptionRunningTitle": "Transkription läuft",
-  "transcriptionRunningContent": "Wenn Sie diesen Bildschirm verlassen, wird die laufende Transkription abgebrochen. Trotzdem verlassen?",
-  "leaveAndCancel": "Verlassen",
   "stay": "Bleiben",
   "discardRecordingTitle": "Aufnahme verwerfen?",
   "discardRecordingContent": "Die Aufnahme ({duration}) wird gelöscht und kann nicht wiederhergestellt werden.",
@@ -628,7 +625,6 @@
   "retryFailedSegments": "Fehlgeschlagene Abschnitte wiederholen",
   "retryingFailedSegments": "Abschnitte werden erneut transkribiert …",
   "transcriptionContinuesInBackground": "Transkription läuft im Hintergrund weiter",
-  "continueInBackground": "Im Hintergrund weiterlaufen",
   "transcriptionRunningBannerTitle": "Transkription läuft",
   "transcriptionRunningBannerSubtitle": "{fileName} · {percent}%",
   "@transcriptionRunningBannerSubtitle": {
@@ -666,6 +662,7 @@
   "noRecordingsMatchSearch": "Keine Aufnahme passt zur Suche",
   "textSize": "Textgröße",
   "textSizeDescription": "Schriftgröße von Transkripten und Prompt-Ergebnissen",
+  "storedData": "Gespeicherte Daten",
   "clearAllHistory": "Alle Aufnahmen löschen",
   "clearAllHistoryConfirm": "Alle Aufnahmen, Transkripte und Chats werden dauerhaft gelöscht.",
   "allHistoryCleared": "Alle Aufnahmen gelöscht",
@@ -679,11 +676,18 @@
   "keywordsEmpty": "Noch keine Begriffe hinterlegt",
   "autoTranscribe": "Nach Aufnahme transkribieren",
   "autoTranscribeDescription": "Startet die Transkription direkt nach dem Ende einer Aufnahme",
+  "speakerLabel": "Sprecher {position}",
+  "@speakerLabel": {
+    "placeholders": {
+      "position": {
+        "type": "int"
+      }
+    }
+  },
   "timestamps": "Zeitmarken",
   "jumpToPosition": "Zu dieser Stelle springen",
   "exportAsText": "Als Text teilen",
   "exportAsSubtitles": "Als Untertitel (SRT) teilen",
-  "exportNoTimestamps": "Für diese Aufnahme liegen keine Zeitmarken vor",
   "detectedLanguageLabel": "Erkannt: {language}",
   "@detectedLanguageLabel": {
     "placeholders": {

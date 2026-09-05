@@ -7,6 +7,7 @@ import '../models/transcription_result.dart';
 import '../models/prompt_result.dart';
 import '../models/transcription_history.dart';
 import '../models/split_transcription_job.dart';
+import '../models/transcription_options.dart';
 import '../services/audio_service.dart';
 import '../services/file_service.dart';
 import '../services/i_file_service.dart';
@@ -34,6 +35,7 @@ import '../utils/constants.dart';
 import '../utils/audio_formats.dart';
 import '../utils/audio_utils.dart';
 import '../utils/error_messages.dart';
+import '../utils/path_utils.dart';
 import '../utils/screen_helpers.dart';
 import '../services/snackbar_service.dart';
 import '../l10n/l10n.dart';
@@ -94,6 +96,7 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
   // Split transcription state
   SplitTranscriptionJob? _activeSplitJob;
   StreamSubscription<SplitTranscriptionJob>? _jobSubscription;
+  StreamSubscription<SplitTranscriptionOutcome>? _outcomeSubscription;
   bool _transcriptionJustCompleted = false;
   int _failedSegmentCount = 0;
   bool _isRetryingSegments = false;
@@ -179,12 +182,9 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
     );
   }
 
-  /// Jumps to [position] of the audio and starts playback
+  /// Jumps to [position] of the audio without changing the playback state
   Future<void> _seekTo(Duration position) async {
     await _audioService.seek(position);
-    if (!_isAudioPlaying) {
-      await _audioService.play();
-    }
   }
 
   Future<void> _togglePlayPause() async {
@@ -257,6 +257,8 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
         _promptResults.addAll(history.promptResults);
       });
     }
+
+    await _runAutoPrompt();
   }
 
   Future<void> _loadInitialFile() async {
@@ -357,6 +359,7 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
   void dispose() {
     _promptSubscription?.cancel();
     _jobSubscription?.cancel();
+    _outcomeSubscription?.cancel();
     for (final subscription in _audioSubscriptions) {
       subscription.cancel();
     }
@@ -494,9 +497,12 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
         apiKey: apiKey,
         historyId: historyId,
         model: completionModelId,
-        speakerDiarization: settingsProvider.speakerDiarization,
-        keywords: settingsProvider.keywords,
-        transcribeStyle: settingsProvider.transcribeStyle,
+        options: TranscriptionOptions(
+          speakerDiarization: settingsProvider.speakerDiarization,
+          keywords: settingsProvider.keywords,
+          style: settingsProvider.transcribeStyle,
+          speakerLabel: (position) => l10n.speakerLabel(position),
+        ),
         failedSegmentLabel: (number, timeRange) =>
             l10n.failedSegmentMarker(number, timeRange),
         onResult: (id, result) =>
@@ -542,6 +548,8 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
     final splitProvider = context.read<SplitTranscriptionProvider>();
     await _jobSubscription?.cancel();
     _jobSubscription = null;
+    await _outcomeSubscription?.cancel();
+    _outcomeSubscription = null;
 
     if (job != null) {
       await splitProvider.cancelJob(job.id);
@@ -583,7 +591,6 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
 
   void _listenToSplitJobUpdates(String jobId) {
     final splitProvider = context.read<SplitTranscriptionProvider>();
-    bool completionHandled = false;
 
     _jobSubscription?.cancel();
     _jobSubscription = splitProvider.jobUpdates.listen((job) {
@@ -593,22 +600,24 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
       setState(() {
         _activeSplitJob = job;
       });
+    });
 
-      if (job.isFinished && !completionHandled) {
-        completionHandled = true;
-        _onSplitTranscriptionComplete(job);
-      }
+    _outcomeSubscription?.cancel();
+    _outcomeSubscription = splitProvider.jobOutcomes.listen((outcome) {
+      if (!mounted) return;
+      if (outcome.job.id != jobId) return;
+
+      _onSplitTranscriptionComplete(outcome);
     });
   }
 
-  Future<void> _onSplitTranscriptionComplete(SplitTranscriptionJob job) async {
+  Future<void> _onSplitTranscriptionComplete(
+    SplitTranscriptionOutcome outcome,
+  ) async {
     if (!mounted) return;
 
-    final historyProvider = context.read<HistoryProvider>();
-    final historyId = _currentHistoryId;
-    final result = historyId == null
-        ? null
-        : historyProvider.getHistoryById(historyId)?.transcription;
+    final job = outcome.job;
+    final result = outcome.result;
 
     setState(() {
       _isTranscribing = false;
@@ -621,8 +630,13 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
       }
     });
 
-    if (result == null && mounted) {
-      SnackBarService().showError(context, context.l10n.transcriptionFailed);
+    if (result == null) {
+      SnackBarService().showError(
+        context,
+        outcome.error == null
+            ? context.l10n.transcriptionFailed
+            : ErrorMessages.forError(context, outcome.error!),
+      );
       return;
     }
 
@@ -631,10 +645,18 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
 
   /// Runs the prompt the user selected to apply automatically after a
   /// transcription, unless the transcript already carries prompt results
+  /// The provider hands the prompt over, so it also starts for a job that
+  /// finished while this screen was closed
   Future<void> _runAutoPrompt() async {
     if (!mounted) return;
     if (_transcriptionResult == null) return;
     if (_promptResults.isNotEmpty || _promptStream != null) return;
+
+    final historyId = _currentHistoryId;
+    if (historyId == null) return;
+
+    final splitProvider = context.read<SplitTranscriptionProvider>();
+    if (!splitProvider.consumePendingAutoPrompt(historyId)) return;
 
     final promptId = context.read<SettingsProvider>().autoPromptId;
     if (promptId == null) return;
@@ -704,14 +726,6 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
         );
       }
     }
-  }
-
-  String _removeFileExtension(String fileName) {
-    final lastDotIndex = fileName.lastIndexOf('.');
-    if (lastDotIndex > 0) {
-      return fileName.substring(0, lastDotIndex);
-    }
-    return fileName;
   }
 
   Future<void> _applyPromptStreaming() async {
@@ -832,12 +846,12 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
   Widget build(BuildContext context) {
     String title = context.l10n.newRecording;
     if (_selectedFile != null) {
-      title = _removeFileExtension(_selectedFile!.name);
+      title = PathUtils.removeExtension(_selectedFile!.name);
     } else if (_currentHistoryId != null) {
       final historyProvider = context.read<HistoryProvider>();
       final history = historyProvider.getHistoryById(_currentHistoryId!);
       if (history != null) {
-        title = _removeFileExtension(history.audioFileName);
+        title = PathUtils.removeExtension(history.audioFileName);
       }
     }
 
@@ -1079,6 +1093,7 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
               TranscriptTimestampsSection(
                 segments: _transcriptionResult!.segments,
                 position: _audioPosition,
+                detectedLanguage: _transcriptionResult!.language,
                 onSeek: _audioFileNotFound ? null : _seekTo,
               ),
             ],

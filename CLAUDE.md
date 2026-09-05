@@ -38,7 +38,7 @@ flutter build apk --release
 ## Directory Map
 
 - `lib/services/` — flat services plus `completion/`, `transcription/`, `export/` sub-layers, each with an `i_*.dart` interface
-- `lib/providers/` — 6 ChangeNotifiers; 5 wired in `main.dart` MultiProvider, `ChatProvider` created locally in `lib/screens/chat_screen.dart`
+- `lib/providers/` — 5 ChangeNotifiers; 4 wired in `main.dart` MultiProvider, `ChatProvider` created locally in `lib/screens/chat_screen.dart`
 - `lib/repositories/model_repository.dart` — model IDs (see Models)
 - `lib/utils/constants.dart`, `app_theme.dart` — design tokens (see `docs/UI_GUIDELINES.md`)
 

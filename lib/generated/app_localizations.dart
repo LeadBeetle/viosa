@@ -1400,24 +1400,6 @@ abstract class AppLocalizations {
   /// **'Transkription abgebrochen'**
   String get transcriptionCancelled;
 
-  /// No description provided for @transcriptionRunningTitle.
-  ///
-  /// In de, this message translates to:
-  /// **'Transkription läuft'**
-  String get transcriptionRunningTitle;
-
-  /// No description provided for @transcriptionRunningContent.
-  ///
-  /// In de, this message translates to:
-  /// **'Wenn Sie diesen Bildschirm verlassen, wird die laufende Transkription abgebrochen. Trotzdem verlassen?'**
-  String get transcriptionRunningContent;
-
-  /// No description provided for @leaveAndCancel.
-  ///
-  /// In de, this message translates to:
-  /// **'Verlassen'**
-  String get leaveAndCancel;
-
   /// No description provided for @stay.
   ///
   /// In de, this message translates to:
@@ -1838,12 +1820,6 @@ abstract class AppLocalizations {
   /// **'Transkription läuft im Hintergrund weiter'**
   String get transcriptionContinuesInBackground;
 
-  /// No description provided for @continueInBackground.
-  ///
-  /// In de, this message translates to:
-  /// **'Im Hintergrund weiterlaufen'**
-  String get continueInBackground;
-
   /// No description provided for @transcriptionRunningBannerTitle.
   ///
   /// In de, this message translates to:
@@ -1921,6 +1897,12 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Schriftgröße von Transkripten und Prompt-Ergebnissen'**
   String get textSizeDescription;
+
+  /// No description provided for @storedData.
+  ///
+  /// In de, this message translates to:
+  /// **'Gespeicherte Daten'**
+  String get storedData;
 
   /// No description provided for @clearAllHistory.
   ///
@@ -2000,6 +1982,12 @@ abstract class AppLocalizations {
   /// **'Startet die Transkription direkt nach dem Ende einer Aufnahme'**
   String get autoTranscribeDescription;
 
+  /// No description provided for @speakerLabel.
+  ///
+  /// In de, this message translates to:
+  /// **'Sprecher {position}'**
+  String speakerLabel(int position);
+
   /// No description provided for @timestamps.
   ///
   /// In de, this message translates to:
@@ -2023,12 +2011,6 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Als Untertitel (SRT) teilen'**
   String get exportAsSubtitles;
-
-  /// No description provided for @exportNoTimestamps.
-  ///
-  /// In de, this message translates to:
-  /// **'Für diese Aufnahme liegen keine Zeitmarken vor'**
-  String get exportNoTimestamps;
 
   /// No description provided for @detectedLanguageLabel.
   ///

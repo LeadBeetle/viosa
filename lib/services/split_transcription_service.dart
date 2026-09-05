@@ -3,8 +3,10 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import '../models/audio_split.dart';
 import '../models/split_transcription_job.dart';
+import '../models/transcription_options.dart';
 import '../models/transcription_result.dart';
 import '../repositories/model_repository.dart';
+import 'split_transcription_exceptions.dart';
 import 'audio_splitter_service.dart';
 import 'i_audio_splitter_service.dart';
 import 'speaker_context_service.dart';
@@ -76,10 +78,8 @@ class SplitTranscriptionService {
   Future<void> processJob(
     SplitTranscriptionJob job,
     String apiKey, {
+    required TranscriptionOptions options,
     String? model,
-    bool speakerDiarization = false,
-    List<String> keywords = const [],
-    String? transcribeStyle,
     void Function(SplitTranscriptionJob)? onProgress,
   }) async {
     if (model != null) {
@@ -106,17 +106,17 @@ class SplitTranscriptionService {
         job,
         split,
         apiKey,
-        speakerContext: speakerDiarization ? currentContext : null,
-        speakerDiarization: speakerDiarization,
-        keywords: keywords,
-        transcribeStyle: transcribeStyle,
+        options: options,
+        speakerContext: options.speakerDiarization ? currentContext : null,
         onProgress: onProgress,
       );
 
       if (split.status == SplitStatus.completed) {
         job.completedCount++;
 
-        if (speakerDiarization && split.transcriptionText != null && split.transcriptionText!.isNotEmpty) {
+        if (options.speakerDiarization &&
+            split.transcriptionText != null &&
+            split.transcriptionText!.isNotEmpty) {
           currentContext = await _extractContextSafely(
             apiKey,
             split.transcriptionText!,
@@ -201,10 +201,8 @@ class SplitTranscriptionService {
     SplitTranscriptionJob job,
     AudioSplit split,
     String apiKey, {
+    required TranscriptionOptions options,
     TranscriptionContext? speakerContext,
-    bool speakerDiarization = false,
-    List<String> keywords = const [],
-    String? transcribeStyle,
     void Function(SplitTranscriptionJob)? onProgress,
   }) async {
     for (int attempt = 1; attempt <= maxRetries; attempt++) {
@@ -223,10 +221,8 @@ class SplitTranscriptionService {
           base64Audio: base64Audio,
           mimeType: split.mimeType,
           language: job.language,
+          options: options,
           speakerContext: speakerContext,
-          speakerDiarization: speakerDiarization,
-          keywords: keywords,
-          transcribeStyle: transcribeStyle,
         );
 
         split.transcriptionText = result.text;
@@ -257,18 +253,17 @@ class SplitTranscriptionService {
     SplitTranscriptionJob job,
     String splitId,
     String apiKey, {
-    bool speakerDiarization = false,
-    List<String> keywords = const [],
-    String? transcribeStyle,
+    required TranscriptionOptions options,
     void Function(SplitTranscriptionJob)? onProgress,
   }) async {
     final split = job.splits.firstWhere(
       (s) => s.id == splitId,
-      orElse: () => throw Exception('Split not found: $splitId'),
+      orElse: () =>
+          throw SplitNotRetryableException('Split not found: $splitId'),
     );
 
     if (split.status != SplitStatus.failed) {
-      throw Exception('Split is not in failed state');
+      throw SplitNotRetryableException('Split is not in failed state: $splitId');
     }
 
     split.status = SplitStatus.pending;
@@ -279,7 +274,7 @@ class SplitTranscriptionService {
       job.failedCount--;
     }
 
-    final speakerContext = speakerDiarization
+    final speakerContext = options.speakerDiarization
         ? await _buildContextFromPreviousSplits(job, split.index, apiKey)
         : null;
 
@@ -287,10 +282,8 @@ class SplitTranscriptionService {
       job,
       split,
       apiKey,
+      options: options,
       speakerContext: speakerContext,
-      speakerDiarization: speakerDiarization,
-      keywords: keywords,
-      transcribeStyle: transcribeStyle,
       onProgress: onProgress,
     );
 

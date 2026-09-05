@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/transcript_segment.dart';
 import '../utils/constants.dart';
+import '../utils/duration_formatter.dart';
 import '../l10n/l10n.dart';
 
 /// Zeigt die Zeitmarken eines Transkripts und springt beim Antippen
@@ -11,11 +12,15 @@ class TranscriptTimestampsSection extends StatefulWidget {
   final ValueChanged<Duration>? onSeek;
   final Duration position;
 
+  /// Language the speech-to-text model reported, shown next to the count
+  final String? detectedLanguage;
+
   const TranscriptTimestampsSection({
     super.key,
     required this.segments,
     this.onSeek,
     this.position = Duration.zero,
+    this.detectedLanguage,
   });
 
   @override
@@ -40,7 +45,7 @@ class _TranscriptTimestampsSectionState
           ListTile(
             leading: const Icon(Icons.schedule),
             title: Text(context.l10n.timestamps),
-            subtitle: Text('${widget.segments.length}'),
+            subtitle: Text(_subtitle(context)),
             trailing: Icon(
               _isExpanded ? Icons.expand_less : Icons.expand_more,
             ),
@@ -62,7 +67,7 @@ class _TranscriptTimestampsSectionState
                     dense: true,
                     selected: isActive,
                     leading: Text(
-                      _formatPosition(segment.start),
+                      DurationFormatter.position(segment.start),
                       style: theme.textTheme.bodySmall?.copyWith(
                         fontFeatures: const [FontFeature.tabularFigures()],
                         color: theme.colorScheme.primary,
@@ -75,6 +80,15 @@ class _TranscriptTimestampsSectionState
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
+                    trailing: widget.onSeek == null
+                        ? null
+                        : Tooltip(
+                            message: context.l10n.jumpToPosition,
+                            child: const Icon(
+                              Icons.play_arrow,
+                              size: AppIconSize.small,
+                            ),
+                          ),
                     onTap: widget.onSeek == null
                         ? null
                         : () => widget.onSeek!(segment.start),
@@ -87,14 +101,11 @@ class _TranscriptTimestampsSectionState
     );
   }
 
-  String _formatPosition(Duration position) {
-    final hours = position.inHours;
-    final minutes = position.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final seconds = position.inSeconds.remainder(60).toString().padLeft(2, '0');
+  String _subtitle(BuildContext context) {
+    final count = '${widget.segments.length}';
+    final language = widget.detectedLanguage;
+    if (language == null || language.isEmpty) return count;
 
-    if (hours > 0) {
-      return '$hours:$minutes:$seconds';
-    }
-    return '$minutes:$seconds';
+    return '$count · ${context.l10n.detectedLanguageLabel(language)}';
   }
 }

@@ -794,16 +794,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get transcriptionCancelled => 'Transcription cancelled';
 
   @override
-  String get transcriptionRunningTitle => 'Transcription running';
-
-  @override
-  String get transcriptionRunningContent =>
-      'Leaving this screen cancels the running transcription. Leave anyway?';
-
-  @override
-  String get leaveAndCancel => 'Leave';
-
-  @override
   String get stay => 'Stay';
 
   @override
@@ -1052,9 +1042,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Transcription keeps running in the background';
 
   @override
-  String get continueInBackground => 'Keep running in background';
-
-  @override
   String get transcriptionRunningBannerTitle => 'Transcription running';
 
   @override
@@ -1102,6 +1089,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Font size of transcripts and prompt results';
 
   @override
+  String get storedData => 'Stored data';
+
+  @override
   String get clearAllHistory => 'Delete all recordings';
 
   @override
@@ -1145,6 +1135,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Starts transcription right after a recording ends';
 
   @override
+  String speakerLabel(int position) {
+    return 'Speaker $position';
+  }
+
+  @override
   String get timestamps => 'Timestamps';
 
   @override
@@ -1155,9 +1150,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get exportAsSubtitles => 'Share as subtitles (SRT)';
-
-  @override
-  String get exportNoTimestamps => 'This recording has no timestamps';
 
   @override
   String detectedLanguageLabel(String language) {

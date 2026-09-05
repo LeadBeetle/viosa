@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../models/transcript_segment.dart';
+import '../models/transcription_options.dart';
 import '../models/transcription_result.dart';
 import '../repositories/model_repository.dart';
 import 'completion/i_completion_service.dart';
@@ -17,10 +18,8 @@ abstract class ITranscriptionService {
     required String base64Audio,
     required String mimeType,
     required String language,
+    required TranscriptionOptions options,
     TranscriptionContext? speakerContext,
-    bool speakerDiarization = false,
-    List<String> keywords = const [],
-    String? transcribeStyle,
   });
 }
 
@@ -56,28 +55,30 @@ class TranscriptionService implements ITranscriptionService {
     required String base64Audio,
     required String mimeType,
     required String language,
+    required TranscriptionOptions options,
     TranscriptionContext? speakerContext,
-    bool speakerDiarization = false,
-    List<String> keywords = const [],
-    String? transcribeStyle,
   }) async {
     final speechToTextResult = await _speechToTextService.transcribe(
       apiKey: apiKey,
       base64Audio: base64Audio,
       format: _getAudioFormat(mimeType),
       language: language,
-      diarization: speakerDiarization,
-      phrases: keywords,
-      transcribeStyle: transcribeStyle,
+      diarization: options.speakerDiarization,
+      phrases: options.keywords,
+      transcribeStyle: options.style,
     );
 
     final resultLanguage = speechToTextResult.detectedLanguage ?? language;
 
-    if (speakerDiarization && speechToTextResult.hasSpeakerLabels) {
-      return _resultFromProviderDiarization(speechToTextResult, resultLanguage);
+    if (options.speakerDiarization && speechToTextResult.hasSpeakerLabels) {
+      return _resultFromProviderDiarization(
+        speechToTextResult,
+        resultLanguage,
+        options.speakerLabel,
+      );
     }
 
-    if (transcribeStyle == TranscribeStyle.verbatim) {
+    if (options.style == TranscribeStyle.verbatim) {
       return _buildResult(
         text: _formatterService.formatTranscription(speechToTextResult.text),
         language: resultLanguage,
@@ -91,7 +92,7 @@ class TranscriptionService implements ITranscriptionService {
         speechToTextResult.text,
         language,
         speakerContext,
-        speakerDiarization,
+        options.speakerDiarization,
       ),
       config: _getConfig(),
     );
@@ -108,20 +109,17 @@ class TranscriptionService implements ITranscriptionService {
   TranscriptionResult _resultFromProviderDiarization(
     SpeechToTextResult speechToTextResult,
     String language,
+    String Function(int position) speakerLabel,
   ) {
-    final segments = _diarizedTranscriptBuilder.withDisplayLabels(
+    final diarized = _diarizedTranscriptBuilder.build(
       speechToTextResult.segments,
-      language,
-    );
-    final text = _diarizedTranscriptBuilder.build(
-      speechToTextResult.segments,
-      language,
+      speakerLabel,
     );
 
     return _buildResult(
-      text: _formatterService.formatTranscription(text),
+      text: _formatterService.formatTranscription(diarized.text),
       language: language,
-      segments: segments,
+      segments: diarized.segments,
     );
   }
 

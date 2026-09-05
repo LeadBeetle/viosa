@@ -1,21 +1,14 @@
 import '../../models/transcription_history.dart';
+import '../../utils/path_utils.dart';
 import 'i_export_content_formatter.dart';
 
 /// Formatiert Transkriptionsdaten als Plain Text.
 /// Strukturierte Ausgabe mit Überschriften und Abschnitten.
 class PlainTextExportFormatter implements IExportContentFormatter {
-  String _removeFileExtension(String fileName) {
-    final lastDot = fileName.lastIndexOf('.');
-    if (lastDot > 0) {
-      return fileName.substring(0, lastDot);
-    }
-    return fileName;
-  }
-
   @override
   String format(TranscriptionHistory history) {
     final buffer = StringBuffer();
-    final name = _removeFileExtension(history.audioFileName);
+    final name = PathUtils.removeExtension(history.audioFileName);
 
     buffer.writeln('# $name');
     buffer.writeln();
@@ -47,7 +40,7 @@ class PlainTextExportFormatter implements IExportContentFormatter {
 
   @override
   String getSubject(TranscriptionHistory history) {
-    final name = _removeFileExtension(history.audioFileName);
+    final name = PathUtils.removeExtension(history.audioFileName);
     return 'VIOSA Export: $name';
   }
 }

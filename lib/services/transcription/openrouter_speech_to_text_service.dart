@@ -40,7 +40,7 @@ class OpenRouterSpeechToTextService implements ISpeechToTextService {
     String? language,
     bool diarization = false,
     List<String> phrases = const [],
-    String? transcribeStyle,
+    TranscribeStyle? transcribeStyle,
   }) async {
     final request = <String, dynamic>{
       'model': model,
@@ -93,7 +93,7 @@ class OpenRouterSpeechToTextService implements ISpeechToTextService {
   Map<String, dynamic> _buildAzureOptions({
     required bool diarization,
     required List<String> phrases,
-    required String? transcribeStyle,
+    required TranscribeStyle? transcribeStyle,
   }) {
     final options = <String, dynamic>{};
 
@@ -111,9 +111,9 @@ class OpenRouterSpeechToTextService implements ISpeechToTextService {
       options['phraseList'] = {'phrases': cleanedPhrases};
     }
 
-    if (transcribeStyle != null && transcribeStyle.isNotEmpty) {
+    if (transcribeStyle != null) {
       options['enhancedMode'] = {
-        'modelOptions': {'transcribeStyle': transcribeStyle},
+        'modelOptions': {'transcribeStyle': transcribeStyle.wireValue},
       };
     }
 

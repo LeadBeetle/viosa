@@ -217,9 +217,6 @@
   "sortDurationShortest": "Duration (shortest first)",
   "cancelTranscription": "Cancel transcription",
   "transcriptionCancelled": "Transcription cancelled",
-  "transcriptionRunningTitle": "Transcription running",
-  "transcriptionRunningContent": "Leaving this screen cancels the running transcription. Leave anyway?",
-  "leaveAndCancel": "Leave",
   "stay": "Stay",
   "discardRecordingTitle": "Discard recording?",
   "discardRecordingContent": "The recording ({duration}) will be deleted and cannot be restored.",
@@ -297,7 +294,6 @@
   "retryFailedSegments": "Retry failed sections",
   "retryingFailedSegments": "Retrying failed sections …",
   "transcriptionContinuesInBackground": "Transcription keeps running in the background",
-  "continueInBackground": "Keep running in background",
   "transcriptionRunningBannerTitle": "Transcription running",
   "transcriptionRunningBannerSubtitle": "{fileName} · {percent}%",
   "openRunningTranscription": "Open",
@@ -311,6 +307,7 @@
   "noRecordingsMatchSearch": "No recording matches the search",
   "textSize": "Text size",
   "textSizeDescription": "Font size of transcripts and prompt results",
+  "storedData": "Stored data",
   "clearAllHistory": "Delete all recordings",
   "clearAllHistoryConfirm": "All recordings, transcripts and chats are deleted permanently.",
   "allHistoryCleared": "All recordings deleted",
@@ -324,11 +321,18 @@
   "keywordsEmpty": "No terms added yet",
   "autoTranscribe": "Transcribe after recording",
   "autoTranscribeDescription": "Starts transcription right after a recording ends",
+  "speakerLabel": "Speaker {position}",
+  "@speakerLabel": {
+    "placeholders": {
+      "position": {
+        "type": "int"
+      }
+    }
+  },
   "timestamps": "Timestamps",
   "jumpToPosition": "Jump to this position",
   "exportAsText": "Share as text",
   "exportAsSubtitles": "Share as subtitles (SRT)",
-  "exportNoTimestamps": "This recording has no timestamps",
   "detectedLanguageLabel": "Detected: {language}",
   "splittingAudioProgress": "Splitting audio: {current}/{total}",
   "autoPrompt": "Prompt after transcription",

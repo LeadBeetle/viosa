@@ -4,6 +4,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../models/transcription_history.dart';
+import '../../utils/path_utils.dart';
 import 'i_export_content_formatter.dart';
 import 'plain_text_export_formatter.dart';
 import 'srt_export_formatter.dart';
@@ -36,14 +37,6 @@ class ExportService implements IExportService {
   })  : _markdownFormatter = formatter ?? PlainTextExportFormatter(),
         _subtitleFormatter = subtitleFormatter ?? SrtExportFormatter();
 
-  String _removeFileExtension(String fileName) {
-    final lastDot = fileName.lastIndexOf('.');
-    if (lastDot > 0) {
-      return fileName.substring(0, lastDot);
-    }
-    return fileName;
-  }
-
   @override
   Future<void> share(
     TranscriptionHistory history, {
@@ -53,7 +46,7 @@ class ExportService implements IExportService {
         format == ExportFormat.subtitles ? _subtitleFormatter : _markdownFormatter;
     final content = formatter.format(history);
     final subject = formatter.getSubject(history);
-    final baseName = _removeFileExtension(history.audioFileName);
+    final baseName = PathUtils.removeExtension(history.audioFileName);
     final extension = format == ExportFormat.subtitles ? 'srt' : 'md';
 
     final tempDir = await getTemporaryDirectory();

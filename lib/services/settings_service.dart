@@ -21,8 +21,8 @@ abstract class ISettingsService {
   Future<String> getThemeMode();
   Future<void> saveSpeakerDiarization(bool enabled);
   Future<bool> getSpeakerDiarization();
-  Future<void> saveTranscribeStyle(String style);
-  Future<String> getTranscribeStyle();
+  Future<void> saveTranscribeStyle(TranscribeStyle style);
+  Future<TranscribeStyle> getTranscribeStyle();
   Future<void> saveKeywords(List<String> keywords);
   Future<List<String>> getKeywords();
   Future<void> saveAutoTranscribe(bool enabled);
@@ -56,8 +56,8 @@ class SettingsService implements ISettingsService {
   static const double _defaultTextSize = 16.0;
   static const String _defaultThemeMode = 'system';
   static const bool _defaultSpeakerDiarization = false;
-  static const String _defaultTranscribeStyle = TranscribeStyle.clean;
-  static const bool _defaultAutoTranscribe = true;
+  static const TranscribeStyle _defaultTranscribeStyle = TranscribeStyle.clean;
+  static const bool _defaultAutoTranscribe = false;
   static const String _keywordSeparator = '\n';
 
   SettingsService({FlutterSecureStorage? storage})
@@ -166,20 +166,14 @@ class SettingsService implements ISettingsService {
   }
 
   @override
-  Future<void> saveTranscribeStyle(String style) async {
-    if (!TranscribeStyle.values.contains(style)) {
-      throw ArgumentError('Invalid transcribe style: $style');
-    }
-    await _storage.write(key: _transcribeStyleKey, value: style);
+  Future<void> saveTranscribeStyle(TranscribeStyle style) async {
+    await _storage.write(key: _transcribeStyleKey, value: style.wireValue);
   }
 
   @override
-  Future<String> getTranscribeStyle() async {
-    final style = await _storage.read(key: _transcribeStyleKey);
-    if (style == null || !TranscribeStyle.values.contains(style)) {
-      return _defaultTranscribeStyle;
-    }
-    return style;
+  Future<TranscribeStyle> getTranscribeStyle() async {
+    final stored = await _storage.read(key: _transcribeStyleKey);
+    return TranscribeStyle.fromWireValue(stored) ?? _defaultTranscribeStyle;
   }
 
   @override

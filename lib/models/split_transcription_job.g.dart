@@ -90,6 +90,8 @@ class JobStatusAdapter extends TypeAdapter<JobStatus> {
         return JobStatus.partialFailure;
       case 4:
         return JobStatus.cancelled;
+      case 5:
+        return JobStatus.failed;
       default:
         return JobStatus.queued;
     }
@@ -112,6 +114,9 @@ class JobStatusAdapter extends TypeAdapter<JobStatus> {
         break;
       case JobStatus.cancelled:
         writer.writeByte(4);
+        break;
+      case JobStatus.failed:
+        writer.writeByte(5);
         break;
     }
   }

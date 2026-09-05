@@ -1,14 +1,25 @@
 import '../../models/transcript_segment.dart';
 
 /// Transcription styles supported by the speech-to-text model
-class TranscribeStyle {
-  /// Keeps fillers, repetitions and false starts
-  static const String verbatim = 'verbatim';
-
+enum TranscribeStyle {
   /// Removes fillers and repetitions
-  static const String clean = 'clean';
+  clean('clean'),
 
-  static const List<String> values = [clean, verbatim];
+  /// Keeps fillers, repetitions and false starts
+  verbatim('verbatim');
+
+  const TranscribeStyle(this.wireValue);
+
+  /// Value the provider API expects
+  final String wireValue;
+
+  /// Returns the style [wireValue] stands for, `null` if it is unknown
+  static TranscribeStyle? fromWireValue(String? wireValue) {
+    for (final style in values) {
+      if (style.wireValue == wireValue) return style;
+    }
+    return null;
+  }
 }
 
 /// Result of a speech-to-text request
@@ -58,6 +69,6 @@ abstract class ISpeechToTextService {
     String? language,
     bool diarization = false,
     List<String> phrases = const [],
-    String? transcribeStyle,
+    TranscribeStyle? transcribeStyle,
   });
 }

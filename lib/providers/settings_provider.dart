@@ -18,9 +18,9 @@ class SettingsProvider with ChangeNotifier {
   double _textSize = 16.0;
   String _themeMode = 'system';
   bool _speakerDiarization = false;
-  String _transcribeStyle = TranscribeStyle.clean;
+  TranscribeStyle _transcribeStyle = TranscribeStyle.clean;
   List<String> _keywords = const [];
-  bool _autoTranscribe = true;
+  bool _autoTranscribe = false;
   String? _autoPromptId;
   bool _isInitialized = false;
   bool _isLoading = false;
@@ -39,7 +39,7 @@ class SettingsProvider with ChangeNotifier {
   String get transcriptionModelId => ModelRepository.transcriptionModelId;
   String get themeModeString => _themeMode;
   bool get speakerDiarization => _speakerDiarization;
-  String get transcribeStyle => _transcribeStyle;
+  TranscribeStyle get transcribeStyle => _transcribeStyle;
   List<String> get keywords => List.unmodifiable(_keywords);
   bool get autoTranscribe => _autoTranscribe;
   String? get autoPromptId => _autoPromptId;
@@ -138,7 +138,7 @@ class SettingsProvider with ChangeNotifier {
   }
 
   /// Save the transcript style requested from the speech-to-text model
-  Future<void> saveTranscribeStyle(String style) async {
+  Future<void> saveTranscribeStyle(TranscribeStyle style) async {
     await _settingsService.saveTranscribeStyle(style);
     _transcribeStyle = style;
     notifyListeners();
@@ -176,7 +176,7 @@ class SettingsProvider with ChangeNotifier {
     _speakerDiarization = false;
     _transcribeStyle = TranscribeStyle.clean;
     _keywords = const [];
-    _autoTranscribe = true;
+    _autoTranscribe = false;
     _autoPromptId = null;
     notifyListeners();
   }

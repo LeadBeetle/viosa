@@ -801,16 +801,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get transcriptionCancelled => 'Transkription abgebrochen';
 
   @override
-  String get transcriptionRunningTitle => 'Transkription läuft';
-
-  @override
-  String get transcriptionRunningContent =>
-      'Wenn Sie diesen Bildschirm verlassen, wird die laufende Transkription abgebrochen. Trotzdem verlassen?';
-
-  @override
-  String get leaveAndCancel => 'Verlassen';
-
-  @override
   String get stay => 'Bleiben';
 
   @override
@@ -1063,9 +1053,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Transkription läuft im Hintergrund weiter';
 
   @override
-  String get continueInBackground => 'Im Hintergrund weiterlaufen';
-
-  @override
   String get transcriptionRunningBannerTitle => 'Transkription läuft';
 
   @override
@@ -1113,6 +1100,9 @@ class AppLocalizationsDe extends AppLocalizations {
       'Schriftgröße von Transkripten und Prompt-Ergebnissen';
 
   @override
+  String get storedData => 'Gespeicherte Daten';
+
+  @override
   String get clearAllHistory => 'Alle Aufnahmen löschen';
 
   @override
@@ -1156,6 +1146,11 @@ class AppLocalizationsDe extends AppLocalizations {
       'Startet die Transkription direkt nach dem Ende einer Aufnahme';
 
   @override
+  String speakerLabel(int position) {
+    return 'Sprecher $position';
+  }
+
+  @override
   String get timestamps => 'Zeitmarken';
 
   @override
@@ -1166,10 +1161,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get exportAsSubtitles => 'Als Untertitel (SRT) teilen';
-
-  @override
-  String get exportNoTimestamps =>
-      'Für diese Aufnahme liegen keine Zeitmarken vor';
 
   @override
   String detectedLanguageLabel(String language) {

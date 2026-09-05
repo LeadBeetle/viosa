@@ -123,6 +123,11 @@ class SplitTranscriptionProgressCard extends StatelessWidget {
         text = 'Abgebrochen';
         color = Theme.of(context).colorScheme.error;
         break;
+      case JobStatus.failed:
+        icon = Icons.error_outline;
+        text = 'Fehlgeschlagen';
+        color = Theme.of(context).colorScheme.error;
+        break;
     }
 
     return Row(
