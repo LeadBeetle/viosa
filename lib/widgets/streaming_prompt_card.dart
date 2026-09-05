@@ -4,6 +4,8 @@ import '../providers/settings_provider.dart';
 import 'streaming_text_display.dart';
 import 'info_chip.dart';
 import '../utils/constants.dart';
+import '../repositories/model_repository.dart';
+import '../l10n/l10n.dart';
 
 /// Card widget for displaying streaming prompt response
 class StreamingPromptCard extends StatelessWidget {
@@ -35,10 +37,11 @@ class StreamingPromptCard extends StatelessWidget {
               height: 1.5,
             ),
             metadata: Wrap(
-              spacing: 8,
+              spacing: AppSpacing.s,
               children: [
                 InfoChip(
-                  label: 'Modell: ${settings.selectedModel}',
+                  label:
+                      context.l10n.modelLabel(ModelRepository.defaultModel.name),
                   icon: Icons.memory,
                 ),
               ],

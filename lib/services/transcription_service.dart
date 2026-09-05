@@ -1,4 +1,3 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../models/transcription_result.dart';
 import '../repositories/model_repository.dart';
@@ -20,15 +19,6 @@ abstract class ITranscriptionService {
     bool speakerDiarization = false,
   });
 
-  Stream<String> transcribeStreaming({
-    required String apiKey,
-    required String base64Audio,
-    required String mimeType,
-    required String language,
-    TranscriptionContext? speakerContext,
-    bool speakerDiarization = false,
-    CancelToken? cancelToken,
-  });
 }
 
 /// Service for audio transcription
@@ -62,12 +52,13 @@ class TranscriptionService implements ITranscriptionService {
     TranscriptionContext? speakerContext,
     bool speakerDiarization = false,
   }) async {
-    final rawTranscript = await _speechToText(
+    final speechToTextResult = await _speechToTextService.transcribe(
       apiKey: apiKey,
       base64Audio: base64Audio,
-      mimeType: mimeType,
+      format: _getAudioFormat(mimeType),
       language: language,
     );
+    final rawTranscript = speechToTextResult.text;
 
     final rawText = await _completionService.complete(
       apiKey: apiKey,
@@ -90,51 +81,6 @@ class TranscriptionService implements ITranscriptionService {
       timestamp: DateTime.now(),
       speakers: speakers,
     );
-  }
-
-  @override
-  Stream<String> transcribeStreaming({
-    required String apiKey,
-    required String base64Audio,
-    required String mimeType,
-    required String language,
-    TranscriptionContext? speakerContext,
-    bool speakerDiarization = false,
-    CancelToken? cancelToken,
-  }) async* {
-    final rawTranscript = await _speechToText(
-      apiKey: apiKey,
-      base64Audio: base64Audio,
-      mimeType: mimeType,
-      language: language,
-    );
-
-    yield* _completionService.completeStreaming(
-      apiKey: apiKey,
-      messages: _buildMessages(
-        rawTranscript,
-        language,
-        speakerContext,
-        speakerDiarization,
-      ),
-      config: _getConfig(),
-      cancelToken: cancelToken,
-    );
-  }
-
-  Future<String> _speechToText({
-    required String apiKey,
-    required String base64Audio,
-    required String mimeType,
-    required String language,
-  }) async {
-    final result = await _speechToTextService.transcribe(
-      apiKey: apiKey,
-      base64Audio: base64Audio,
-      format: _getAudioFormat(mimeType),
-      language: language,
-    );
-    return result.text;
   }
 
   List<CompletionMessage> _buildMessages(

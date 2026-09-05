@@ -20,7 +20,6 @@ import '../widgets/prompt_selector_bottom_sheet.dart';
 import '../widgets/split_transcription_progress_card.dart';
 import '../widgets/transcription_button.dart';
 import '../widgets/prompt_results_list.dart';
-import '../widgets/streaming_transcription_card.dart';
 import '../widgets/completed_transcription_card.dart';
 import '../widgets/streaming_prompt_card.dart';
 import '../dialogs/transcription_confirmation_dialog.dart';
@@ -77,14 +76,12 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
   bool _isPlayerCollapsed = false;
 
   // Streaming state
-  Stream<String>? _transcriptionStream;
   Stream<String>? _promptStream;
   final StringBuffer _promptBuffer = StringBuffer();
   String? _currentPromptName;
 
   // Split transcription state
   SplitTranscriptionJob? _activeSplitJob;
-  bool _isSplitTranscription = false;
 
 
   // Audio file missing state
@@ -369,8 +366,8 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
 
     if (!mounted) return;
 
-    final selectedModelId = settingsProvider.selectedModel;
-    final selectedModel = ModelRepository.transcriptionModel;
+    final completionModelId = settingsProvider.completionModelId;
+    final transcriptionModel = ModelRepository.transcriptionModel;
     final hasExistingData = _transcriptionResult != null || _promptResults.isNotEmpty;
 
     final confirmed = await TranscriptionConfirmationDialog.show(
@@ -378,7 +375,7 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
       duration: duration,
       shouldSplit: shouldSplit,
       splitCount: splitCount,
-      selectedModel: selectedModel,
+      selectedModel: transcriptionModel,
       hasExistingData: hasExistingData,
     );
 
@@ -399,7 +396,6 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
       splitProvider.setApiKey(apiKey);
 
       setState(() {
-        _isSplitTranscription = true;
         _isTranscribing = true;
       });
 
@@ -408,7 +404,7 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
         fileName: _selectedFile!.name,
         language: language,
         apiKey: apiKey,
-        model: selectedModelId,
+        model: completionModelId,
         speakerDiarization: settingsProvider.speakerDiarization,
       );
 
@@ -421,7 +417,6 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
     } catch (e) {
       safeSetState(() {
         _isTranscribing = false;
-        _isSplitTranscription = false;
         _activeSplitJob = null;
       });
       if (mounted) {
@@ -473,7 +468,6 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
         setState(() {
           _transcriptionResult = result;
           _activeSplitJob = null;
-          _isSplitTranscription = false;
         });
 
         await _saveToHistory();
@@ -485,7 +479,6 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
       if (mounted) {
         setState(() {
           _activeSplitJob = null;
-          _isSplitTranscription = false;
         });
         SnackBarService().showError(context, context.l10n.transcriptionFailed);
       }
@@ -554,7 +547,7 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
     });
 
     try {
-      final model = settingsProvider.selectedModel;
+      final model = settingsProvider.completionModelId;
       final llmProvider = LLMProviderFactory.createForModel(model);
 
       final stream = llmProvider.applyPromptStreaming(
@@ -599,7 +592,7 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
       transcriptionText: _transcriptionResult!.text,
       llmResponse: _promptBuffer.toString(),
       timestamp: DateTime.now(),
-      modelUsed: settingsProvider.selectedModel,
+      modelUsed: settingsProvider.completionModelId,
     );
 
     setState(() {
@@ -755,8 +748,7 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
             const SizedBox(height: AppSpacing.m),
           ],
           if (_isTranscribing) ...[
-            if (_isSplitTranscription)
-              _activeSplitJob != null
+            _activeSplitJob != null
                   ? SplitTranscriptionProgressCard(job: _activeSplitJob!)
                   : Consumer<SplitTranscriptionProvider>(
                       builder: (context, provider, child) {
@@ -787,16 +779,7 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
                           ),
                         );
                       },
-                    )
-            else
-              StreamingTranscriptionCard(
-                textStream: _transcriptionStream,
-                onStreamComplete: () {},
-                onStreamError: (error) {
-                  SnackBarService().showError(context, context.l10n.errorGeneric(error.toString()));
-                },
-                onChunk: (chunk) {},
-              ),
+                    ),
           ] else if (_transcriptionResult != null) ...[
             CompletedTranscriptionCard(
               transcriptionResult: _transcriptionResult!,

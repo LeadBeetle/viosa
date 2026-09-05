@@ -290,23 +290,29 @@ abstract class AppLocalizations {
   /// **'Bitte API-Key konfigurieren'**
   String get configureApiKey;
 
+  /// No description provided for @modelsSectionTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Modelle'**
+  String get modelsSectionTitle;
+
+  /// No description provided for @speechToTextModelLabel.
+  ///
+  /// In de, this message translates to:
+  /// **'Spracherkennung'**
+  String get speechToTextModelLabel;
+
+  /// No description provided for @languageModelLabel.
+  ///
+  /// In de, this message translates to:
+  /// **'Sprachmodell'**
+  String get languageModelLabel;
+
   /// No description provided for @aiModel.
   ///
   /// In de, this message translates to:
   /// **'KI-Modell'**
   String get aiModel;
-
-  /// No description provided for @currentModel.
-  ///
-  /// In de, this message translates to:
-  /// **'Aktuell:'**
-  String get currentModel;
-
-  /// No description provided for @selectModelDescription.
-  ///
-  /// In de, this message translates to:
-  /// **'Wählen Sie das Modell für Transkription und Prompts'**
-  String get selectModelDescription;
 
   /// No description provided for @audioTranscription.
   ///
@@ -782,12 +788,6 @@ abstract class AppLocalizations {
   /// **'Fehler beim Speichern der Sprache: {error}'**
   String errorSavingLanguage(String error);
 
-  /// No description provided for @errorSavingModel.
-  ///
-  /// In de, this message translates to:
-  /// **'Fehler beim Speichern des Modells: {error}'**
-  String errorSavingModel(String error);
-
   /// No description provided for @errorSavingTheme.
   ///
   /// In de, this message translates to:
@@ -949,30 +949,6 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Alte Aufnahme: Audiodatei nicht mehr verfügbar'**
   String get oldRecordingAudioUnavailable;
-
-  /// No description provided for @modelTierFast.
-  ///
-  /// In de, this message translates to:
-  /// **'Schnell & günstig'**
-  String get modelTierFast;
-
-  /// No description provided for @modelTierPremium.
-  ///
-  /// In de, this message translates to:
-  /// **'Premium'**
-  String get modelTierPremium;
-
-  /// No description provided for @modelDescriptionFast.
-  ///
-  /// In de, this message translates to:
-  /// **'Ideal für einfache Transkriptionen und schnelle Ergebnisse'**
-  String get modelDescriptionFast;
-
-  /// No description provided for @modelDescriptionPremium.
-  ///
-  /// In de, this message translates to:
-  /// **'Bessere Qualität für komplexe Audio-Inhalte'**
-  String get modelDescriptionPremium;
 
   /// No description provided for @timeAgoSeconds.
   ///

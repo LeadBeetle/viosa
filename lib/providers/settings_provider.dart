@@ -30,8 +30,8 @@ class SettingsProvider with ChangeNotifier {
   Locale get locale => Locale(_uiLanguage);
   String? get audioSavePath => _audioSavePath;
   double get textSize => _textSize;
-  String get selectedModel => ModelRepository.defaultModelId;
-  String get transcriptionModel => ModelRepository.transcriptionModelId;
+  String get completionModelId => ModelRepository.defaultModelId;
+  String get transcriptionModelId => ModelRepository.transcriptionModelId;
   String get themeModeString => _themeMode;
   bool get speakerDiarization => _speakerDiarization;
   bool get isInitialized => _isInitialized;
@@ -65,6 +65,7 @@ class SettingsProvider with ChangeNotifier {
       _textSize = await _settingsService.getTextSize();
       _themeMode = await _settingsService.getThemeMode();
       _speakerDiarization = await _settingsService.getSpeakerDiarization();
+      await _settingsService.removeLegacySettings();
       _isInitialized = true;
     } catch (e) {
       debugPrint('Error initializing settings: $e');

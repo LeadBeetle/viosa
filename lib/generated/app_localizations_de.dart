@@ -108,14 +108,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get configureApiKey => 'Bitte API-Key konfigurieren';
 
   @override
+  String get modelsSectionTitle => 'Modelle';
+
+  @override
+  String get speechToTextModelLabel => 'Spracherkennung';
+
+  @override
+  String get languageModelLabel => 'Sprachmodell';
+
+  @override
   String get aiModel => 'KI-Modell';
-
-  @override
-  String get currentModel => 'Aktuell:';
-
-  @override
-  String get selectModelDescription =>
-      'Wählen Sie das Modell für Transkription und Prompts';
 
   @override
   String get audioTranscription => 'Audio & Transkription';
@@ -396,11 +398,6 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String errorSavingModel(String error) {
-    return 'Fehler beim Speichern des Modells: $error';
-  }
-
-  @override
   String errorSavingTheme(String error) {
     return 'Fehler beim Speichern des Themes: $error';
   }
@@ -512,20 +509,6 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get oldRecordingAudioUnavailable =>
       'Alte Aufnahme: Audiodatei nicht mehr verfügbar';
-
-  @override
-  String get modelTierFast => 'Schnell & günstig';
-
-  @override
-  String get modelTierPremium => 'Premium';
-
-  @override
-  String get modelDescriptionFast =>
-      'Ideal für einfache Transkriptionen und schnelle Ergebnisse';
-
-  @override
-  String get modelDescriptionPremium =>
-      'Bessere Qualität für komplexe Audio-Inhalte';
 
   @override
   String timeAgoSeconds(int count) {

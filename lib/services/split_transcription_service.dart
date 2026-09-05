@@ -18,7 +18,7 @@ import 'completion/openrouter_completion_service.dart';
 class SplitTranscriptionService {
   final AudioSplitterService _splitterService;
   final Map<String, SplitTranscriptionJob> _jobs = {};
-  String _currentModel = ModelRepository.defaultModelId;
+  String _completionModel = ModelRepository.defaultModelId;
   ILLMProvider? _provider;
   ISpeakerContextService? _speakerContextService;
 
@@ -30,13 +30,13 @@ class SplitTranscriptionService {
   })  : _splitterService = splitterService ?? AudioSplitterService();
 
   ILLMProvider _getProvider() {
-    _provider ??= LLMProviderFactory.createForModel(_currentModel);
+    _provider ??= LLMProviderFactory.createForModel(_completionModel);
     return _provider!;
   }
 
   ISpeakerContextService _getSpeakerContextService() {
     _speakerContextService ??= SpeakerContextService(
-      completionService: OpenRouterCompletionService(model: _currentModel),
+      completionService: OpenRouterCompletionService(model: _completionModel),
     );
     return _speakerContextService!;
   }
@@ -81,8 +81,8 @@ class SplitTranscriptionService {
     void Function(SplitTranscriptionJob)? onProgress,
   }) async {
     if (model != null) {
-      _currentModel = model;
-      _provider = LLMProviderFactory.createForModel(_currentModel);
+      _completionModel = model;
+      _provider = LLMProviderFactory.createForModel(_completionModel);
       _speakerContextService = null;
     }
     job.status = JobStatus.processing;
@@ -352,7 +352,7 @@ class SplitTranscriptionService {
       transcription: TranscriptionResult(
         text: mergedText,
         language: job.language,
-        modelUsed: _currentModel,
+        modelUsed: ModelRepository.transcriptionModelId,
         timestamp: job.completedAt ?? DateTime.now(),
         speakers: speakers,
       ),

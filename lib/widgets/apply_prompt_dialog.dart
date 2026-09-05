@@ -23,7 +23,7 @@ class ApplyPromptDialog extends StatefulWidget {
 
 class _ApplyPromptDialogState extends State<ApplyPromptDialog> {
   ILLMProvider _getLLMProvider() {
-    final model = context.read<SettingsProvider>().selectedModel;
+    final model = context.read<SettingsProvider>().completionModelId;
     return LLMProviderFactory.createForModel(model);
   }
 

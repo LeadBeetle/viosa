@@ -100,7 +100,7 @@ class _ChatScreenState extends State<ChatScreen> {
     await _chatProvider.sendMessage(
       message,
       apiKey: settings.apiKey!,
-      model: settings.selectedModel,
+      model: settings.completionModelId,
     );
 
     _scrollToBottom();
@@ -266,7 +266,7 @@ class _ChatScreenState extends State<ChatScreen> {
     await _chatProvider.regenerateResponse(
       messageIndex,
       apiKey: settings.apiKey!,
-      model: settings.selectedModel,
+      model: settings.completionModelId,
     );
 
     _scrollToBottom();

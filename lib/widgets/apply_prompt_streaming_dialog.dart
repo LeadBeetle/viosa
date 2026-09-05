@@ -26,7 +26,7 @@ class ApplyPromptStreamingDialog extends StatefulWidget {
 
 class _ApplyPromptStreamingDialogState extends State<ApplyPromptStreamingDialog> {
   ILLMProvider _getLLMProvider() {
-    final model = context.read<SettingsProvider>().selectedModel;
+    final model = context.read<SettingsProvider>().completionModelId;
     return LLMProviderFactory.createForModel(model);
   }
 
@@ -105,7 +105,7 @@ class _ApplyPromptStreamingDialogState extends State<ApplyPromptStreamingDialog>
       }
 
       // Create result and return it
-      final model = context.read<SettingsProvider>().selectedModel;
+      final model = context.read<SettingsProvider>().completionModelId;
       final result = PromptResult(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         promptName: _selectedPrompt!.name,
@@ -130,7 +130,7 @@ class _ApplyPromptStreamingDialogState extends State<ApplyPromptStreamingDialog>
   void _cancelStreaming() {
     if (_streamedResponse.isNotEmpty) {
       // Create partial result
-      final model = context.read<SettingsProvider>().selectedModel;
+      final model = context.read<SettingsProvider>().completionModelId;
       final result = PromptResult(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         promptName: '${_selectedPrompt!.name} (${context.l10n.cancelled})',

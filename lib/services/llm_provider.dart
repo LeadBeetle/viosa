@@ -1,4 +1,3 @@
-import 'package:dio/dio.dart';
 import '../models/transcription_result.dart';
 import '../models/prompt_result.dart';
 import 'completion/i_completion_service.dart';
@@ -23,16 +22,6 @@ abstract class ILLMProvider {
     required String language,
     TranscriptionContext? speakerContext,
     bool speakerDiarization = false,
-  });
-
-  Stream<String> transcribeAudioStreaming({
-    required String apiKey,
-    required String base64Audio,
-    required String mimeType,
-    required String language,
-    TranscriptionContext? speakerContext,
-    bool speakerDiarization = false,
-    CancelToken? cancelToken,
   });
 
   Future<PromptResult> applyPrompt({
@@ -88,27 +77,6 @@ class LLMProviderAdapter implements ILLMProvider {
       language: language,
       speakerContext: speakerContext,
       speakerDiarization: speakerDiarization,
-    );
-  }
-
-  @override
-  Stream<String> transcribeAudioStreaming({
-    required String apiKey,
-    required String base64Audio,
-    required String mimeType,
-    required String language,
-    TranscriptionContext? speakerContext,
-    bool speakerDiarization = false,
-    CancelToken? cancelToken,
-  }) {
-    return _transcriptionService.transcribeStreaming(
-      apiKey: apiKey,
-      base64Audio: base64Audio,
-      mimeType: mimeType,
-      language: language,
-      speakerContext: speakerContext,
-      speakerDiarization: speakerDiarization,
-      cancelToken: cancelToken,
     );
   }
 

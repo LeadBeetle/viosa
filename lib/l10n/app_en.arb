@@ -36,9 +36,10 @@
   "pleaseEnterApiKey": "Please enter an API key",
   "configureApiKey": "Please configure API key",
 
+  "modelsSectionTitle": "Models",
+  "speechToTextModelLabel": "Speech recognition",
+  "languageModelLabel": "Language model",
   "aiModel": "AI Model",
-  "currentModel": "Current:",
-  "selectModelDescription": "Select the model for transcription and prompts",
 
   "audioTranscription": "Audio & Transcription",
   "storageLocation": "Storage Location for Recordings",
@@ -129,7 +130,6 @@
   "errorRenaming": "Error renaming: {error}",
   "errorDeleting": "Error deleting: {error}",
   "errorSavingLanguage": "Error saving language: {error}",
-  "errorSavingModel": "Error saving model: {error}",
   "errorSavingTheme": "Error saving theme: {error}",
   "errorSavingPrompt": "Error saving prompt: {error}",
   "errorDeletingPrompt": "Error deleting prompt: {error}",
@@ -162,10 +162,6 @@
   "oldRecordingNoAudio": "Old recording without audio file",
   "oldRecordingAudioUnavailable": "Old recording: Audio file no longer available",
 
-  "modelTierFast": "Fast & affordable",
-  "modelTierPremium": "Premium",
-  "modelDescriptionFast": "Ideal for simple transcriptions and quick results",
-  "modelDescriptionPremium": "Better quality for complex audio content",
 
   "timeAgoSeconds": "{count} sec ago",
   "timeAgoMinutes": "{count} min ago",

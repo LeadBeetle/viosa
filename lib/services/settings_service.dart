@@ -20,6 +20,9 @@ abstract class ISettingsService {
   Future<void> saveSpeakerDiarization(bool enabled);
   Future<bool> getSpeakerDiarization();
   Future<void> clearAllSettings();
+
+  /// Remove settings written by older app versions that are no longer read
+  Future<void> removeLegacySettings();
 }
 
 /// Concrete implementation of settings service
@@ -31,8 +34,8 @@ class SettingsService implements ISettingsService {
   static const String _languageKey = 'transcription_language';
   static const String _audioSavePathKey = 'audio_save_path';
   static const String _textSizeKey = 'text_size';
-  /// Legacy key, only removed on clear
-  static const String _modelKey = 'selected_model';
+  /// Written by versions that let the user pick a model; migrated away on startup
+  static const String _legacyModelKey = 'selected_model';
   static const String _themeModeKey = 'theme_mode';
   static const String _speakerDiarizationKey = 'speaker_diarization';
   static const String _defaultLanguage = 'auto';
@@ -152,9 +155,14 @@ class SettingsService implements ISettingsService {
       _storage.delete(key: _languageKey),
       _storage.delete(key: _audioSavePathKey),
       _storage.delete(key: _textSizeKey),
-      _storage.delete(key: _modelKey),
+      _storage.delete(key: _legacyModelKey),
       _storage.delete(key: _themeModeKey),
       _storage.delete(key: _speakerDiarizationKey),
     ]);
+  }
+
+  @override
+  Future<void> removeLegacySettings() async {
+    await _storage.delete(key: _legacyModelKey);
   }
 }

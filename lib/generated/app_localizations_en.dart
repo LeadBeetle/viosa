@@ -107,14 +107,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get configureApiKey => 'Please configure API key';
 
   @override
+  String get modelsSectionTitle => 'Models';
+
+  @override
+  String get speechToTextModelLabel => 'Speech recognition';
+
+  @override
+  String get languageModelLabel => 'Language model';
+
+  @override
   String get aiModel => 'AI Model';
-
-  @override
-  String get currentModel => 'Current:';
-
-  @override
-  String get selectModelDescription =>
-      'Select the model for transcription and prompts';
 
   @override
   String get audioTranscription => 'Audio & Transcription';
@@ -392,11 +394,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String errorSavingModel(String error) {
-    return 'Error saving model: $error';
-  }
-
-  @override
   String errorSavingTheme(String error) {
     return 'Error saving theme: $error';
   }
@@ -507,20 +504,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get oldRecordingAudioUnavailable =>
       'Old recording: Audio file no longer available';
-
-  @override
-  String get modelTierFast => 'Fast & affordable';
-
-  @override
-  String get modelTierPremium => 'Premium';
-
-  @override
-  String get modelDescriptionFast =>
-      'Ideal for simple transcriptions and quick results';
-
-  @override
-  String get modelDescriptionPremium =>
-      'Better quality for complex audio content';
 
   @override
   String timeAgoSeconds(int count) {

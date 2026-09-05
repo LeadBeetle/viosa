@@ -41,9 +41,10 @@
   "pleaseEnterApiKey": "Bitte geben Sie einen API-Key ein",
   "configureApiKey": "Bitte API-Key konfigurieren",
 
+  "modelsSectionTitle": "Modelle",
+  "speechToTextModelLabel": "Spracherkennung",
+  "languageModelLabel": "Sprachmodell",
   "aiModel": "KI-Modell",
-  "currentModel": "Aktuell:",
-  "selectModelDescription": "Wählen Sie das Modell für Transkription und Prompts",
 
   "audioTranscription": "Audio & Transkription",
   "storageLocation": "Speicherort für Aufnahmen",
@@ -185,12 +186,6 @@
       "error": {"type": "String"}
     }
   },
-  "errorSavingModel": "Fehler beim Speichern des Modells: {error}",
-  "@errorSavingModel": {
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
   "errorSavingTheme": "Fehler beim Speichern des Themes: {error}",
   "@errorSavingTheme": {
     "placeholders": {
@@ -273,10 +268,6 @@
   "oldRecordingNoAudio": "Alte Aufnahme ohne Audiodatei",
   "oldRecordingAudioUnavailable": "Alte Aufnahme: Audiodatei nicht mehr verfügbar",
 
-  "modelTierFast": "Schnell & günstig",
-  "modelTierPremium": "Premium",
-  "modelDescriptionFast": "Ideal für einfache Transkriptionen und schnelle Ergebnisse",
-  "modelDescriptionPremium": "Bessere Qualität für komplexe Audio-Inhalte",
 
   "timeAgoSeconds": "vor {count} Sek.",
   "@timeAgoSeconds": {

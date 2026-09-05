@@ -374,30 +374,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 Icon(
                   Icons.memory,
-                  size: 20,
+                  size: AppIconSize.medium,
                   color: Theme.of(context).colorScheme.primary,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.s),
                 Text(
-                  context.l10n.aiModel,
+                  context.l10n.modelsSectionTitle,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.m),
             _buildModelRow(
               context,
               icon: Icons.record_voice_over,
-              label: context.l10n.audioTranscription,
+              label: context.l10n.speechToTextModelLabel,
               model: transcriptionModel,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.s),
             _buildModelRow(
               context,
               icon: Icons.auto_awesome,
-              label: context.l10n.aiModel,
+              label: context.l10n.languageModelLabel,
               model: llmModel,
             ),
           ],
@@ -418,8 +418,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: Text(
             label,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color:
-                      Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: AppOpacity.secondary),
                 ),
           ),
         ),

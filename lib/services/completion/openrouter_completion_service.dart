@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import '../llm_exceptions.dart';
+import '../openrouter_http.dart';
 import 'i_completion_service.dart';
 
 /// OpenRouter implementation of ICompletionService
@@ -20,12 +21,10 @@ class OpenRouterCompletionService implements ICompletionService {
 
   OpenRouterCompletionService({
     Dio? dio,
-    this.baseUrl = 'https://openrouter.ai/api/v1',
+    this.baseUrl = OpenRouterHttp.baseUrl,
     required this.model,
   }) : _dio = dio ?? Dio() {
-    _dio.options.connectTimeout = const Duration(seconds: 30);
-    _dio.options.sendTimeout = const Duration(minutes: 7);
-    _dio.options.receiveTimeout = const Duration(minutes: 7);
+    OpenRouterHttp.configureTimeouts(_dio);
   }
 
   @override
@@ -41,17 +40,17 @@ class OpenRouterCompletionService implements ICompletionService {
         '$baseUrl/chat/completions',
         data: request,
         options: Options(
-          headers: _buildHeaders(apiKey),
+          headers: OpenRouterHttp.buildHeaders(apiKey),
           validateStatus: (status) => status != null && status < 600,
         ),
       );
 
-      _handleResponseErrors(response);
+      OpenRouterHttp.throwForStatus(response.statusCode, response.data);
       return _extractContent(response.data);
     } on LLMProviderException {
       rethrow;
     } on DioException catch (e) {
-      throw _handleDioException(e);
+      throw OpenRouterHttp.mapDioException(e);
     } catch (e) {
       if (e is Exception) rethrow;
       throw LLMProviderException('Completion failed: $e');
@@ -73,7 +72,7 @@ class OpenRouterCompletionService implements ICompletionService {
         '$baseUrl/chat/completions',
         data: request,
         options: Options(
-          headers: _buildHeaders(apiKey),
+          headers: OpenRouterHttp.buildHeaders(apiKey),
           responseType: ResponseType.stream,
           validateStatus: (status) => status != null && status < 600,
         ),
@@ -85,20 +84,11 @@ class OpenRouterCompletionService implements ICompletionService {
     } on LLMProviderException {
       rethrow;
     } on DioException catch (e) {
-      throw _handleDioException(e);
+      throw OpenRouterHttp.mapDioException(e);
     } catch (e) {
       if (e is LLMProviderException) rethrow;
       throw LLMProviderException('Streaming failed: $e');
     }
-  }
-
-  Map<String, String> _buildHeaders(String apiKey) {
-    return {
-      'Authorization': 'Bearer $apiKey',
-      'Content-Type': 'application/json',
-      'HTTP-Referer': 'https://viosa-app.local',
-      'X-Title': 'VIOSA',
-    };
   }
 
   Map<String, dynamic> _buildRequest(
@@ -111,21 +101,6 @@ class OpenRouterCompletionService implements ICompletionService {
       'max_tokens': config.maxTokens,
       'temperature': config.temperature,
     };
-  }
-
-  void _handleResponseErrors(Response response) {
-    if (response.statusCode == 401) throw LLMAuthException();
-    if (response.statusCode == 429) throw LLMRateLimitException();
-    if (response.statusCode == 503) {
-      throw LLMServerException(503, 'Service temporarily unavailable.');
-    }
-    if (response.statusCode != null && response.statusCode! >= 500) {
-      throw LLMServerException(response.statusCode!);
-    }
-    if (response.statusCode != 200) {
-      final error = response.data['error']?['message'] ?? 'Unknown error';
-      throw LLMProviderException('API error: $error', statusCode: response.statusCode);
-    }
   }
 
   void _handleStreamingResponseErrors(Response<ResponseBody> response) {
@@ -143,31 +118,6 @@ class OpenRouterCompletionService implements ICompletionService {
     if (response.data == null) {
       throw LLMProviderException('No data received from API');
     }
-  }
-
-  LLMProviderException _handleDioException(DioException e) {
-    if (e.type == DioExceptionType.cancel) {
-      return LLMProviderException('Request cancelled by user');
-    }
-    if (e.type == DioExceptionType.connectionTimeout) {
-      return LLMTimeoutException('Connection timeout. Please check your internet connection.');
-    }
-    if (e.type == DioExceptionType.sendTimeout) {
-      return LLMTimeoutException('Upload timeout. Your file may be too large or connection too slow.');
-    }
-    if (e.type == DioExceptionType.receiveTimeout) {
-      return LLMTimeoutException('Response timeout. The server is taking too long to respond.');
-    }
-    if (e.type == DioExceptionType.connectionError) {
-      return LLMNetworkException();
-    }
-    if (e.response?.statusCode != null) {
-      final statusCode = e.response!.statusCode!;
-      if (statusCode == 401) return LLMAuthException();
-      if (statusCode == 429) return LLMRateLimitException();
-      if (statusCode >= 500) return LLMServerException(statusCode);
-    }
-    return LLMProviderException('Request failed: ${e.message}');
   }
 
   String _extractContent(Map<String, dynamic> responseData) {

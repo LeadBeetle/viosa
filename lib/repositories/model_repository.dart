@@ -10,9 +10,8 @@ class ModelRepository {
   /// Model used for speech-to-text via the OpenRouter transcription endpoint
   static const String transcriptionModelId = 'microsoft/mai-transcribe-2';
 
-  /// Tier identifiers (used for comparison, not displayed)
+  /// Tier identifier shown in the transcription confirmation dialog
   static const String tierFast = 'fast';
-  static const String tierPremium = 'premium';
 
   /// Configuration of the speech-to-text model
   static const ModelConfig transcriptionModel = ModelConfig(
@@ -68,25 +67,5 @@ class ModelRepository {
   /// Get model by ID or return default
   static ModelConfig getModelByIdOrDefault(String id) {
     return getModelById(id) ?? defaultModel;
-  }
-
-  /// Check if a model ID is valid
-  static bool isValidModel(String id) {
-    return id == transcriptionModelId || supportedModels.any((m) => m.id == id);
-  }
-
-  /// Get all model IDs
-  static List<String> get allModelIds {
-    return supportedModels.map((m) => m.id).toList();
-  }
-
-  /// Get models by provider
-  static List<ModelConfig> getModelsByProvider(String provider) {
-    return supportedModels.where((m) => m.provider == provider).toList();
-  }
-
-  /// Get models by tier
-  static List<ModelConfig> getModelsByTier(String tier) {
-    return supportedModels.where((m) => m.tier == tier).toList();
   }
 }
