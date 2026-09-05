@@ -330,5 +330,8 @@
   "exportAsSubtitles": "Share as subtitles (SRT)",
   "exportNoTimestamps": "This recording has no timestamps",
   "detectedLanguageLabel": "Detected: {language}",
-  "splittingAudioProgress": "Splitting audio: {current}/{total}"
+  "splittingAudioProgress": "Splitting audio: {current}/{total}",
+  "autoPrompt": "Prompt after transcription",
+  "autoPromptDescription": "Runs the selected prompt as soon as a transcript is ready",
+  "autoPromptDisabled": "Disabled"
 }

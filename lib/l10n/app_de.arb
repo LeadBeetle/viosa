@@ -702,5 +702,8 @@
         "type": "int"
       }
     }
-  }
+  },
+  "autoPrompt": "Prompt nach Transkription",
+  "autoPromptDescription": "Führt den gewählten Prompt automatisch aus, sobald ein Transkript fertig ist",
+  "autoPromptDisabled": "Deaktiviert"
 }

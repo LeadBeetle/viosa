@@ -1180,4 +1180,14 @@ class AppLocalizationsDe extends AppLocalizations {
   String splittingAudioProgress(int current, int total) {
     return 'Audio wird geteilt: $current/$total';
   }
+
+  @override
+  String get autoPrompt => 'Prompt nach Transkription';
+
+  @override
+  String get autoPromptDescription =>
+      'Führt den gewählten Prompt automatisch aus, sobald ein Transkript fertig ist';
+
+  @override
+  String get autoPromptDisabled => 'Deaktiviert';
 }

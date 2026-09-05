@@ -1168,4 +1168,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String splittingAudioProgress(int current, int total) {
     return 'Splitting audio: $current/$total';
   }
+
+  @override
+  String get autoPrompt => 'Prompt after transcription';
+
+  @override
+  String get autoPromptDescription =>
+      'Runs the selected prompt as soon as a transcript is ready';
+
+  @override
+  String get autoPromptDisabled => 'Disabled';
 }

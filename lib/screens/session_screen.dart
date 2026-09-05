@@ -623,7 +623,30 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
 
     if (result == null && mounted) {
       SnackBarService().showError(context, context.l10n.transcriptionFailed);
+      return;
     }
+
+    await _runAutoPrompt();
+  }
+
+  /// Runs the prompt the user selected to apply automatically after a
+  /// transcription, unless the transcript already carries prompt results
+  Future<void> _runAutoPrompt() async {
+    if (!mounted) return;
+    if (_transcriptionResult == null) return;
+    if (_promptResults.isNotEmpty || _promptStream != null) return;
+
+    final promptId = context.read<SettingsProvider>().autoPromptId;
+    if (promptId == null) return;
+
+    final promptsProvider = context.read<PromptsProvider>();
+    final prompt = promptsProvider.getPromptById(promptId, context.l10n);
+    if (prompt == null) return;
+
+    await promptsProvider.incrementUsage(prompt.id);
+    if (!mounted) return;
+
+    _startPromptStreaming(prompt.name, prompt.template);
   }
 
   /// Transcribes the segments that failed and refreshes the result

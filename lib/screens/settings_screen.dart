@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../providers/history_provider.dart';
+import '../providers/prompts_provider.dart';
 import '../providers/settings_provider.dart';
 import '../services/transcription/i_speech_to_text_service.dart';
 import '../utils/constants.dart';
@@ -605,9 +606,56 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const Divider(),
             const SizedBox(height: 8),
             _buildAutoTranscribeToggle(context),
+            const SizedBox(height: 16),
+            const Divider(),
+            const SizedBox(height: 8),
+            _buildAutoPromptSelector(context),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildAutoPromptSelector(BuildContext context) {
+    final settingsProvider = context.watch<SettingsProvider>();
+    final promptsProvider = context.watch<PromptsProvider>();
+    final prompts = promptsProvider.getAllPrompts(context.l10n);
+    final selectedId = prompts.any((p) => p.id == settingsProvider.autoPromptId)
+        ? settingsProvider.autoPromptId
+        : null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSettingHeader(
+          context,
+          Icons.auto_awesome,
+          context.l10n.autoPrompt,
+        ),
+        const SizedBox(height: AppSpacing.s),
+        Padding(
+          padding: const EdgeInsets.only(left: 28),
+          child: DropdownButtonFormField<String?>(
+            initialValue: selectedId,
+            isExpanded: true,
+            items: [
+              DropdownMenuItem<String?>(
+                value: null,
+                child: Text(context.l10n.autoPromptDisabled),
+              ),
+              ...prompts.map(
+                (prompt) => DropdownMenuItem<String?>(
+                  value: prompt.id,
+                  child: Text(prompt.name, overflow: TextOverflow.ellipsis),
+                ),
+              ),
+            ],
+            onChanged: (value) => settingsProvider.saveAutoPromptId(value),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.s),
+        _buildSettingDescription(context, context.l10n.autoPromptDescription),
+      ],
     );
   }
 

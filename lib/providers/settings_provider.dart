@@ -21,6 +21,7 @@ class SettingsProvider with ChangeNotifier {
   String _transcribeStyle = TranscribeStyle.clean;
   List<String> _keywords = const [];
   bool _autoTranscribe = true;
+  String? _autoPromptId;
   bool _isInitialized = false;
   bool _isLoading = false;
 
@@ -41,6 +42,7 @@ class SettingsProvider with ChangeNotifier {
   String get transcribeStyle => _transcribeStyle;
   List<String> get keywords => List.unmodifiable(_keywords);
   bool get autoTranscribe => _autoTranscribe;
+  String? get autoPromptId => _autoPromptId;
   bool get isInitialized => _isInitialized;
   bool get isLoading => _isLoading;
   bool get hasApiKey => _apiKey != null && _apiKey!.isNotEmpty;
@@ -75,6 +77,7 @@ class SettingsProvider with ChangeNotifier {
       _transcribeStyle = await _settingsService.getTranscribeStyle();
       _keywords = await _settingsService.getKeywords();
       _autoTranscribe = await _settingsService.getAutoTranscribe();
+      _autoPromptId = await _settingsService.getAutoPromptId();
       await _settingsService.removeLegacySettings();
       _isInitialized = true;
     } catch (e) {
@@ -155,6 +158,13 @@ class SettingsProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  /// Save the prompt that runs on its own once a transcription is done
+  Future<void> saveAutoPromptId(String? promptId) async {
+    await _settingsService.saveAutoPromptId(promptId);
+    _autoPromptId = promptId;
+    notifyListeners();
+  }
+
   /// Clear all settings
   Future<void> clearSettings() async {
     await _settingsService.clearAllSettings();
@@ -167,6 +177,7 @@ class SettingsProvider with ChangeNotifier {
     _transcribeStyle = TranscribeStyle.clean;
     _keywords = const [];
     _autoTranscribe = true;
+    _autoPromptId = null;
     notifyListeners();
   }
 }

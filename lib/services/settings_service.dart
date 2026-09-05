@@ -27,6 +27,8 @@ abstract class ISettingsService {
   Future<List<String>> getKeywords();
   Future<void> saveAutoTranscribe(bool enabled);
   Future<bool> getAutoTranscribe();
+  Future<void> saveAutoPromptId(String? promptId);
+  Future<String?> getAutoPromptId();
   Future<void> clearAllSettings();
 
   /// Remove settings written by older app versions that are no longer read
@@ -49,6 +51,7 @@ class SettingsService implements ISettingsService {
   static const String _transcribeStyleKey = 'transcribe_style';
   static const String _keywordsKey = 'transcription_keywords';
   static const String _autoTranscribeKey = 'auto_transcribe';
+  static const String _autoPromptIdKey = 'auto_prompt_id';
   static const String _defaultLanguage = 'auto';
   static const double _defaultTextSize = 16.0;
   static const String _defaultThemeMode = 'system';
@@ -219,6 +222,22 @@ class SettingsService implements ISettingsService {
   }
 
   @override
+  Future<void> saveAutoPromptId(String? promptId) async {
+    if (promptId == null || promptId.trim().isEmpty) {
+      await _storage.delete(key: _autoPromptIdKey);
+      return;
+    }
+    await _storage.write(key: _autoPromptIdKey, value: promptId);
+  }
+
+  @override
+  Future<String?> getAutoPromptId() async {
+    final promptId = await _storage.read(key: _autoPromptIdKey);
+    if (promptId == null || promptId.isEmpty) return null;
+    return promptId;
+  }
+
+  @override
   Future<void> clearAllSettings() async {
     await Future.wait([
       _storage.delete(key: _apiKeyKey),
@@ -231,6 +250,7 @@ class SettingsService implements ISettingsService {
       _storage.delete(key: _transcribeStyleKey),
       _storage.delete(key: _keywordsKey),
       _storage.delete(key: _autoTranscribeKey),
+      _storage.delete(key: _autoPromptIdKey),
     ]);
   }
 

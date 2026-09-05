@@ -2041,6 +2041,24 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Audio wird geteilt: {current}/{total}'**
   String splittingAudioProgress(int current, int total);
+
+  /// No description provided for @autoPrompt.
+  ///
+  /// In de, this message translates to:
+  /// **'Prompt nach Transkription'**
+  String get autoPrompt;
+
+  /// No description provided for @autoPromptDescription.
+  ///
+  /// In de, this message translates to:
+  /// **'Führt den gewählten Prompt automatisch aus, sobald ein Transkript fertig ist'**
+  String get autoPromptDescription;
+
+  /// No description provided for @autoPromptDisabled.
+  ///
+  /// In de, this message translates to:
+  /// **'Deaktiviert'**
+  String get autoPromptDisabled;
 }
 
 class _AppLocalizationsDelegate
