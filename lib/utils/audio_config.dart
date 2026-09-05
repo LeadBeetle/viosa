@@ -5,18 +5,24 @@ class AudioConfig {
   /// Higher values = better quality but larger files
   static const int bitRate = 128000;
 
-  /// Audio sample rate in Hz (44.1 kHz - CD quality)
-  /// Standard for high-quality audio recording
-  static const int sampleRate = 44100;
+  /// Audio sample rate in Hz (16 kHz)
+  /// Speech recognition works on 16 kHz, and it keeps the uploaded WAV small
+  static const int sampleRate = 16000;
+
+  /// Mono, because speech models mix a stereo track down anyway
+  static const int numChannels = 1;
 
   /// Default maximum recording duration (10 minutes)
   static const Duration maxRecordingDuration = Duration(minutes: 10);
 
   /// Default audio file extension for recordings
-  static const String recordingExtension = '.m4a';
+  ///
+  /// The transcription provider rejects the MP4/AAC container, so recordings
+  /// are written as uncompressed WAV
+  static const String recordingExtension = '.wav';
 
   /// Audio encoder format
-  static const String encoderFormat = 'aac';
+  static const String encoderFormat = 'wav';
 
   // Prevent instantiation
   AudioConfig._();

@@ -127,15 +127,29 @@ class OpenRouterSpeechToTextService implements ISpeechToTextService {
     String base64Audio,
     String format,
   ) async {
-    final fields = <String, dynamic>{
-      for (final entry in request.entries)
-        if (entry.key != 'input_audio' && entry.key != 'provider')
-          entry.key: entry.value is String ? entry.value : jsonEncode(entry.value),
-      'file': MultipartFile.fromBytes(
-        base64Decode(base64Audio),
-        filename: 'audio.$format',
+    final fields = <MapEntry<String, dynamic>>[];
+
+    for (final entry in request.entries) {
+      if (entry.key == 'input_audio' || entry.key == 'provider') continue;
+      final value = entry.value;
+      if (value is List) {
+        fields.addAll(
+          value.map((item) => MapEntry(entry.key, item.toString())),
+        );
+      } else {
+        fields.add(MapEntry(entry.key, value.toString()));
+      }
+    }
+
+    fields.add(
+      MapEntry(
+        'file',
+        MultipartFile.fromBytes(
+          base64Decode(base64Audio),
+          filename: 'audio.$format',
+        ),
       ),
-    };
+    );
 
     final headers = OpenRouterHttp.buildHeaders(apiKey)
       ..remove('Content-Type');
@@ -143,7 +157,7 @@ class OpenRouterSpeechToTextService implements ISpeechToTextService {
     try {
       return await _dio.post(
         '$baseUrl${OpenRouterHttp.transcriptionsPath}',
-        data: FormData.fromMap(fields),
+        data: FormData()..fields.addAll(_textFields(fields))..files.addAll(_fileFields(fields)),
         options: Options(
           headers: headers,
           validateStatus: (status) => status != null && status < 600,
@@ -152,6 +166,22 @@ class OpenRouterSpeechToTextService implements ISpeechToTextService {
     } on DioException catch (e) {
       throw OpenRouterHttp.mapDioException(e);
     }
+  }
+
+  Iterable<MapEntry<String, String>> _textFields(
+    List<MapEntry<String, dynamic>> fields,
+  ) {
+    return fields
+        .where((field) => field.value is! MultipartFile)
+        .map((field) => MapEntry(field.key, field.value as String));
+  }
+
+  Iterable<MapEntry<String, MultipartFile>> _fileFields(
+    List<MapEntry<String, dynamic>> fields,
+  ) {
+    return fields
+        .where((field) => field.value is MultipartFile)
+        .map((field) => MapEntry(field.key, field.value as MultipartFile));
   }
 
   /// Names the container of the payload so a rejected upload can be told

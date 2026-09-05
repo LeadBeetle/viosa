@@ -120,16 +120,17 @@ class RecordingService implements IRecordingService {
       directory = await getApplicationDocumentsDirectory();
     }
 
-    // Generate unique filename with .m4a extension (actual recording format)
     final timestamp = DateTime.now().millisecondsSinceEpoch;
-    _recordingPath = '${directory.path}/recording_$timestamp.m4a';
+    _recordingPath =
+        '${directory.path}/recording_$timestamp${AudioConfig.recordingExtension}';
 
     // Start recording
     await _recorder.start(
       const RecordConfig(
-        encoder: AudioEncoder.aacLc,
+        encoder: AudioEncoder.wav,
         bitRate: AudioConfig.bitRate,
         sampleRate: AudioConfig.sampleRate,
+        numChannels: AudioConfig.numChannels,
       ),
       path: _recordingPath!,
     );
@@ -225,7 +226,7 @@ class RecordingService implements IRecordingService {
       // Use custom name if provided, otherwise generate a user-friendly name
       final String displayName;
       if (customName != null && customName.isNotEmpty) {
-        displayName = '$customName.m4a';
+        displayName = '$customName${AudioConfig.recordingExtension}';
       } else {
         // Generate user-friendly name with date/time
         final now = DateTime.now();
@@ -234,7 +235,7 @@ class RecordingService implements IRecordingService {
             '${now.year} '
             '${now.hour.toString().padLeft(2, '0')}:'
             '${now.minute.toString().padLeft(2, '0')}';
-        displayName = 'Aufnahme $formattedDate.m4a';
+        displayName = 'Aufnahme $formattedDate${AudioConfig.recordingExtension}';
       }
 
       final audioFile = AudioFile(
