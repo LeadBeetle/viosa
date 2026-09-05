@@ -69,10 +69,37 @@ class OpenRouterSpeechToTextService implements ISpeechToTextService {
       };
     }
 
-    debugPrint('Transcription request: ${_describeRequest(request, base64Audio)}');
+    for (final variant in _variantsOf(request)) {
+      debugPrint(
+        'Transcription request (${variant.name}): '
+        '${_describeRequest(variant.request, base64Audio)}',
+      );
 
+      final response = await _post(apiKey, variant.request);
+
+      if (response.statusCode == 400 && !variant.isLast) {
+        OpenRouterHttp.logErrorBody(response.statusCode, response.data);
+        debugPrint('Variant ${variant.name} rejected with 400, trying next');
+        continue;
+      }
+
+      OpenRouterHttp.throwForStatus(response.statusCode, response.data);
+      debugPrint('Transcription accepted with variant ${variant.name}');
+      return _parseResponse(response.data);
+    }
+
+    throw LLMProviderException(
+      'Transcription rejected with 400 for every request variant',
+      statusCode: 400,
+    );
+  }
+
+  Future<Response<dynamic>> _post(
+    String apiKey,
+    Map<String, dynamic> request,
+  ) async {
     try {
-      final response = await _dio.post(
+      return await _dio.post(
         '$baseUrl${OpenRouterHttp.transcriptionsPath}',
         data: request,
         options: Options(
@@ -80,17 +107,44 @@ class OpenRouterSpeechToTextService implements ISpeechToTextService {
           validateStatus: (status) => status != null && status < 600,
         ),
       );
-
-      OpenRouterHttp.throwForStatus(response.statusCode, response.data);
-      return _parseResponse(response.data);
-    } on LLMProviderException {
-      rethrow;
     } on DioException catch (e) {
       throw OpenRouterHttp.mapDioException(e);
-    } catch (e) {
-      if (e is Exception) rethrow;
-      throw LLMProviderException('Transcription failed: $e');
     }
+  }
+
+  /// Progressively simpler versions of [request]
+  ///
+  /// OpenRouter forwards an upstream rejection as a bare "Provider returned
+  /// 400" without naming the field, so the optional parts are dropped one by
+  /// one until the API accepts the call. The log names the variant that worked
+  List<_RequestVariant> _variantsOf(Map<String, dynamic> request) {
+    final variants = <Map<String, dynamic>>[Map.of(request)];
+
+    if (request.containsKey('provider')) {
+      variants.add(Map.of(variants.last)..remove('provider'));
+    }
+    if (request.containsKey('timestamp_granularities')) {
+      variants.add(Map.of(variants.last)..remove('timestamp_granularities'));
+    }
+    variants.add(Map.of(variants.last)..remove('response_format'));
+
+    return [
+      for (var i = 0; i < variants.length; i++)
+        _RequestVariant(
+          request: variants[i],
+          name: _variantName(variants[i]),
+          isLast: i == variants.length - 1,
+        ),
+    ];
+  }
+
+  String _variantName(Map<String, dynamic> request) {
+    final parts = <String>[
+      if (request.containsKey('provider')) 'provider',
+      if (request.containsKey('timestamp_granularities')) 'timestamps',
+      if (request.containsKey('response_format')) 'verbose_json',
+    ];
+    return parts.isEmpty ? 'minimal' : parts.join('+');
   }
 
   /// Renders the request for the log with the audio replaced by its size
@@ -196,4 +250,17 @@ class OpenRouterSpeechToTextService implements ISpeechToTextService {
   String _textFromSegments(List<TranscriptSegment> segments) {
     return segments.map((segment) => segment.text).join(' ').trim();
   }
+}
+
+/// One attempt of the transcription request with its log label
+class _RequestVariant {
+  final Map<String, dynamic> request;
+  final String name;
+  final bool isLast;
+
+  const _RequestVariant({
+    required this.request,
+    required this.name,
+    required this.isLast,
+  });
 }
