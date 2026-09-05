@@ -1622,6 +1622,24 @@ abstract class AppLocalizations {
   /// **'Etwas ist schiefgelaufen. Bitte erneut versuchen.'**
   String get errorUnknown;
 
+  /// No description provided for @errorAudioFileMissing.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Audiodatei ist nicht mehr vorhanden. Bitte die Datei erneut verknüpfen.'**
+  String get errorAudioFileMissing;
+
+  /// No description provided for @errorAudioDurationUnknown.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Länge der Audiodatei konnte nicht gelesen werden. Möglicherweise ist die Aufnahme beschädigt.'**
+  String get errorAudioDurationUnknown;
+
+  /// No description provided for @errorAudioSplitFailed.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Audiodatei konnte nicht in Abschnitte zerlegt werden.'**
+  String get errorAudioSplitFailed;
+
   /// No description provided for @speechUnavailable.
   ///
   /// In de, this message translates to:

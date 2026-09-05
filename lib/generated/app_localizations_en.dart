@@ -927,6 +927,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorUnknown => 'Something went wrong. Please try again.';
 
   @override
+  String get errorAudioFileMissing =>
+      'The audio file is gone. Please link the file again.';
+
+  @override
+  String get errorAudioDurationUnknown =>
+      'The length of the audio file could not be read. The recording may be damaged.';
+
+  @override
+  String get errorAudioSplitFailed =>
+      'The audio file could not be cut into segments.';
+
+  @override
   String get speechUnavailable => 'Speech recognition unavailable';
 
   @override

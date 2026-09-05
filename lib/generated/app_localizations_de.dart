@@ -936,6 +936,18 @@ class AppLocalizationsDe extends AppLocalizations {
       'Etwas ist schiefgelaufen. Bitte erneut versuchen.';
 
   @override
+  String get errorAudioFileMissing =>
+      'Die Audiodatei ist nicht mehr vorhanden. Bitte die Datei erneut verknüpfen.';
+
+  @override
+  String get errorAudioDurationUnknown =>
+      'Die Länge der Audiodatei konnte nicht gelesen werden. Möglicherweise ist die Aufnahme beschädigt.';
+
+  @override
+  String get errorAudioSplitFailed =>
+      'Die Audiodatei konnte nicht in Abschnitte zerlegt werden.';
+
+  @override
   String get speechUnavailable => 'Spracherkennung nicht verfügbar';
 
   @override

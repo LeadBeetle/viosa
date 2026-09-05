@@ -6,6 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import '../models/audio_split.dart';
 import '../utils/audio_utils.dart';
 import 'i_audio_splitter_service.dart';
+import 'split_transcription_exceptions.dart';
 
 /// Service for splitting audio files into smaller segments
 /// Following Single Responsibility Principle (SRP)
@@ -19,11 +20,15 @@ class AudioSplitterService implements IAudioSplitterService {
     Duration overlap = const Duration(seconds: 5),
     void Function(SplitProgress progress)? onProgress,
   }) async {
+    if (!await File(audioPath).exists()) {
+      throw AudioFileMissingException(audioPath);
+    }
+
     try {
       // Get total audio duration
       final totalDuration = await AudioUtils.getAudioDuration(audioPath);
       if (totalDuration == Duration.zero) {
-        throw Exception('Unable to determine audio duration');
+        throw AudioDurationUnknownException(audioPath);
       }
 
       // Calculate number of splits needed
@@ -88,7 +93,7 @@ class AudioSplitterService implements IAudioSplitterService {
         );
 
         if (!success) {
-          throw Exception('Failed to create split $i');
+          throw AudioSplitFailedException(i);
         }
 
         // Get file size
@@ -119,12 +124,16 @@ class AudioSplitterService implements IAudioSplitterService {
       ));
 
       return splits;
+    } on SplitTranscriptionException {
+      rethrow;
     } catch (e) {
-      throw Exception('Failed to split audio: $e');
+      throw SplitTranscriptionException('Failed to split audio: $e');
     }
   }
 
   /// Creates a single split for files that don't need splitting
+  /// The split points at the source file instead of a copy, so callers must
+  /// keep it out of any cleanup that deletes split files
   Future<AudioSplit> _createSingleSplit(String audioPath, Duration duration) async {
     final file = File(audioPath);
     final size = await file.length();

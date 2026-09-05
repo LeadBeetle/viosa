@@ -6,6 +6,7 @@ import '../models/split_transcription_job.dart';
 import '../models/transcription_options.dart';
 import '../models/transcription_result.dart';
 import '../repositories/model_repository.dart';
+import '../utils/path_utils.dart';
 import 'split_transcription_exceptions.dart';
 import 'audio_splitter_service.dart';
 import 'i_audio_splitter_service.dart';
@@ -357,9 +358,17 @@ class SplitTranscriptionService {
     );
   }
 
-  /// Cleans up split files
+  /// Cleans up the split files the pipeline created
+  /// An audio short enough to be transcribed in one piece is used as its own
+  /// split, so that split points at the recording itself and must survive the
+  /// cleanup
   Future<void> cleanupSplits(SplitTranscriptionJob job) async {
-    await _splitterService.cleanupSplits(job.splits);
+    final originalPath = PathUtils.normalize(job.originalAudioPath);
+    final temporarySplits = job.splits
+        .where((split) => PathUtils.normalize(split.filePath) != originalPath)
+        .toList();
+
+    await _splitterService.cleanupSplits(temporarySplits);
     _jobs.remove(job.id);
   }
 }

@@ -410,6 +410,20 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
       return;
     }
 
+    if (!await File(_selectedFile!.path).exists()) {
+      if (!mounted) return;
+      setState(() {
+        _audioFileNotFound = true;
+      });
+      SnackBarService().showError(
+        context,
+        context.l10n.errorAudioFileMissing,
+        actionLabel: context.l10n.relinkAudioFile,
+        onAction: _relinkAudioFile,
+      );
+      return;
+    }
+
     if (_currentHistoryId == null) {
       await _saveToHistory();
       if (!mounted) return;

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/widgets.dart';
 import '../services/llm_exceptions.dart';
+import '../services/split_transcription_exceptions.dart';
 import '../l10n/l10n.dart';
 
 /// Translates exceptions into user-facing messages
@@ -19,6 +20,13 @@ class ErrorMessages {
     if (error is LLMServerException) return l10n.errorServer;
     if (error is SocketException) return l10n.errorNetwork;
     if (error is TimeoutException) return l10n.errorTimeout;
+
+    if (error is AudioFileMissingException) return l10n.errorAudioFileMissing;
+    if (error is AudioDurationUnknownException) {
+      return l10n.errorAudioDurationUnknown;
+    }
+    if (error is AudioSplitFailedException) return l10n.errorAudioSplitFailed;
+    if (error is FileSystemException) return l10n.errorAudioFileMissing;
 
     return l10n.errorUnknown;
   }
