@@ -26,6 +26,20 @@ void main() {
       expect(AudioFormats.mimeTypeForPath('a.wav'), 'audio/wav');
       expect(AudioFormats.mimeTypeForPath('a.unbekannt'), 'audio/mpeg');
     });
+
+    test('meldet der Transkriptions-API den echten Container', () {
+      expect(AudioFormats.apiFormatForPath('recording_1.m4a'), 'm4a');
+      expect(AudioFormats.apiFormatForPath('clip.MP4'), 'm4a');
+      expect(AudioFormats.apiFormatForPath('a.wav'), 'wav');
+      expect(AudioFormats.apiFormatForPath('a.mpga'), 'mp3');
+      expect(AudioFormats.apiFormatForPath('a.oga'), 'ogg');
+      expect(AudioFormats.apiFormatForPath('ohne_endung'), 'mp3');
+    });
+
+    test('leitet ein AAC-Format nicht über den MIME-Typ ab', () {
+      expect(AudioFormats.mimeTypeForPath('a.m4a'), 'audio/mpeg');
+      expect(AudioFormats.apiFormatForPath('a.m4a'), isNot('mp3'));
+    });
   });
 
   group('FileSizeFormatter', () {
