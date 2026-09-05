@@ -38,9 +38,9 @@ flutter build apk --release
 ## Directory Map
 
 - `lib/services/` — flat services plus `completion/`, `transcription/`, `export/` sub-layers, each with an `i_*.dart` interface
-- `lib/providers/` — 6 ChangeNotifiers wired in `main.dart` MultiProvider
-- `lib/repositories/model_repository.dart` — single source of truth for model IDs
-- `lib/utils/constants.dart`, `app_theme.dart` — design tokens (see `UI_GUIDELINES.md`)
+- `lib/providers/` — 6 ChangeNotifiers; 5 wired in `main.dart` MultiProvider, `ChatProvider` created locally in `lib/screens/chat_screen.dart`
+- `lib/repositories/model_repository.dart` — model IDs (see Models)
+- `lib/utils/constants.dart`, `app_theme.dart` — design tokens (see `docs/UI_GUIDELINES.md`)
 
 ## Models
 
@@ -134,7 +134,7 @@ class ExampleService implements IExampleService {
 
 - **Hive typeIds in use: 0–8, 10, 11. Next free: 9.** Reusing an id corrupts stored data silently.
 - `permission_handler` pinned to ^12: 13.x pulls permission_handler_android 14, which needs AGP 9 / compileSdk 37.
-- UI design tokens (`AppSpacing`, `AppOpacity`, `AppIconSize`) documented in `UI_GUIDELINES.md` — use them, don't invent values.
+- UI design tokens (`AppSpacing`, `AppOpacity`, `AppIconSize`) documented in `docs/UI_GUIDELINES.md` — use them, don't invent values.
 
 ## Development Guidelines
 

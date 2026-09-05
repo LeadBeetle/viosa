@@ -134,7 +134,7 @@ Before using the app, you'll need to:
 For detailed implementation plans and architecture documentation, see:
 - [Implementation Plan](thoughts/implementation-plan.md)
 - [Project guidelines for contributors and Claude Code](CLAUDE.md)
-- [UI/UX guidelines and design tokens](UI_GUIDELINES.md)
+- [UI/UX guidelines and design tokens](docs/UI_GUIDELINES.md)
 
 UI strings are not hardcoded: add a key to both `lib/l10n/app_de.arb` and
 `lib/l10n/app_en.arb`, run `flutter gen-l10n`, then read it via `context.l10n.<key>`.

@@ -32,7 +32,7 @@ migrate_working_dir/
 .pub/
 /build/
 /coverage/
-android/build/
+android/**/build/
 
 # Symbolication related
 app.*.symbols
@@ -54,3 +54,6 @@ android/key.properties
 android/keystore/
 *.jks
 *.keystore
+
+# Per-developer Claude Code settings
+.claude/settings.local.json
