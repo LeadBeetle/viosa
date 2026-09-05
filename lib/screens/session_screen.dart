@@ -370,7 +370,7 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
     if (!mounted) return;
 
     final selectedModelId = settingsProvider.selectedModel;
-    final selectedModel = ModelRepository.getModelByIdOrDefault(selectedModelId);
+    final selectedModel = ModelRepository.transcriptionModel;
     final hasExistingData = _transcriptionResult != null || _promptResults.isNotEmpty;
 
     final confirmed = await TranscriptionConfirmationDialog.show(
@@ -460,13 +460,12 @@ class _SessionScreenState extends State<SessionScreen> with ScreenHelpers {
       final mergedText = job.mergedTranscription;
 
       if (mergedText != null && mergedText.isNotEmpty) {
-        final settingsProvider = context.read<SettingsProvider>();
         final speakerExtractor = SpeakerExtractionService();
         final speakers = speakerExtractor.extractSpeakers(mergedText);
         final result = TranscriptionResult(
           text: mergedText,
           language: job.language,
-          modelUsed: settingsProvider.selectedModel,
+          modelUsed: ModelRepository.transcriptionModelId,
           timestamp: job.completedAt ?? DateTime.now(),
           speakers: speakers,
         );

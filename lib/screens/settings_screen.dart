@@ -6,6 +6,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../providers/settings_provider.dart';
 import '../utils/constants.dart';
+import '../models/model_config.dart';
 import '../repositories/model_repository.dart';
 import '../services/snackbar_service.dart';
 import '../widgets/info_chip.dart';
@@ -26,10 +27,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   String _selectedLanguage = 'auto';
   String? _audioSavePath;
-  String _selectedModel = ModelRepository.defaultModelId;
   String _selectedThemeMode = 'system';
   bool _isApiKeyVisible = false;
-  bool _isModelSectionExpanded = false;
   bool _isAboutSectionExpanded = false;
   bool _isApiKeyValid = false;
 
@@ -54,7 +53,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
     _selectedLanguage = settingsProvider.language;
     _audioSavePath = settingsProvider.audioSavePath;
-    _selectedModel = settingsProvider.selectedModel;
     _selectedThemeMode = settingsProvider.themeModeString;
   }
 
@@ -83,17 +81,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } catch (e) {
       if (mounted) {
         _showErrorSnackBar(context.l10n.errorSavingLanguage(e.toString()));
-      }
-    }
-  }
-
-  Future<void> _saveModel(String model) async {
-    try {
-      final settingsProvider = context.read<SettingsProvider>();
-      await settingsProvider.saveModel(model);
-    } catch (e) {
-      if (mounted) {
-        _showErrorSnackBar(context.l10n.errorSavingModel(e.toString()));
       }
     }
   }
@@ -374,242 +361,73 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildModelSelectionCard(BuildContext context) {
-    final selectedModel = AppConstants.supportedModels.firstWhere(
-      (m) => m.id == _selectedModel,
-      orElse: () => AppConstants.supportedModels.first,
-    );
+    const transcriptionModel = ModelRepository.transcriptionModel;
+    final llmModel = ModelRepository.defaultModel;
 
     return Card(
-      child: Column(
-        children: [
-          InkWell(
-            onTap: () {
-              setState(() {
-                _isModelSectionExpanded = !_isModelSectionExpanded;
-              });
-            },
-            child: Padding(
-              padding: const EdgeInsets.all(AppConstants.defaultPadding),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.memory,
-                    size: 20,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          context.l10n.aiModel,
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Text(
-                              '${context.l10n.currentModel} ',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurface
-                                    .withValues(alpha: 0.6),
-                              ),
-                            ),
-                            InfoChip(
-                              label: selectedModel.name,
-                              icon: Icons.auto_awesome,
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  Icon(
-                    _isModelSectionExpanded
-                        ? Icons.expand_less
-                        : Icons.expand_more,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (_isModelSectionExpanded) ...[
-            const Divider(height: 1),
-            Padding(
-              padding: const EdgeInsets.all(AppConstants.defaultPadding),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    context.l10n.selectModelDescription,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withValues(alpha: 0.6),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  ...AppConstants.supportedModels.map((model) {
-                    final isSelected = _selectedModel == model.id;
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: InkWell(
-                        onTap: () {
-                          setState(() {
-                            _selectedModel = model.id;
-                          });
-                          _saveModel(model.id);
-                        },
-                        borderRadius: BorderRadius.circular(
-                            AppConstants.defaultBorderRadius),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: isSelected
-                                  ? Theme.of(context).colorScheme.primary
-                                  : Theme.of(context)
-                                      .colorScheme
-                                      .outline
-                                      .withValues(alpha: 0.5),
-                              width: isSelected ? 2 : 1,
-                            ),
-                            borderRadius: BorderRadius.circular(
-                                AppConstants.defaultBorderRadius),
-                            color: isSelected
-                                ? Theme.of(context)
-                                    .colorScheme
-                                    .primaryContainer
-                                    .withValues(alpha: 0.3)
-                                : null,
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  isSelected
-                                      ? Icons.radio_button_checked
-                                      : Icons.radio_button_unchecked,
-                                  color: isSelected
-                                      ? Theme.of(context).colorScheme.primary
-                                      : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child: Text(
-                                              model.name,
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .titleMedium
-                                                  ?.copyWith(
-                                                    fontWeight: isSelected
-                                                        ? FontWeight.bold
-                                                        : FontWeight.normal,
-                                                  ),
-                                            ),
-                                          ),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 8, vertical: 4),
-                                            decoration: BoxDecoration(
-                                              color: model.provider == 'Google'
-                                                  ? Colors.blue.withValues(alpha: 0.1)
-                                                  : Colors.orange
-                                                      .withValues(alpha: 0.1),
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                            child: Text(
-                                              model.provider,
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .labelSmall
-                                                  ?.copyWith(
-                                                    color: model.provider ==
-                                                            'Google'
-                                                        ? Colors.blue.shade700
-                                                        : Colors
-                                                            .orange.shade700,
-                                                    fontWeight: FontWeight.w500,
-                                                  ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Row(
-                                        children: [
-                                          Icon(
-                                            model.tier == ModelRepository.tierFast
-                                                ? Icons.flash_on
-                                                : Icons.star,
-                                            size: 14,
-                                            color: model.tier == ModelRepository.tierFast
-                                                ? Colors.green
-                                                : Colors.amber,
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            model.tier == ModelRepository.tierFast
-                                                ? context.l10n.modelTierFast
-                                                : context.l10n.modelTierPremium,
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .labelMedium
-                                                ?.copyWith(
-                                                  color: model.tier == ModelRepository.tierFast
-                                                      ? Colors.green
-                                                      : Colors.amber,
-                                                  fontWeight: FontWeight.w500,
-                                                ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        model.description == 'fast'
-                                            ? context.l10n.modelDescriptionFast
-                                            : context.l10n.modelDescriptionPremium,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodySmall
-                                            ?.copyWith(
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .onSurface
-                                                  .withValues(alpha: 0.6),
-                                            ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppConstants.defaultPadding),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.memory,
+                  size: 20,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  context.l10n.aiModel,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
                       ),
-                    );
-                  }),
-                ],
-              ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _buildModelRow(
+              context,
+              icon: Icons.record_voice_over,
+              label: context.l10n.audioTranscription,
+              model: transcriptionModel,
+            ),
+            const SizedBox(height: 8),
+            _buildModelRow(
+              context,
+              icon: Icons.auto_awesome,
+              label: context.l10n.aiModel,
+              model: llmModel,
             ),
           ],
-        ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildModelRow(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required ModelConfig model,
+  }) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color:
+                      Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
+          ),
+        ),
+        InfoChip(
+          label: model.name,
+          icon: icon,
+        ),
+      ],
     );
   }
 

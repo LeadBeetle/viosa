@@ -41,7 +41,7 @@ class StreamingTranscriptionCard extends StatelessWidget {
                   icon: Icons.language,
                 ),
                 InfoChip(
-                  label: 'Modell: ${settings.selectedModel}',
+                  label: 'Modell: ${settings.transcriptionModel}',
                   icon: Icons.memory,
                 ),
               ],

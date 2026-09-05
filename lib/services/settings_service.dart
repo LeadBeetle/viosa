@@ -1,5 +1,4 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '../repositories/model_repository.dart';
 
 /// Interface for settings storage operations
 /// Following Interface Segregation Principle (ISP)
@@ -16,9 +15,6 @@ abstract class ISettingsService {
   Future<void> deleteAudioSavePath();
   Future<void> saveTextSize(double size);
   Future<double> getTextSize();
-  Future<void> saveModel(String model);
-  Future<String> getModel();
-  Future<void> deleteModel();
   Future<void> saveThemeMode(String themeMode);
   Future<String> getThemeMode();
   Future<void> saveSpeakerDiarization(bool enabled);
@@ -35,6 +31,7 @@ class SettingsService implements ISettingsService {
   static const String _languageKey = 'transcription_language';
   static const String _audioSavePathKey = 'audio_save_path';
   static const String _textSizeKey = 'text_size';
+  /// Legacy key, only removed on clear
   static const String _modelKey = 'selected_model';
   static const String _themeModeKey = 'theme_mode';
   static const String _speakerDiarizationKey = 'speaker_diarization';
@@ -120,24 +117,6 @@ class SettingsService implements ISettingsService {
     final sizeStr = await _storage.read(key: _textSizeKey);
     if (sizeStr == null) return _defaultTextSize;
     return double.tryParse(sizeStr) ?? _defaultTextSize;
-  }
-
-  @override
-  Future<void> saveModel(String model) async {
-    if (model.trim().isEmpty) {
-      throw ArgumentError('Model cannot be empty');
-    }
-    await _storage.write(key: _modelKey, value: model);
-  }
-
-  @override
-  Future<String> getModel() async {
-    return await _storage.read(key: _modelKey) ?? ModelRepository.defaultModelId;
-  }
-
-  @override
-  Future<void> deleteModel() async {
-    await _storage.delete(key: _modelKey);
   }
 
   @override
