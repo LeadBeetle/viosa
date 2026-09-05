@@ -57,7 +57,7 @@ class AppTheme {
         ),
       ),
       appBarTheme: AppBarTheme(
-        centerTitle: true,
+        centerTitle: false,
         elevation: 0,
         backgroundColor: _lightBackground,
         foregroundColor: colorScheme.onSurface,
@@ -121,7 +121,7 @@ class AppTheme {
         ),
       ),
       appBarTheme: AppBarTheme(
-        centerTitle: true,
+        centerTitle: false,
         elevation: 0,
         backgroundColor: _darkBackground,
         foregroundColor: colorScheme.onSurface,
