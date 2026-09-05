@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import '../../models/transcript_segment.dart';
 import '../llm_exceptions.dart';
 import '../openrouter_http.dart';
@@ -68,6 +69,8 @@ class OpenRouterSpeechToTextService implements ISpeechToTextService {
       };
     }
 
+    debugPrint('Transcription request: ${_describeRequest(request, base64Audio)}');
+
     try {
       final response = await _dio.post(
         '$baseUrl${OpenRouterHttp.transcriptionsPath}',
@@ -88,6 +91,16 @@ class OpenRouterSpeechToTextService implements ISpeechToTextService {
       if (e is Exception) rethrow;
       throw LLMProviderException('Transcription failed: $e');
     }
+  }
+
+  /// Renders the request for the log with the audio replaced by its size
+  String _describeRequest(Map<String, dynamic> request, String base64Audio) {
+    final described = Map<String, dynamic>.from(request);
+    described['input_audio'] = {
+      'data': '<${base64Audio.length} base64 chars>',
+      'format': (request['input_audio'] as Map)['format'],
+    };
+    return described.toString();
   }
 
   Map<String, dynamic> _buildAzureOptions({

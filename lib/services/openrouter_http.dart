@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'llm_exceptions.dart';
 
 /// Shared HTTP concerns for every OpenRouter-backed service.
@@ -34,6 +36,7 @@ class OpenRouterHttp {
 
   /// Throw the matching [LLMProviderException] for a non-200 response
   static void throwForStatus(int? statusCode, dynamic data) {
+    if (statusCode != 200) logErrorBody(statusCode, data);
     if (statusCode == 401) throw LLMAuthException();
     if (statusCode == 429) throw LLMRateLimitException();
     if (statusCode == 503) {
@@ -54,6 +57,19 @@ class OpenRouterHttp {
         statusCode: statusCode,
       );
     }
+  }
+
+  /// Log the untouched error body so the upstream reason survives even when it
+  /// is not part of the message the user gets to see
+  static void logErrorBody(int? statusCode, dynamic data) {
+    String body;
+    try {
+      body = jsonEncode(data);
+    } catch (_) {
+      body = data.toString();
+    }
+    if (body.length > 2000) body = '${body.substring(0, 2000)}…';
+    debugPrint('OpenRouter $statusCode body: $body');
   }
 
   /// Pull the provider error message out of an error response body
