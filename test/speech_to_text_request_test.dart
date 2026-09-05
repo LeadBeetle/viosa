@@ -9,6 +9,7 @@ import 'package:viosa/services/transcription/openrouter_speech_to_text_service.d
 
 class _RecordingAdapter implements HttpClientAdapter {
   final List<Map<String, dynamic>> requests = [];
+  final List<bool> multipart = [];
   final bool Function(Map<String, dynamic> request) accepts;
 
   _RecordingAdapter(this.accepts);
@@ -22,8 +23,12 @@ class _RecordingAdapter implements HttpClientAdapter {
     Stream<Uint8List>? requestStream,
     Future<void>? cancelFuture,
   ) async {
-    final request = jsonDecode(jsonEncode(options.data)) as Map<String, dynamic>;
+    final data = options.data;
+    final request = data is FormData
+        ? {for (final field in data.fields) field.key: field.value}
+        : jsonDecode(jsonEncode(data)) as Map<String, dynamic>;
     requests.add(request);
+    multipart.add(data is FormData);
 
     if (!accepts(request)) {
       return ResponseBody.fromString(
@@ -86,6 +91,17 @@ void main() {
     expect(adapter.requests.last['response_format'], 'verbose_json');
   });
 
+  test('lädt die Datei hoch, wenn der JSON-Body abgelehnt wird', () async {
+    final adapter = _RecordingAdapter(
+      (request) => !request.containsKey('input_audio'),
+    );
+
+    await _transcribe(_service(adapter));
+
+    expect(adapter.multipart.last, isTrue);
+    expect(adapter.requests.last['model'], 'microsoft/mai-transcribe-2');
+  });
+
   test('meldet einen Fehler, wenn jede Variante abgelehnt wird', () async {
     final adapter = _RecordingAdapter((_) => false);
 
@@ -94,7 +110,9 @@ void main() {
       throwsA(isA<LLMProviderException>()),
     );
 
-    expect(adapter.requests, hasLength(4));
+    expect(adapter.requests, hasLength(6));
+    expect(adapter.multipart.sublist(0, 4), everyElement(isFalse));
+    expect(adapter.multipart.sublist(4), everyElement(isTrue));
     expect(adapter.requests.last.containsKey('response_format'), isFalse);
     expect(adapter.requests.last.containsKey('timestamp_granularities'), isFalse);
   });

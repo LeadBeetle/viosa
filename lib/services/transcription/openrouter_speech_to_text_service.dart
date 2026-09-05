@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../../models/transcript_segment.dart';
@@ -69,13 +70,17 @@ class OpenRouterSpeechToTextService implements ISpeechToTextService {
       };
     }
 
+    debugPrint('Audio header: ${_describeAudio(base64Audio)}');
+
     for (final variant in _variantsOf(request)) {
       debugPrint(
         'Transcription request (${variant.name}): '
         '${_describeRequest(variant.request, base64Audio)}',
       );
 
-      final response = await _post(apiKey, variant.request);
+      final response = variant.multipart
+          ? await _postMultipart(apiKey, variant.request, base64Audio, format)
+          : await _post(apiKey, variant.request);
 
       if (response.statusCode == 400 && !variant.isLast) {
         OpenRouterHttp.logErrorBody(response.statusCode, response.data);
@@ -112,6 +117,60 @@ class OpenRouterSpeechToTextService implements ISpeechToTextService {
     }
   }
 
+  /// Sends the same call as an OpenAI-style file upload
+  ///
+  /// The JSON body with `input_audio` is only one of the two shapes the
+  /// endpoint accepts, so a provider that rejects it still gets a chance
+  Future<Response<dynamic>> _postMultipart(
+    String apiKey,
+    Map<String, dynamic> request,
+    String base64Audio,
+    String format,
+  ) async {
+    final fields = <String, dynamic>{
+      for (final entry in request.entries)
+        if (entry.key != 'input_audio' && entry.key != 'provider')
+          entry.key: entry.value is String ? entry.value : jsonEncode(entry.value),
+      'file': MultipartFile.fromBytes(
+        base64Decode(base64Audio),
+        filename: 'audio.$format',
+      ),
+    };
+
+    final headers = OpenRouterHttp.buildHeaders(apiKey)
+      ..remove('Content-Type');
+
+    try {
+      return await _dio.post(
+        '$baseUrl${OpenRouterHttp.transcriptionsPath}',
+        data: FormData.fromMap(fields),
+        options: Options(
+          headers: headers,
+          validateStatus: (status) => status != null && status < 600,
+        ),
+      );
+    } on DioException catch (e) {
+      throw OpenRouterHttp.mapDioException(e);
+    }
+  }
+
+  /// Names the container of the payload so a rejected upload can be told
+  /// apart from a rejected request field
+  String _describeAudio(String base64Audio) {
+    final Uint8List bytes;
+    try {
+      bytes = base64Decode(base64Audio);
+    } catch (e) {
+      return 'undecodable base64 (${base64Audio.length} chars): $e';
+    }
+
+    final head = bytes.take(12).map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+    final ascii = String.fromCharCodes(
+      bytes.take(12).map((b) => b >= 32 && b < 127 ? b : 46),
+    );
+    return '${bytes.length} bytes, head $head ($ascii)';
+  }
+
   /// Progressively simpler versions of [request]
   ///
   /// OpenRouter forwards an upstream rejection as a bare "Provider returned
@@ -128,11 +187,21 @@ class OpenRouterSpeechToTextService implements ISpeechToTextService {
     }
     variants.add(Map.of(variants.last)..remove('response_format'));
 
+    final multipartFrom = variants.length;
+    variants
+      ..add(Map.of(request)..remove('provider'))
+      ..add(Map.of(request)
+        ..remove('provider')
+        ..remove('timestamp_granularities')
+        ..remove('response_format'));
+
     return [
       for (var i = 0; i < variants.length; i++)
         _RequestVariant(
           request: variants[i],
-          name: _variantName(variants[i]),
+          name: '${i >= multipartFrom ? 'multipart:' : ''}'
+              '${_variantName(variants[i])}',
+          multipart: i >= multipartFrom,
           isLast: i == variants.length - 1,
         ),
     ];
@@ -256,11 +325,13 @@ class OpenRouterSpeechToTextService implements ISpeechToTextService {
 class _RequestVariant {
   final Map<String, dynamic> request;
   final String name;
+  final bool multipart;
   final bool isLast;
 
   const _RequestVariant({
     required this.request,
     required this.name,
+    required this.multipart,
     required this.isLast,
   });
 }
