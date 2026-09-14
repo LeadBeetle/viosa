@@ -34,7 +34,10 @@ class AudioTranscoderService implements IAudioTranscoderService {
 
   @override
   Future<String> toWav(String audioPath) async {
-    if (!needsTranscoding(audioPath)) return audioPath;
+    if (!needsTranscoding(audioPath)) {
+      debugPrint('Transcode: $audioPath needs none');
+      return audioPath;
+    }
 
     final source = File(audioPath);
     if (!await source.exists()) throw AudioFileMissingException(audioPath);
@@ -54,7 +57,8 @@ class AudioTranscoderService implements IAudioTranscoderService {
 
       if (path == null) throw const AudioTranscodeException('Kein Zielpfad');
 
-      debugPrint('Transcode: $audioPath -> $path');
+      final size = await File(path).length();
+      debugPrint('Transcode: $audioPath -> $path ($size bytes)');
       return path;
     } on PlatformException catch (e) {
       throw AudioTranscodeException(e.message ?? e.code);
