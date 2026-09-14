@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../../models/transcript_segment.dart';
@@ -70,33 +69,12 @@ class OpenRouterSpeechToTextService implements ISpeechToTextService {
       };
     }
 
-    debugPrint('Audio header: ${_describeAudio(base64Audio)}');
+    debugPrint('Transcription request: ${_describeRequest(request, base64Audio)}');
 
-    for (final variant in _variantsOf(request)) {
-      debugPrint(
-        'Transcription request (${variant.name}): '
-        '${_describeRequest(variant.request, base64Audio)}',
-      );
+    final response = await _post(apiKey, request);
 
-      final response = variant.multipart
-          ? await _postMultipart(apiKey, variant.request, base64Audio, format)
-          : await _post(apiKey, variant.request);
-
-      if (response.statusCode == 400 && !variant.isLast) {
-        OpenRouterHttp.logErrorBody(response.statusCode, response.data);
-        debugPrint('Variant ${variant.name} rejected with 400, trying next');
-        continue;
-      }
-
-      OpenRouterHttp.throwForStatus(response.statusCode, response.data);
-      debugPrint('Transcription accepted with variant ${variant.name}');
-      return _parseResponse(response.data);
-    }
-
-    throw LLMProviderException(
-      'Transcription rejected with 400 for every request variant',
-      statusCode: 400,
-    );
+    OpenRouterHttp.throwForStatus(response.statusCode, response.data);
+    return _parseResponse(response.data);
   }
 
   Future<Response<dynamic>> _post(
@@ -115,135 +93,6 @@ class OpenRouterSpeechToTextService implements ISpeechToTextService {
     } on DioException catch (e) {
       throw OpenRouterHttp.mapDioException(e);
     }
-  }
-
-  /// Sends the same call as an OpenAI-style file upload
-  ///
-  /// The JSON body with `input_audio` is only one of the two shapes the
-  /// endpoint accepts, so a provider that rejects it still gets a chance
-  Future<Response<dynamic>> _postMultipart(
-    String apiKey,
-    Map<String, dynamic> request,
-    String base64Audio,
-    String format,
-  ) async {
-    final fields = <MapEntry<String, dynamic>>[];
-
-    for (final entry in request.entries) {
-      if (entry.key == 'input_audio' || entry.key == 'provider') continue;
-      final value = entry.value;
-      if (value is List) {
-        fields.addAll(
-          value.map((item) => MapEntry(entry.key, item.toString())),
-        );
-      } else {
-        fields.add(MapEntry(entry.key, value.toString()));
-      }
-    }
-
-    fields.add(
-      MapEntry(
-        'file',
-        MultipartFile.fromBytes(
-          base64Decode(base64Audio),
-          filename: 'audio.$format',
-        ),
-      ),
-    );
-
-    final headers = OpenRouterHttp.buildHeaders(apiKey)
-      ..remove('Content-Type');
-
-    try {
-      return await _dio.post(
-        '$baseUrl${OpenRouterHttp.transcriptionsPath}',
-        data: FormData()..fields.addAll(_textFields(fields))..files.addAll(_fileFields(fields)),
-        options: Options(
-          headers: headers,
-          validateStatus: (status) => status != null && status < 600,
-        ),
-      );
-    } on DioException catch (e) {
-      throw OpenRouterHttp.mapDioException(e);
-    }
-  }
-
-  Iterable<MapEntry<String, String>> _textFields(
-    List<MapEntry<String, dynamic>> fields,
-  ) {
-    return fields
-        .where((field) => field.value is! MultipartFile)
-        .map((field) => MapEntry(field.key, field.value as String));
-  }
-
-  Iterable<MapEntry<String, MultipartFile>> _fileFields(
-    List<MapEntry<String, dynamic>> fields,
-  ) {
-    return fields
-        .where((field) => field.value is MultipartFile)
-        .map((field) => MapEntry(field.key, field.value as MultipartFile));
-  }
-
-  /// Names the container of the payload so a rejected upload can be told
-  /// apart from a rejected request field
-  String _describeAudio(String base64Audio) {
-    final Uint8List bytes;
-    try {
-      bytes = base64Decode(base64Audio);
-    } catch (e) {
-      return 'undecodable base64 (${base64Audio.length} chars): $e';
-    }
-
-    final head = bytes.take(12).map((b) => b.toRadixString(16).padLeft(2, '0')).join();
-    final ascii = String.fromCharCodes(
-      bytes.take(12).map((b) => b >= 32 && b < 127 ? b : 46),
-    );
-    return '${bytes.length} bytes, head $head ($ascii)';
-  }
-
-  /// Progressively simpler versions of [request]
-  ///
-  /// OpenRouter forwards an upstream rejection as a bare "Provider returned
-  /// 400" without naming the field, so the optional parts are dropped one by
-  /// one until the API accepts the call. The log names the variant that worked
-  List<_RequestVariant> _variantsOf(Map<String, dynamic> request) {
-    final variants = <Map<String, dynamic>>[Map.of(request)];
-
-    if (request.containsKey('provider')) {
-      variants.add(Map.of(variants.last)..remove('provider'));
-    }
-    if (request.containsKey('timestamp_granularities')) {
-      variants.add(Map.of(variants.last)..remove('timestamp_granularities'));
-    }
-    variants.add(Map.of(variants.last)..remove('response_format'));
-
-    final multipartFrom = variants.length;
-    variants
-      ..add(Map.of(request)..remove('provider'))
-      ..add(Map.of(request)
-        ..remove('provider')
-        ..remove('timestamp_granularities')
-        ..remove('response_format'));
-
-    return [
-      for (var i = 0; i < variants.length; i++)
-        _RequestVariant(
-          request: variants[i],
-          name: '${i >= multipartFrom ? 'multipart:' : ''}'
-              '${_variantName(variants[i])}',
-          multipart: i >= multipartFrom,
-          isLast: i == variants.length - 1,
-        ),
-    ];
-  }
-
-  String _variantName(Map<String, dynamic> request) {
-    final parts = <String>[
-      if (request.containsKey('provider')) 'provider',
-      if (request.containsKey('timestamp_granularities')) 'timestamps',
-      if (request.containsKey('response_format')) 'verbose_json',
-    ];
-    return parts.isEmpty ? 'minimal' : parts.join('+');
   }
 
   /// Renders the request for the log with the audio replaced by its size
@@ -349,19 +198,4 @@ class OpenRouterSpeechToTextService implements ISpeechToTextService {
   String _textFromSegments(List<TranscriptSegment> segments) {
     return segments.map((segment) => segment.text).join(' ').trim();
   }
-}
-
-/// One attempt of the transcription request with its log label
-class _RequestVariant {
-  final Map<String, dynamic> request;
-  final String name;
-  final bool multipart;
-  final bool isLast;
-
-  const _RequestVariant({
-    required this.request,
-    required this.name,
-    required this.multipart,
-    required this.isLast,
-  });
 }

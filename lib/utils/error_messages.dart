@@ -27,6 +27,9 @@ class ErrorMessages {
 
     if (error is MissingApiKeyException) return l10n.errorApiKeyMissing;
     if (error is AudioFileMissingException) return l10n.errorAudioFileMissing;
+    if (error is AudioTranscodeException) {
+      return l10n.errorAudioConversion(_detail(error.message));
+    }
     if (error is FileSystemException) return l10n.errorAudioFileMissing;
 
     if (error is LLMProviderException) {

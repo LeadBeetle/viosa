@@ -9,10 +9,9 @@ import 'package:viosa/services/transcription/openrouter_speech_to_text_service.d
 
 class _RecordingAdapter implements HttpClientAdapter {
   final List<Map<String, dynamic>> requests = [];
-  final List<bool> multipart = [];
-  final bool Function(Map<String, dynamic> request) accepts;
+  final int statusCode;
 
-  _RecordingAdapter(this.accepts);
+  _RecordingAdapter({this.statusCode = 200});
 
   @override
   void close({bool force = false}) {}
@@ -23,28 +22,17 @@ class _RecordingAdapter implements HttpClientAdapter {
     Stream<Uint8List>? requestStream,
     Future<void>? cancelFuture,
   ) async {
-    final data = options.data;
-    final request = data is FormData
-        ? {for (final field in data.fields) field.key: field.value}
-        : jsonDecode(jsonEncode(data)) as Map<String, dynamic>;
-    requests.add(request);
-    multipart.add(data is FormData);
+    requests.add(jsonDecode(jsonEncode(options.data)) as Map<String, dynamic>);
 
-    if (!accepts(request)) {
-      return ResponseBody.fromString(
-        jsonEncode({
-          'error': {'message': 'Provider returned 400', 'code': 400}
-        }),
-        400,
-        headers: {
-          Headers.contentTypeHeader: [Headers.jsonContentType]
-        },
-      );
-    }
+    final body = statusCode == 200
+        ? {'text': 'hallo', 'language': 'de'}
+        : {
+            'error': {'message': 'Provider returned 400', 'code': statusCode}
+          };
 
     return ResponseBody.fromString(
-      jsonEncode({'text': 'hallo', 'language': 'de'}),
-      200,
+      jsonEncode(body),
+      statusCode,
       headers: {
         Headers.contentTypeHeader: [Headers.jsonContentType]
       },
@@ -58,62 +46,40 @@ OpenRouterSpeechToTextService _service(_RecordingAdapter adapter) {
   return OpenRouterSpeechToTextService(dio: dio);
 }
 
-Future<dynamic> _transcribe(OpenRouterSpeechToTextService service) {
+Future<SpeechToTextResult> _transcribe(OpenRouterSpeechToTextService service) {
   return service.transcribe(
     apiKey: 'key',
     base64Audio: 'AAAA',
-    format: 'm4a',
+    format: 'wav',
     transcribeStyle: TranscribeStyle.clean,
   );
 }
 
 void main() {
-  test('sendet zuerst die vollständige Anfrage', () async {
-    final adapter = _RecordingAdapter((_) => true);
+  test('sendet genau eine Anfrage mit allen Optionen', () async {
+    final adapter = _RecordingAdapter();
 
-    await _transcribe(_service(adapter));
+    final result = await _transcribe(_service(adapter));
 
+    expect(result.text, 'hallo');
     expect(adapter.requests, hasLength(1));
-    expect(adapter.requests.single['provider'], isNotNull);
-    expect(adapter.requests.single['response_format'], 'verbose_json');
+
+    final request = adapter.requests.single;
+    expect(request['model'], 'microsoft/mai-transcribe-2');
+    expect((request['input_audio'] as Map)['format'], 'wav');
+    expect(request['response_format'], 'verbose_json');
+    expect(request['timestamp_granularities'], ['segment']);
+    expect(request['provider'], isNotNull);
   });
 
-  test('lässt bei 400 die optionalen Felder nacheinander weg', () async {
-    final adapter = _RecordingAdapter(
-      (request) => !request.containsKey('provider'),
-    );
-
-    await _transcribe(_service(adapter));
-
-    expect(adapter.requests, hasLength(2));
-    expect(adapter.requests.first.containsKey('provider'), isTrue);
-    expect(adapter.requests.last.containsKey('provider'), isFalse);
-    expect(adapter.requests.last['response_format'], 'verbose_json');
-  });
-
-  test('lädt die Datei hoch, wenn der JSON-Body abgelehnt wird', () async {
-    final adapter = _RecordingAdapter(
-      (request) => !request.containsKey('input_audio'),
-    );
-
-    await _transcribe(_service(adapter));
-
-    expect(adapter.multipart.last, isTrue);
-    expect(adapter.requests.last['model'], 'microsoft/mai-transcribe-2');
-  });
-
-  test('meldet einen Fehler, wenn jede Variante abgelehnt wird', () async {
-    final adapter = _RecordingAdapter((_) => false);
+  test('meldet den Fehler, ohne die Anfrage zu wiederholen', () async {
+    final adapter = _RecordingAdapter(statusCode: 400);
 
     await expectLater(
       _transcribe(_service(adapter)),
       throwsA(isA<LLMProviderException>()),
     );
 
-    expect(adapter.requests, hasLength(6));
-    expect(adapter.multipart.sublist(0, 4), everyElement(isFalse));
-    expect(adapter.multipart.sublist(4), everyElement(isTrue));
-    expect(adapter.requests.last.containsKey('response_format'), isFalse);
-    expect(adapter.requests.last.containsKey('timestamp_granularities'), isFalse);
+    expect(adapter.requests, hasLength(1));
   });
 }

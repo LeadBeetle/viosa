@@ -254,6 +254,7 @@
   "errorUnknownWithDetails": "Something went wrong: {details}",
   "errorServiceWithDetails": "Transcription failed: {details}",
   "errorAudioFileMissing": "The audio file is gone. Please link the file again.",
+  "errorAudioConversion": "The audio file could not be converted: {details}",
   "speechUnavailable": "Speech recognition unavailable",
   "speechInitError": "Speech recognition could not be started",
   "speechRecognitionError": "Speech recognition failed",

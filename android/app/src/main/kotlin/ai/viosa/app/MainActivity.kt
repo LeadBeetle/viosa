@@ -2,12 +2,16 @@ package ai.viosa.app
 
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.provider.OpenableColumns
 import android.util.Log
+import java.util.concurrent.Executors
 import java.io.File
 import java.lang.reflect.Method
 import java.lang.reflect.Field
@@ -16,8 +20,10 @@ import java.lang.reflect.InvocationHandler
 
 class MainActivity : FlutterActivity() {
     private val sharedAudioChannel = "ai.viosa.app/shared_audio"
+    private val audioTranscodeChannel = "ai.viosa.app/audio_transcode"
     private var pendingSharedAudioPath: String? = null
     private var methodChannel: MethodChannel? = null
+    private val transcodeExecutor = Executors.newSingleThreadExecutor()
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -32,6 +38,45 @@ class MainActivity : FlutterActivity() {
                 else -> result.notImplemented()
             }
         }
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, audioTranscodeChannel)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "toWav" -> transcodeToWav(call, result)
+                    else -> result.notImplemented()
+                }
+            }
+    }
+
+    /**
+     * Dekodiert die Datei auf einem Hintergrund-Thread, damit der UI-Thread
+     * während der Umwandlung frei bleibt.
+     */
+    private fun transcodeToWav(call: MethodCall, result: MethodChannel.Result) {
+        val sourcePath = call.argument<String>("sourcePath")
+        val targetPath = call.argument<String>("targetPath")
+        val sampleRate = call.argument<Int>("sampleRate")
+
+        if (sourcePath == null || targetPath == null || sampleRate == null) {
+            result.error("invalid_arguments", "sourcePath, targetPath und sampleRate nötig", null)
+            return
+        }
+
+        val handler = Handler(Looper.getMainLooper())
+        transcodeExecutor.execute {
+            try {
+                val path = AudioTranscoder.toWav(sourcePath, targetPath, sampleRate)
+                handler.post { result.success(path) }
+            } catch (e: Exception) {
+                Log.w("Viosa", "Audio transcode failed", e)
+                handler.post { result.error("transcode_failed", e.message, null) }
+            }
+        }
+    }
+
+    override fun onDestroy() {
+        transcodeExecutor.shutdownNow()
+        super.onDestroy()
     }
 
     override fun onNewIntent(intent: Intent) {

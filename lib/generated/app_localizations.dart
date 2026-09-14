@@ -1622,6 +1622,12 @@ abstract class AppLocalizations {
   /// **'Die Audiodatei ist nicht mehr vorhanden. Bitte die Datei erneut verknüpfen.'**
   String get errorAudioFileMissing;
 
+  /// No description provided for @errorAudioConversion.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Audiodatei konnte nicht umgewandelt werden: {details}'**
+  String errorAudioConversion(String details);
+
   /// No description provided for @speechUnavailable.
   ///
   /// In de, this message translates to:

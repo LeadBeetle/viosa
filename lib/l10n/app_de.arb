@@ -572,6 +572,14 @@
     }
   },
   "errorAudioFileMissing": "Die Audiodatei ist nicht mehr vorhanden. Bitte die Datei erneut verknüpfen.",
+  "errorAudioConversion": "Die Audiodatei konnte nicht umgewandelt werden: {details}",
+  "@errorAudioConversion": {
+    "placeholders": {
+      "details": {
+        "type": "String"
+      }
+    }
+  },
   "speechUnavailable": "Spracherkennung nicht verfügbar",
   "speechInitError": "Spracherkennung konnte nicht gestartet werden",
   "speechRecognitionError": "Spracherkennung fehlgeschlagen",

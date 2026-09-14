@@ -21,3 +21,10 @@ class AudioFileMissingException extends TranscriptionPipelineException {
   const AudioFileMissingException(this.path)
       : super('Audio file not found: $path');
 }
+
+/// Thrown when an imported file could not be decoded into the format the
+/// transcription API accepts
+class AudioTranscodeException extends TranscriptionPipelineException {
+  const AudioTranscodeException(String reason)
+      : super('Audio conversion failed: $reason');
+}

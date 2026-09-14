@@ -931,6 +931,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'The audio file is gone. Please link the file again.';
 
   @override
+  String errorAudioConversion(String details) {
+    return 'The audio file could not be converted: $details';
+  }
+
+  @override
   String get speechUnavailable => 'Speech recognition unavailable';
 
   @override

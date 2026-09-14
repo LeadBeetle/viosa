@@ -940,6 +940,11 @@ class AppLocalizationsDe extends AppLocalizations {
       'Die Audiodatei ist nicht mehr vorhanden. Bitte die Datei erneut verknüpfen.';
 
   @override
+  String errorAudioConversion(String details) {
+    return 'Die Audiodatei konnte nicht umgewandelt werden: $details';
+  }
+
+  @override
   String get speechUnavailable => 'Spracherkennung nicht verfügbar';
 
   @override
